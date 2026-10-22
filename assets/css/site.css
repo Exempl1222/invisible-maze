@@ -1,0 +1,253 @@
+/* Invisible Maze site styles
+   Colour roles map to game objects, so the palette doubles as a legend:
+   amber = robot, cyan = revealed wall, lilac = portal. */
+
+:root {
+  --night: #17232d;      /* page background */
+  --panel: #1e2d39;      /* raised surfaces */
+  --grid: #2c3e4c;       /* grid lines, borders */
+  --chalk: #e6edf1;      /* primary text */
+  --muted: #9fb2bf;      /* secondary text */
+  --robot: #f5b83d;      /* the robot, primary actions */
+  --wall: #5fe0d6;       /* walls once revealed */
+  --portal: #b996ff;     /* the exit */
+
+  --font-display: "Chakra Petch", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
+
+  --step--1: 0.875rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.3125rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2.25rem, 6vw, 3.75rem);
+
+  --gutter: 16px;
+  --measure: 62ch;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--chalk);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.55;
+}
+
+a { color: var(--wall); text-underline-offset: 3px; }
+a:hover { color: var(--chalk); }
+
+:focus-visible {
+  outline: 3px solid var(--robot);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.wrap {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* Header */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--step-1);
+  color: var(--chalk);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.wordmark svg { width: 28px; height: 28px; }
+.site-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  margin-left: 1.25rem;
+}
+.site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--chalk); }
+
+/* Hero */
+.hero {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+  padding-block: 2.5rem 4rem;
+}
+@media (min-width: 860px) {
+  .hero { grid-template-columns: 1.05fr 1fr; padding-block: 4rem 6rem; }
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-3);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  margin: 0 0 1.25rem;
+}
+.hero p {
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: var(--step-1);
+  line-height: 1.5;
+  margin: 0 0 2rem;
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--step-0);
+  padding: 0.8rem 1.4rem;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 2px solid var(--robot);
+  background: var(--robot);
+  color: var(--night);
+}
+.btn:hover { background: transparent; color: var(--robot); }
+.btn.quiet { background: transparent; color: var(--chalk); border-color: var(--grid); }
+.btn.quiet:hover { border-color: var(--chalk); }
+.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+/* Teaser board */
+.board-frame {
+  justify-self: center;
+  width: min(420px, 100%);
+}
+.board {
+  --n: 7;
+  display: grid;
+  grid-template-columns: 1.6rem repeat(var(--n), 1fr);
+  grid-template-rows: 1.6rem repeat(var(--n), 1fr);
+  gap: 3px;
+  aspect-ratio: 1 / 1;
+  position: relative;
+}
+.clue {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.cell {
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+.cell.wall {
+  background: color-mix(in srgb, var(--wall) 22%, var(--panel));
+  border-color: var(--wall);
+}
+.cell.bump { box-shadow: 0 0 0 3px var(--wall), 0 0 18px color-mix(in srgb, var(--wall) 60%, transparent); }
+.cell.portal {
+  border-color: var(--portal);
+  background: radial-gradient(circle, color-mix(in srgb, var(--portal) 55%, transparent) 0 35%, var(--panel) 36%);
+}
+.cell.trail { background: color-mix(in srgb, var(--robot) 12%, var(--panel)); }
+
+.robot {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition: transform 260ms cubic-bezier(.4,.1,.3,1);
+}
+.robot svg { width: 72%; height: 72%; }
+.robot.jolt svg { animation: jolt 220ms ease; }
+@keyframes jolt { 30% { transform: scale(0.85) rotate(-6deg); } 60% { transform: scale(1.05) rotate(4deg); } }
+
+.sensor {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.9rem;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.sensor strong { font-family: var(--font-display); color: var(--robot); font-size: var(--step-0); }
+
+/* Sections */
+section { padding-block: 3rem; border-top: 1px solid var(--grid); }
+h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--step-2);
+  line-height: 1.15;
+  margin: 0 0 1.5rem;
+}
+.rules {
+  display: grid;
+  gap: 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 760px) { .rules { grid-template-columns: repeat(3, 1fr); gap: 2.5rem; } }
+.rules h3 {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.rules h3 .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.rules p { margin: 0; color: var(--muted); max-width: 34ch; }
+
+.roadmap { list-style: none; margin: 0; padding: 0; max-width: var(--measure); counter-reset: phase; }
+.roadmap li {
+  position: relative;
+  padding: 0 0 1.4rem 2.75rem;
+  counter-increment: phase;
+}
+.roadmap li::before {
+  content: counter(phase);
+  position: absolute; left: 0; top: 0.05rem;
+  width: 1.8rem; height: 1.8rem;
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 600; font-size: var(--step--1);
+  border: 2px solid var(--grid); border-radius: 50%;
+  color: var(--muted);
+}
+.roadmap li.done::before { border-color: var(--wall); color: var(--wall); }
+.roadmap li.now::before { border-color: var(--robot); background: var(--robot); color: var(--night); }
+.roadmap strong { font-family: var(--font-display); font-weight: 600; }
+.roadmap span { display: block; color: var(--muted); }
+
+/* Simple content pages */
+.page { padding-block: 3rem 5rem; max-width: var(--measure); }
+.page h1 { font-family: var(--font-display); font-size: var(--step-3); line-height: 1.05; margin: 0 0 1rem; }
+.page p { color: var(--muted); font-size: var(--step-1); }
+
+.site-footer {
+  border-top: 1px solid var(--grid);
+  padding-block: 2rem 3rem;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+@media (max-width: 420px) {
+  .site-nav a { margin-left: 0.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .robot, .cell { transition: none; }
+  .robot.jolt svg { animation: none; }
+}

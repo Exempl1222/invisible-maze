@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invisible Maze</title>
+  <meta name="description" content="A puzzle game about walls you can't see. Read the edge clues, work out the maze, and outsmart a little robot.">
+  <meta name="theme-color" content="#17232d">
+  <meta property="og:title" content="Invisible Maze">
+  <meta property="og:description" content="A puzzle game about walls you can't see.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <header class="wrap site-header">
+    <a class="wordmark" href="./">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="11" width="20" height="15" rx="5" fill="var(--robot)"/><rect x="10" y="16" width="4" height="4" rx="1" fill="var(--night)"/><rect x="18" y="16" width="4" height="4" rx="1" fill="var(--night)"/><rect x="15" y="5" width="2" height="6" fill="var(--robot)"/><circle cx="16" cy="5" r="2" fill="var(--robot)"/></svg>
+      Invisible Maze
+    </a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="./" aria-current="page">Home</a>
+      <a href="play/">Play</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap hero">
+      <div>
+        <h1>Walls you can't see.</h1>
+        <p>A puzzle game for your phone. The maze hides its walls until something hits them. The numbers on the edges tell you how many are in each row and column. Work out the rest.</p>
+        <div class="actions">
+          <a class="btn" href="play/">Play the prototype</a>
+          <a class="btn quiet" href="#how-it-works">How it works</a>
+        </div>
+      </div>
+
+      <div class="board-frame">
+        <div class="board" id="teaser" role="img" aria-label="A seven by seven grid. A robot moves toward a portal in the top right, bumping into hidden walls that light up as it hits them."></div>
+        <div class="sensor" aria-hidden="true">
+          <span>Distance to portal</span>
+          <strong id="teaser-distance">12</strong>
+        </div>
+      </div>
+    </div>
+
+    <section id="how-it-works">
+      <div class="wrap">
+        <h2>How a level works</h2>
+        <ul class="rules">
+          <li>
+            <h3><span class="swatch" style="background:var(--wall)"></span>Hidden walls</h3>
+            <p>Every level has walls, but you only see one once the robot runs into it.</p>
+          </li>
+          <li>
+            <h3><span class="swatch" style="background:var(--chalk)"></span>Edge clues</h3>
+            <p>The number beside each row and column says how many walls it holds, like a Picross puzzle.</p>
+          </li>
+          <li>
+            <h3><span class="swatch" style="background:var(--robot)"></span>Robot sensor</h3>
+            <p>The robot always knows how far it is from the portal. Use that, plus the clues, to plan every move.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="progress">
+      <div class="wrap">
+        <h2>Where the build is at</h2>
+        <ol class="roadmap">
+          <li class="now"><strong>Website live</strong><span>This page, auto-deployed from GitHub.</span></li>
+          <li><strong>Rules locked</strong><span>Picking the game mode and writing the full rules.</span></li>
+          <li><strong>Puzzle engine</strong><span>Level generator that guarantees every maze is solvable.</span></li>
+          <li><strong>Playable build</strong><span>The real game on the Play page, tuned for phones.</span></li>
+          <li><strong>Polish and launch</strong><span>Sound, levels, lives and hints, a proper domain.</span></li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div class="wrap">
+    Invisible Maze is in development.</div>
+  </footer>
+
+  <script type="module">
+    import { startTeaser } from './assets/js/teaser.js';
+    startTeaser(document.getElementById('teaser'), document.getElementById('teaser-distance'));
+  </script>
+</body>
+</html>
