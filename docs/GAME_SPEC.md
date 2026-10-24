@@ -1,35 +1,92 @@
-# Game spec (draft, not locked)
+# Game spec v2 (locked 24 Oct 2026)
 
-Status: **open**. Phase 3 does not start until every question below has an answer.
+Source of truth for game logic. If something isn't answered here, stop and ask; don't invent rules. Changes go through a PR that edits this file first.
+
+v1 (hidden walls and Picross clues) is retired. Hidden walls turned the puzzle into guessing, and on a plain grid par never went above 4.
 
 ## Concept
 
-A grid maze with hidden walls, a robot and a portal. Edge clues (Picross style) give the number of walls in each row and column. The robot has a sensor that reads its distance to the portal.
+A robot wants to reach the beacon and always takes the shortest route. Before it moves, you place walls, all in one go, to stop it reaching the beacon within its move limit. Use as few walls as you can.
 
-## Modes
+## Core rules
 
-| | Classic | Flipped (front-runner) |
-|---|---|---|
-| Player role | Guide the robot to the portal | Place walls so the robot can't reach the portal |
-| Robot | Player-controlled | Moves on its own, limited number of moves |
-| Win | Reach the portal | Robot runs out of moves |
-| Lose | Out of lives (bumps) | Robot reaches the portal |
+| Rule | Decision |
+|---|---|
+| Robot movement | One step per move: up, down, left or right. Never diagonal. |
+| Robot route | Always a shortest route to the beacon given the board after your walls. |
+| Tie-break | If several routes are equally short, the robot prefers up, right, down, left at each step. Cosmetic only: it never changes win or lose. |
+| Turn order | Place every wall, press Go, watch. No changes once Go is pressed. |
+| Win | No route to the beacon, or the shortest route is longer than the move limit. |
+| Lose | The robot reaches the beacon within the move limit. |
+| Robot with no route | Stays put and shows a stuck animation. That's a win. |
+| Robot with a route that's too long | Walks its shortest route until it runs out of moves, then stops. That's a win. |
+| Wall budget | Set per level. The UI won't let you place more. |
+| Score | Par = fewest walls that win, computed exactly by the engine. 3 stars at par, 2 at par + 1, 1 at anything else within budget. |
+| Retries | Unlimited. No lives. |
 
-## Open questions
+## Tiles
 
-1. **Mode:** flipped only, or classic as a tutorial?
-2. **Robot brain (flipped):** shortest path every turn, a fixed rule (always turn right), or something the player can learn and exploit?
-3. **What's hidden in flipped mode?** Pre-existing walls the player can't see, plus walls the player places?
-4. **Wall budget:** how many walls can the player place per level?
-5. **Turn order:** place all walls then watch, or alternate (place one, robot moves one)?
-6. **Where do the edge clues count?** Hidden walls only, or hidden plus placed?
-7. **Distance sensor:** straight-line, grid steps ignoring walls, or true path length?
-8. **Grid sizes** by difficulty (e.g. 5x5 to 9x9)?
-9. **Lives, hints and ads:** what costs a life, what a hint reveals, when an ad is offered.
-10. **Level supply:** hand-built set, daily seed, or endless generator?
+| Tile | Symbol | Robot can walk on it | You can wall it |
+|---|---|---|---|
+| Grass | `.` | Yes | Yes (the only buildable tile) |
+| Rock | `#` | No | n/a (pre-built, permanent) |
+| River | `~` | No | No |
+| Bridge | `=` | Yes | No |
+| Teleporter | `T` (pairs share a letter in level data) | Yes | No |
+| Robot start | `R` | Yes | No |
+| Beacon | `B` | Yes | No |
 
-## Engine guarantees (any mode)
+**Teleporters:** stepping onto one moves the robot straight to its partner. Forced (the robot can't step on without travelling), two-way, and the whole jump counts as one move. The robot then continues from the partner tile. Walking onto the partner tile directly also teleports it back.
 
-- Every level is solvable, verified by brute force on small grids.
-- No level is solvable by a trivial move (filters out boring levels).
-- Levels are reproducible from a seed.
+**v1 ships with these tiles only.** New tiles (mud, one-way conveyors, gates) arrive one per level pack, each through a spec change.
+
+## Grids and levels
+
+| Size | Use |
+|---|---|
+| 5x5 | Tutorial (first 5 levels, one new idea each) |
+| 7x7 | Main levels |
+| 9x9 | Hard levels and the daily |
+
+- **Level supply:** one curated daily level plus packs of 30.
+- **Levels are generated offline and curated**, not made on the phone. The prototype found about 8% of random 9x9 terrain levels reach par 3 or more, and about 1 in 200 has par 3 or more with exactly one answer.
+- **The daily level must have exactly one par answer.** Pack levels may have more, tagged by count.
+
+## Hints and ads
+
+- A hint reveals one wall from a par answer.
+- Hints are earned by watching an ad, after launch. No ads until Phase 6.
+
+## Engine guarantees (Phase 3)
+
+- `solve(level)` returns par and one par answer. Exact, exhaustive search.
+- `countAnswers(level, k)` returns how many k-wall answers exist (capped).
+- `simulate(level, walls)` returns the robot's step-by-step route (including teleports), the result (win or lose), and moves used.
+- Every shipped level has an answer within budget, and budget is at least par.
+- Levels are reproducible from a seed. The engine is pure JS with no DOM.
+
+## Level data format
+
+```json
+{
+  "id": "d-2026-10-24",
+  "size": 9,
+  "tiles": [
+    ".....=~..",
+    "......~..",
+    "..R...~..",
+    "......=..",
+    "...#..~..",
+    "......=..",
+    "......=..",
+    "...#..~~B",
+    "a...#..~a"
+  ],
+  "moveLimit": 13,
+  "wallBudget": 4,
+  "par": 3,
+  "parAnswers": 1
+}
+```
+
+Teleporter pairs use matching lowercase letters (`a` with `a`, `b` with `b`). Coordinates are `[x, y]` from the top left. This level is the one in the landing-page replay (par answer: `[8,6]`, `[0,7]`, `[1,8]`).

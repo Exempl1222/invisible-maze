@@ -12,7 +12,7 @@ Invisible Maze, a mobile-first puzzle game. Plain HTML, CSS and JavaScript (ES m
 index.html            landing page (hero teaser is a canned replay, not game logic)
 play/index.html       the game page (placeholder until Phase 4)
 assets/css/site.css   all styles; colour tokens on :root
-assets/js/teaser.js   hero replay
+assets/js/teaser.js   hero replay (canned, not game logic)
 src/game/             puzzle engine, pure JS, no DOM (Phase 3)
 tests/                Playwright browser tests (phone + desktop)
 docs/ROADMAP.md       phases and status
@@ -27,7 +27,7 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 3. **Engine stays pure.** Nothing in `src/game/` touches the DOM, `window` or timers. Randomness takes a seed.
 4. **Mobile first.** Design at 390px wide. No horizontal scroll. Touch targets at least 44px.
 5. **Relative paths only.** The site is served from `/invisible-maze/`, so `/assets/...` breaks. Use `assets/...` or `../assets/...`.
-6. **Colour means something.** Amber is the robot and primary actions, cyan is a revealed wall, lilac is the portal. Don't reuse them for decoration.
+6. **Colour means something.** Amber is the robot and primary actions, cyan is a player wall, lilac is the beacon, pink is a teleporter, blue is river, timber is bridge, slate is rock. Don't reuse them for decoration.
 7. **Verify before claiming done.** Run `npm test`, and for UI changes run the maze-playtest skill and look at the screenshots.
 8. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
 
