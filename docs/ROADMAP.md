@@ -4,8 +4,8 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 
 | Phase | Parcel | Done when | Who | Status |
 |---|---|---|---|---|
-| 1 | **Website live** | Landing page and Play placeholder auto-deploy from `main` to GitHub Pages, with smoke tests gating every deploy | Orchestrator (Opus) | In progress |
-| 2 | **Rules locked** | `docs/GAME_SPEC.md` answers every open question; mode chosen (flipped is the front-runner) | Eric decides, Planner drafts (Opus) | Next |
+| 1 | **Website live** | Landing page and Play placeholder auto-deploy from `main` to GitHub Pages, with smoke tests gating every deploy | Orchestrator (Opus) | Done 24 Oct 2026 |
+| 2 | **Rules locked** | `docs/GAME_SPEC.md` answers every open question; mode chosen (flipped is the front-runner) | Eric decides, Planner drafts (Opus) | In progress |
 | 3 | **Puzzle engine** | Pure JS in `src/game/`: grid, robot movement, clue generation, level generator, solvability checker. Seeded. Tests first, all green | Builder (Sonnet) | Not started |
 | 4 | **Playable build** | `/play/` runs one full level on a phone, start to win or lose | Builder (Sonnet) + frontend-design | Not started |
 | 5 | **Playtest loop** | A fresh agent plays 20 seeded levels with the maze-playtest skill and reports bugs and dead ends | QA agent (Sonnet, no prior context) | Not started |
