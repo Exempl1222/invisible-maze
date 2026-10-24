@@ -113,6 +113,8 @@ export function generateLevels({
   unique = size >= 7,
   ringFilter = true,
   minRoute = size,
+  minSlack = 2,
+  maxSlack = 6,
   maxTries = 50000,
 } = {}) {
   const levels = [];
@@ -136,7 +138,7 @@ export function generateLevels({
     if (!open) { stats.rejected.terrain++; continue; }
     const routeLength = open.positions.length - 1;
     if (routeLength < minRoute) { stats.rejected.tooShort++; continue; }
-    const moveLimit = routeLength + rng.int(2, 6);
+    const moveLimit = routeLength + rng.int(minSlack, maxSlack);
     const lv = parseLevel({ size, tiles, moveLimit, wallBudget: size * size });
     const t0 = performance.now();
     const s = solve(lv, { maxPar });
@@ -177,7 +179,7 @@ export function formatStats(stats) {
 }
 
 function parseArgs(argv) {
-  const opts = { size: 9, count: 5, seed: 1, minPar: 3, unique: null, ringFilter: true, minRoute: null, maxTries: 50000, maxPar: 6, out: null };
+  const opts = { size: 9, count: 5, seed: 1, minPar: 3, unique: null, ringFilter: true, minRoute: null, minSlack: 2, maxSlack: 6, maxTries: 50000, maxPar: 6, out: null };
   const num = (name, v) => {
     const n = Number(v);
     if (!Number.isInteger(n)) throw new Error(`${name} needs an integer, got ${v}`);
@@ -192,6 +194,8 @@ function parseArgs(argv) {
     else if (a === '--min-par') opts.minPar = num(a, next());
     else if (a === '--max-par') opts.maxPar = num(a, next());
     else if (a === '--max-tries') opts.maxTries = num(a, next());
+    else if (a === '--min-slack') opts.minSlack = num(a, next());
+    else if (a === '--max-slack') opts.maxSlack = num(a, next());
     else if (a === '--min-route') opts.minRoute = num(a, next());
     else if (a === '--unique') opts.unique = true;
     else if (a === '--no-unique') opts.unique = false;
@@ -214,7 +218,7 @@ function main() {
   const file = resolve(dir, `size${opts.size}-seed${opts.seed}.json`);
   writeFileSync(file, JSON.stringify(levels, null, 2) + '\n');
   const secs = ((performance.now() - t0) / 1000).toFixed(1);
-  const maxMs = solveMs.length ? Math.max(...solveMs).toFixed(0) : 0;
+  const maxMs = solveMs.length ? solveMs.reduce((a, b) => Math.max(a, b), 0).toFixed(0) : 0;
   const avgMs = solveMs.length ? (solveMs.reduce((a, b) => a + b, 0) / solveMs.length).toFixed(1) : 0;
   console.log(`kept ${levels.length}/${opts.count} levels from ${tried} candidates in ${secs}s (solve avg ${avgMs}ms, max ${maxMs}ms)`);
   console.log(formatStats(stats));
