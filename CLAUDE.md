@@ -10,8 +10,11 @@ Invisible Maze, a mobile-first puzzle game. Plain HTML, CSS and JavaScript (ES m
 
 ```
 index.html            landing page (hero teaser is a canned replay, not game logic)
-play/index.html       the game page (placeholder until Phase 4)
-assets/css/site.css   all styles; colour tokens on :root
+play/index.html       the game: level select, board, robot replay, results
+assets/css/site.css   site styles; colour tokens on :root
+assets/css/play.css   game page styles (uses the site tokens)
+assets/js/play/       game UI (main, board, select, storage); calls the engine
+assets/levels/        level packs (pack-01.json)
 assets/js/teaser.js   hero replay (canned, not game logic)
 src/game/             puzzle engine, pure JS, no DOM (Phase 3)
 tests/                Playwright browser tests (phone + desktop)

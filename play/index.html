@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/play.css">
 </head>
 <body>
   <header class="wrap site-header">
@@ -23,14 +24,41 @@
     </nav>
   </header>
 
-  <main class="wrap page" id="game-root">
-    <h1>The robot is still in the workshop.</h1>
-    <p>The first playable level will appear on this page as soon as the puzzle engine is ready. Until then, the replay on the home page shows how a level plays out.</p>
-    <a class="btn" href="../">Watch the replay</a>
+  <main class="play" id="game-root">
+    <div class="play-head">
+      <h1 id="title">Play</h1>
+      <a class="btn quiet" id="back" href="./" hidden>All levels</a>
+    </div>
+
+    <p id="loading" class="loading">Loading levels...</p>
+    <noscript><p class="loading">The game needs JavaScript to run.</p></noscript>
+
+    <div id="select-view" hidden></div>
+
+    <div id="game-view" class="game" hidden>
+      <div class="stats" aria-label="Level limits">
+        <p class="stat"><span class="stat-label">Walls</span><strong id="walls-used">0 / 0</strong></p>
+        <p class="stat"><span class="stat-label">Move limit</span><strong id="move-limit">0</strong></p>
+        <p class="stat"><span class="stat-label">Moves left</span><strong id="moves-left">0</strong></p>
+      </div>
+
+      <div class="board play-board" id="board"></div>
+
+      <div class="side">
+        <p class="hint" id="status" role="status"></p>
+        <div class="controls" id="controls">
+          <button type="button" class="btn quiet" id="clear">Clear walls</button>
+          <button type="button" class="btn" id="go">Go</button>
+        </div>
+        <div class="result" id="result" role="status" hidden></div>
+      </div>
+    </div>
   </main>
 
   <footer class="site-footer"><div class="wrap">
     Invisible Maze is in development.</div>
   </footer>
+
+  <script type="module" src="../assets/js/play/main.js"></script>
 </body>
 </html>
