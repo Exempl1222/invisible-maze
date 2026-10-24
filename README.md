@@ -1,8 +1,8 @@
 # Invisible Maze
 
-A mobile-first puzzle game about walls you can't see. Hidden walls, Picross-style edge clues, and a robot with a distance sensor.
+A mobile-first puzzle game. The robot always takes the shortest route to the beacon; stop it with as few walls as you can. Rivers, bridges and teleporters get in the way. (Invisible Maze is a working title.)
 
-**Status:** website live, game in design. See [docs/ROADMAP.md](docs/ROADMAP.md).
+**Status:** website live, rules locked, engine next. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Run it locally
 

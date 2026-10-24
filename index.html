@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Invisible Maze</title>
-  <meta name="description" content="A puzzle game about walls you can't see. Read the edge clues, work out the maze, and outsmart a little robot.">
+  <meta name="description" content="A puzzle game for your phone. The robot always takes the shortest route. Stop it with as few walls as you can.">
   <meta name="theme-color" content="#17232d">
   <meta property="og:title" content="Invisible Maze">
-  <meta property="og:description" content="A puzzle game about walls you can't see.">
+  <meta property="og:description" content="Stop the robot with as few walls as you can.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,19 +29,19 @@
   <main>
     <div class="wrap hero">
       <div>
-        <h1>Walls you can't see.</h1>
-        <p>A puzzle game for your phone. The maze hides its walls until something hits them. The numbers on the edges tell you how many are in each row and column. Work out the rest.</p>
+        <h1>Stop the robot.</h1>
+        <p>A puzzle game for your phone. The robot always takes the shortest route to the beacon. Place your walls, press go, and see if it gets there. Fewer walls, more stars.</p>
         <div class="actions">
-          <a class="btn" href="play/">Play the prototype</a>
-          <a class="btn quiet" href="#how-it-works">How it works</a>
+          <a class="btn" href="#how-it-works">See how it plays</a>
+          <a class="btn quiet" href="play/">Play page</a>
         </div>
       </div>
 
       <div class="board-frame">
-        <div class="board" id="teaser" role="img" aria-label="A seven by seven grid. A robot moves toward a portal in the top right, bumping into hidden walls that light up as it hits them."></div>
-        <div class="sensor" aria-hidden="true">
-          <span>Distance to portal</span>
-          <strong id="teaser-distance">12</strong>
+        <div class="board" id="teaser" role="img" aria-label="A nine by nine map with a river, bridges, rocks and a pair of teleporters. First the robot reaches the beacon through a teleporter. Then three walls are placed and the robot has no route left."></div>
+        <div class="status" aria-live="off">
+          <span id="teaser-caption">No walls. The robot takes the shortest route.</span>
+          <span class="moves">Moves left <strong id="teaser-moves">13</strong></span>
         </div>
       </div>
     </div>
@@ -51,16 +51,16 @@
         <h2>How a level works</h2>
         <ul class="rules">
           <li>
-            <h3><span class="swatch" style="background:var(--wall)"></span>Hidden walls</h3>
-            <p>Every level has walls, but you only see one once the robot runs into it.</p>
+            <h3><span class="swatch" style="background:var(--robot)"></span>The robot</h3>
+            <p>It always takes the shortest route to the beacon, and it has a move limit. Teleporters count as one step.</p>
           </li>
           <li>
-            <h3><span class="swatch" style="background:var(--chalk)"></span>Edge clues</h3>
-            <p>The number beside each row and column says how many walls it holds, like a Picross puzzle.</p>
+            <h3><span class="swatch" style="background:var(--wall)"></span>Your walls</h3>
+            <p>Place them all on grass before it moves. Cut every route, or make the shortest one too long.</p>
           </li>
           <li>
-            <h3><span class="swatch" style="background:var(--robot)"></span>Robot sensor</h3>
-            <p>The robot always knows how far it is from the portal. Use that, plus the clues, to plan every move.</p>
+            <h3><span class="swatch" style="background:var(--river)"></span>The terrain</h3>
+            <p>Rivers block the robot. Bridges and teleporters let it through, and you can't build on any of them.</p>
           </li>
         </ul>
       </div>
@@ -71,22 +71,26 @@
         <h2>Where the build is at</h2>
         <ol class="roadmap">
           <li class="done"><strong>Website live</strong><span>This page, auto-deployed from GitHub.</span></li>
-          <li class="now"><strong>Rules locked</strong><span>Picking the game mode and writing the full rules.</span></li>
-          <li><strong>Puzzle engine</strong><span>Level generator that guarantees every maze is solvable.</span></li>
+          <li class="done"><strong>Rules locked</strong><span>Shortest-path robot, terrain, par scoring.</span></li>
+          <li class="now"><strong>Puzzle engine</strong><span>Exact par solver and a level generator that keeps only the good ones.</span></li>
           <li><strong>Playable build</strong><span>The real game on the Play page, tuned for phones.</span></li>
-          <li><strong>Polish and launch</strong><span>Sound, levels, lives and hints, a proper domain.</span></li>
+          <li><strong>Polish and launch</strong><span>Daily level, level packs, hints, a proper name and domain.</span></li>
         </ol>
       </div>
     </section>
   </main>
 
   <footer class="site-footer"><div class="wrap">
-    Invisible Maze is in development.</div>
+    Invisible Maze is a working title. The game is in development.</div>
   </footer>
 
   <script type="module">
     import { startTeaser } from './assets/js/teaser.js';
-    startTeaser(document.getElementById('teaser'), document.getElementById('teaser-distance'));
+    startTeaser(
+      document.getElementById('teaser'),
+      document.getElementById('teaser-caption'),
+      document.getElementById('teaser-moves'),
+    );
   </script>
 </body>
 </html>

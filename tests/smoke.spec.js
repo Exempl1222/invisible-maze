@@ -33,13 +33,17 @@ for (const path of pages) {
   });
 }
 
-test('teaser renders a 7x7 board with clues and moves the robot', async ({ page }) => {
+test('teaser renders the 9x9 level and plays both acts', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('#teaser .cell')).toHaveCount(49);
-  await expect(page.locator('#teaser .clue')).toHaveCount(14);
-  const start = await page.locator('#teaser-distance').textContent();
-  await expect(page.locator('#teaser-distance')).not.toHaveText(start, { timeout: 5000 });
-  await expect(page.locator('#teaser .cell.wall').first()).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#teaser .cell')).toHaveCount(81);
+  await expect(page.locator('#teaser .cell.teleporter')).toHaveCount(2);
+  await expect(page.locator('#teaser .cell.beacon')).toHaveCount(1);
+  // Act 1: the robot moves and uses up moves.
+  // Each value only shows for ~0.4s, so check the count has dropped, not an exact number.
+  await expect(page.locator('#teaser-moves')).not.toHaveText('13', { timeout: 5000 });
+  await expect(page.locator('#teaser .cell.beacon.reached')).toHaveCount(1, { timeout: 10000 });
+  // Act 2: exactly the three par walls go down.
+  await expect(page.locator('#teaser .cell.wall')).toHaveCount(3, { timeout: 12000 });
 });
 
 test('nav links reach the play page and back', async ({ page }) => {

@@ -2,7 +2,7 @@
   "name": "invisible-maze",
   "version": "0.1.0",
   "private": true,
-  "description": "A mobile-first puzzle game about walls you can't see.",
+  "description": "A mobile-first puzzle game: stop a shortest-path robot with as few walls as you can.",
   "type": "module",
   "scripts": {
     "serve": "python3 -m http.server 4173",

@@ -1,6 +1,7 @@
 /* Invisible Maze site styles
    Colour roles map to game objects, so the palette doubles as a legend:
-   amber = robot, cyan = revealed wall, lilac = portal. */
+   amber = robot, cyan = player walls, lilac = beacon, pink = teleporters,
+   blue = river, timber = bridge, slate = rock. */
 
 :root {
   --night: #17232d;      /* page background */
@@ -9,8 +10,12 @@
   --chalk: #e6edf1;      /* primary text */
   --muted: #9fb2bf;      /* secondary text */
   --robot: #f5b83d;      /* the robot, primary actions */
-  --wall: #5fe0d6;       /* walls once revealed */
-  --portal: #b996ff;     /* the exit */
+  --wall: #5fe0d6;       /* walls the player places */
+  --beacon: #b996ff;     /* the robot's goal */
+  --teleporter: #ff7ab6; /* teleporter pairs */
+  --river: #2f78b7;      /* impassable water */
+  --bridge: #b98d5c;     /* crossings, can't be walled */
+  --rock: #52616c;       /* pre-built, permanent */
 
   --font-display: "Chakra Petch", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
@@ -127,24 +132,16 @@ a:hover { color: var(--chalk); }
 /* Teaser board */
 .board-frame {
   justify-self: center;
-  width: min(420px, 100%);
+  width: min(440px, 100%);
 }
 .board {
-  --n: 7;
+  --n: 9;
   display: grid;
-  grid-template-columns: 1.6rem repeat(var(--n), 1fr);
-  grid-template-rows: 1.6rem repeat(var(--n), 1fr);
+  grid-template-columns: repeat(var(--n), 1fr);
+  grid-template-rows: repeat(var(--n), 1fr);
   gap: 3px;
   aspect-ratio: 1 / 1;
   position: relative;
-}
-.clue {
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: var(--step--1);
-  color: var(--muted);
 }
 .cell {
   background: var(--panel);
@@ -152,36 +149,56 @@ a:hover { color: var(--chalk); }
   border-radius: 4px;
   transition: background-color 180ms ease, box-shadow 180ms ease;
 }
+.cell.rock { background: var(--rock); border-color: var(--rock); border-radius: 30%; }
+.cell.river { background: var(--river); border-color: var(--river); border-radius: 2px; }
+.cell.bridge {
+  border-color: var(--bridge);
+  background: repeating-linear-gradient(90deg, var(--bridge) 0 3px, color-mix(in srgb, var(--bridge) 55%, var(--panel)) 3px 6px);
+}
+.cell.teleporter {
+  border-color: var(--teleporter);
+  background: radial-gradient(circle, transparent 0 22%, var(--teleporter) 23% 34%, var(--panel) 35%);
+}
+.cell.teleporter.flash { box-shadow: 0 0 16px var(--teleporter); }
+.cell.beacon {
+  border-color: var(--beacon);
+  background: radial-gradient(circle, var(--beacon) 0 30%, color-mix(in srgb, var(--beacon) 20%, var(--panel)) 31%);
+}
+.cell.beacon.reached { box-shadow: 0 0 0 3px var(--beacon), 0 0 20px var(--beacon); }
+.cell.trail { background: color-mix(in srgb, var(--robot) 14%, var(--panel)); }
 .cell.wall {
-  background: color-mix(in srgb, var(--wall) 22%, var(--panel));
-  border-color: var(--wall);
+  background: color-mix(in srgb, var(--wall) 30%, var(--panel));
+  border: 2px solid var(--wall);
 }
-.cell.bump { box-shadow: 0 0 0 3px var(--wall), 0 0 18px color-mix(in srgb, var(--wall) 60%, transparent); }
-.cell.portal {
-  border-color: var(--portal);
-  background: radial-gradient(circle, color-mix(in srgb, var(--portal) 55%, transparent) 0 35%, var(--panel) 36%);
-}
-.cell.trail { background: color-mix(in srgb, var(--robot) 12%, var(--panel)); }
+.cell.wall.drop { animation: drop 240ms cubic-bezier(.3,1.4,.5,1); }
+@keyframes drop { from { transform: scale(1.5); opacity: 0; } }
 
 .robot {
   position: absolute;
+  left: 0; top: 0;
   display: grid;
   place-items: center;
   pointer-events: none;
-  transition: transform 260ms cubic-bezier(.4,.1,.3,1);
+  transition: transform 300ms cubic-bezier(.4,.1,.3,1);
 }
-.robot svg { width: 72%; height: 72%; }
-.robot.jolt svg { animation: jolt 220ms ease; }
-@keyframes jolt { 30% { transform: scale(0.85) rotate(-6deg); } 60% { transform: scale(1.05) rotate(4deg); } }
+.robot svg { width: 76%; height: 76%; }
+.robot.blink { animation: blink 360ms ease; }
+@keyframes blink { 0% { opacity: 0; transform-origin: center; } 100% { opacity: 1; } }
+.robot.jolt svg { animation: jolt 500ms ease 2; }
+@keyframes jolt { 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
 
-.sensor {
+.status {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
   margin-top: 0.9rem;
+  min-height: 3em;
   font-size: var(--step--1);
   color: var(--muted);
 }
-.sensor strong { font-family: var(--font-display); color: var(--robot); font-size: var(--step-0); }
+.status .moves { white-space: nowrap; }
+.status strong { font-family: var(--font-display); color: var(--robot); font-size: var(--step-0); }
 
 /* Sections */
 section { padding-block: 3rem; border-top: 1px solid var(--grid); }
@@ -249,5 +266,5 @@ h2 {
 
 @media (prefers-reduced-motion: reduce) {
   .robot, .cell { transition: none; }
-  .robot.jolt svg { animation: none; }
+  .robot.jolt svg, .robot.blink, .cell.wall.drop { animation: none; }
 }
