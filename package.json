@@ -7,7 +7,7 @@
   "scripts": {
     "serve": "python3 -m http.server 4173",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --test \"src/**/*.test.js\"",
+    "test:unit": "node --test \"src/**/*.test.js\" \"tools/**/*.test.js\"",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
