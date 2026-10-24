@@ -6,7 +6,7 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 |---|---|---|---|---|
 | 1 | **Website live** | Landing page and Play placeholder auto-deploy from `main` to GitHub Pages, with smoke tests gating every deploy | Orchestrator (Opus) | Done 24 Oct 2026 |
 | 2 | **Rules locked** | `docs/GAME_SPEC.md` answers every open question (v2: shortest-path robot, terrain, par scoring) | Eric decides, Planner drafts (Opus) | Done 24 Oct 2026 |
-| 3 | **Puzzle engine** | Pure JS in `src/game/`: level parser, shortest path with teleporters, `simulate`, exact `solve` (par), `countAnswers`, plus an offline generator script that keeps only good levels. Seeded. Tests first, all green | Builder (Sonnet) | Next |
+| 3 | **Puzzle engine** | Pure JS in `src/game/`: level parser, shortest path with teleporters, `simulate`, exact `solve` (par), `countAnswers`, plus an offline generator script that keeps only good levels. Seeded. Tests first, all green | Builder (Sonnet) | In review |
 | 4 | **Playable build** | `/play/` runs one full level on a phone, start to win or lose | Builder (Sonnet) + frontend-design | Not started |
 | 5 | **Playtest loop** | A fresh agent plays 20 seeded levels with the maze-playtest skill and reports bugs and dead ends | QA agent (Sonnet, no prior context) | Not started |
 | 6 | **Polish and launch** | Daily level, packs of 30, hints, final name, analytics, custom domain, then ads | Mixed | Not started |
