@@ -79,3 +79,26 @@ test('invalid walls are rejected', () => {
   assert.throws(() => simulate(lv, 'nope'), /walls/i);
   assert.doesNotThrow(() => simulate(lv, [[0, 0], [1, 0], [2, 0], [3, 0]]));
 });
+
+test('via: lines up with steps and names the teleporter stepped onto', () => {
+  // R at (0,0); teleporter a at (1,0) and (3,2); beacon at (4,2). Route: step on a(1,0), land on a(3,2), step to B.
+  const lv = P(['Ra...', '#####', '...aB', '#####', '#####'], {});
+  const r = simulate(lv, []);
+  assert.equal(r.result, 'lose');
+  assert.equal(r.via.length, r.steps.length);
+  assert.equal(r.via[0], null);
+  assert.deepEqual(r.via[1], [1, 0]);
+  assert.deepEqual(r.steps[1], [3, 2]);
+  assert.equal(r.via[2], null);
+});
+
+test('via is cut to the move limit on a too-far win', () => {
+  const lv = P(['R...B', '#####', '#####', '#####', '#####'], { moveLimit: 2 });
+  const r = simulate(lv, []);
+  assert.equal(r.via.length, r.steps.length);
+});
+
+test('via on a blocked win is just the start', () => {
+  const r = simulate(parseLevel(SPEC_LEVEL), SPEC_ANSWER);
+  assert.deepEqual(r.via, [null]);
+});

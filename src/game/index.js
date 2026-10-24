@@ -2,5 +2,6 @@
 export { parseLevel } from './level.js';
 export { findPath, DIRS } from './path.js';
 export { simulate, validateWalls } from './simulate.js';
+export { stars } from './stars.js';
 export { solve, countAnswers } from './solve.js';
 export { createRng, mulberry32 } from './rng.js';
