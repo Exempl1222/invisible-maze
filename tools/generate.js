@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 // Offline level generator. Not shipped to the site.
 //
-//   node tools/generate.js --size 9 --count 5 --seed 1 --min-par 3 --unique
+//   node tools/generate.js --size 9 --count 5 --seed 1 --min-par 3
 //
 // Builds random terrain (rocks, one meandering river with 2-4 bridges, 1-2 teleporter
 // pairs, start and beacon on grass and far apart), solves each candidate exactly, keeps
-// those that pass the filters, and writes them to levels/generated/size<N>-seed<S>.json.
+// those that pass the filters (route >= grid size, no ring answer, unique on 7x7/9x9), and writes them to levels/generated/size<N>-seed<S>.json.
 // Same seed, same output.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseLevel, findPath, solve, countAnswers, createRng } from '../src/game/index.js';
+import { parseLevel, findPath, solve, countAnswers, simulate, createRng } from '../src/game/index.js';
 
 function buildTerrain(rng, size) {
   // Built with the river running top to bottom, then transposed/flipped at the end.
@@ -83,28 +83,73 @@ function buildTerrain(rng, size) {
 }
 
 /**
- * @returns {{levels:object[], tried:number, solveMs:number[]}}
+ * True if a single grid cell is orthogonally adjacent to EVERY wall in the answer
+ * (a "ring" around a teleporter, the beacon, the start or any tile). Players learn
+ * "box it in" from these, so the generator rejects them. Pure.
+ * Any one-wall answer is trivially a ring. The level argument supplies the grid size.
+ * @param {{size:number}} level
+ * @param {number[][]} answer walls as [x, y]
  */
-export function generateLevels({ size = 9, count = 5, seed = 1, minPar = 3, unique = false, maxPar = 6, maxTries = 50000 } = {}) {
+export function isRingAnswer(level, answer) {
+  if (!answer.length) return false;
+  for (let y = 0; y < level.size; y++) {
+    for (let x = 0; x < level.size; x++) {
+      if (answer.every(([wx, wy]) => Math.abs(wx - x) + Math.abs(wy - y) === 1)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @returns {{levels:object[], meta:object[], tried:number, solveMs:number[], stats:object}}
+ * `meta[i]` describes `levels[i]`: { winReason, usesTeleporter, routeLength }.
+ */
+export function generateLevels({
+  size = 9,
+  count = 5,
+  seed = 1,
+  minPar = 3,
+  maxPar = 6,
+  unique = size >= 7,
+  ringFilter = true,
+  minRoute = size,
+  maxTries = 50000,
+} = {}) {
   const levels = [];
+  const meta = [];
   const solveMs = [];
+  const stats = {
+    tried: 0,
+    kept: 0,
+    rejected: { terrain: 0, ring: 0, tooShort: 0, notUnique: 0, parOutOfRange: 0 },
+    winReasons: { blocked: 0, 'too-far': 0 },
+    usesTeleporter: 0,
+  };
   let tried = 0;
   while (levels.length < count && tried < maxTries) {
     const rng = createRng(`${seed}:${tried}`);
     tried++;
     const tiles = buildTerrain(rng, size);
-    if (!tiles) continue;
+    if (!tiles) { stats.rejected.terrain++; continue; }
     const probe = parseLevel({ size, tiles, moveLimit: 1, wallBudget: 0 });
     const open = findPath(probe, []);
-    if (!open) continue;
-    const moveLimit = open.positions.length - 1 + rng.int(2, 6);
+    if (!open) { stats.rejected.terrain++; continue; }
+    const routeLength = open.positions.length - 1;
+    if (routeLength < minRoute) { stats.rejected.tooShort++; continue; }
+    const moveLimit = routeLength + rng.int(2, 6);
     const lv = parseLevel({ size, tiles, moveLimit, wallBudget: size * size });
     const t0 = performance.now();
     const s = solve(lv, { maxPar });
     solveMs.push(performance.now() - t0);
-    if (!s || s.par < minPar) continue;
+    if (!s || s.par < minPar) { stats.rejected.parOutOfRange++; continue; }
+    if (ringFilter && isRingAnswer(lv, s.answer)) { stats.rejected.ring++; continue; }
     const answers = countAnswers(lv, s.par, unique ? 2 : 50);
-    if (unique && answers !== 1) continue;
+    if (unique && answers !== 1) { stats.rejected.notUnique++; continue; }
+    const final = parseLevel({ size, tiles, moveLimit, wallBudget: s.par + 1 });
+    const winReason = simulate(final, s.answer).reason;
+    const usesTeleporter = open.teleports.length > 0;
+    stats.winReasons[winReason] = (stats.winReasons[winReason] ?? 0) + 1;
+    if (usesTeleporter) stats.usesTeleporter++;
     levels.push({
       id: `size${size}-seed${seed}-${String(levels.length + 1).padStart(2, '0')}`,
       size,
@@ -114,12 +159,25 @@ export function generateLevels({ size = 9, count = 5, seed = 1, minPar = 3, uniq
       par: s.par,
       parAnswers: answers,
     });
+    meta.push({ winReason, usesTeleporter, routeLength });
   }
-  return { levels, tried, solveMs };
+  stats.tried = tried;
+  stats.kept = levels.length;
+  return { levels, meta, tried, solveMs, stats };
+}
+
+export function formatStats(stats) {
+  const r = stats.rejected;
+  const w = stats.winReasons;
+  return [
+    `candidates tried: ${stats.tried}, kept: ${stats.kept}`,
+    `rejected: ring ${r.ring}, too-short ${r.tooShort}, not-unique ${r.notUnique}, par out of range ${r.parOutOfRange}, bad terrain ${r.terrain}`,
+    `win reasons among kept: blocked ${w.blocked}, too-far ${w['too-far']}; teleporter on open route: ${stats.usesTeleporter}`,
+  ].join('\n');
 }
 
 function parseArgs(argv) {
-  const opts = { size: 9, count: 5, seed: 1, minPar: 3, unique: false, maxTries: 50000, maxPar: 6, out: null };
+  const opts = { size: 9, count: 5, seed: 1, minPar: 3, unique: null, ringFilter: true, minRoute: null, maxTries: 50000, maxPar: 6, out: null };
   const num = (name, v) => {
     const n = Number(v);
     if (!Number.isInteger(n)) throw new Error(`${name} needs an integer, got ${v}`);
@@ -134,7 +192,10 @@ function parseArgs(argv) {
     else if (a === '--min-par') opts.minPar = num(a, next());
     else if (a === '--max-par') opts.maxPar = num(a, next());
     else if (a === '--max-tries') opts.maxTries = num(a, next());
+    else if (a === '--min-route') opts.minRoute = num(a, next());
     else if (a === '--unique') opts.unique = true;
+    else if (a === '--no-unique') opts.unique = false;
+    else if (a === '--no-ring-filter') opts.ringFilter = false;
     else if (a === '--out') opts.out = next();
     else throw new Error(`unknown argument ${a}`);
   }
@@ -144,7 +205,10 @@ function parseArgs(argv) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const t0 = performance.now();
-  const { levels, tried, solveMs } = generateLevels(opts);
+  const gen = { ...opts };
+  if (gen.unique === null) delete gen.unique; // default: on for 7x7 and 9x9
+  if (gen.minRoute === null) delete gen.minRoute; // default: the grid size
+  const { levels, tried, solveMs, stats } = generateLevels(gen);
   const dir = opts.out ? resolve(opts.out) : resolve(dirname(fileURLToPath(import.meta.url)), '../levels/generated');
   mkdirSync(dir, { recursive: true });
   const file = resolve(dir, `size${opts.size}-seed${opts.seed}.json`);
@@ -153,6 +217,7 @@ function main() {
   const maxMs = solveMs.length ? Math.max(...solveMs).toFixed(0) : 0;
   const avgMs = solveMs.length ? (solveMs.reduce((a, b) => a + b, 0) / solveMs.length).toFixed(1) : 0;
   console.log(`kept ${levels.length}/${opts.count} levels from ${tried} candidates in ${secs}s (solve avg ${avgMs}ms, max ${maxMs}ms)`);
+  console.log(formatStats(stats));
   console.log(`wrote ${file}`);
   if (levels.length < opts.count) {
     console.error(`only found ${levels.length} of ${opts.count} requested within ${opts.maxTries} tries`);
