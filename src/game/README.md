@@ -15,9 +15,10 @@ Import everything from `src/game/index.js` (relative paths only; the site is ser
 |---|---|
 | `parseLevel(json)` | Validates the spec's level format and returns a normalised level: `size`, `grid`, `start`, `beacon`, `partners`, `moveLimit`, `wallBudget`, plus `tile(x,y)`, `walkable(x,y)`, `buildable(x,y)`, `partner(x,y)`. Throws a clear error for non-square grids, missing or duplicate `R`/`B`, teleporter letters not appearing exactly twice, unknown tiles. |
 | `findPath(level, walls)` | Shortest route start to beacon with extra walls. Returns `{ positions, teleports, via }` or `null`. A teleport is one move; `positions[i]` is where the robot ends move `i`, `teleports` lists the move indices that were jumps, `via[i]` is the teleporter tile stepped onto. Ties broken up, right, down, left. |
-| `simulate(level, walls)` | Validates walls (grass only, no duplicates, within budget; throws otherwise), then returns `{ result, reason, steps, teleports, movesUsed }`. `win/blocked`: no route, robot stays put. `win/too-far`: robot walks `moveLimit` moves and stops. `lose/reached`: beacon reached within the limit. |
+| `simulate(level, walls)` | Validates walls (grass only, no duplicates, within budget; throws otherwise), then returns `{ result, reason, steps, teleports, via, movesUsed }` (`via[i]` is the teleporter tile stepped onto for move `i`, or `null`). `win/blocked`: no route, robot stays put. `win/too-far`: robot walks `moveLimit` moves and stops. `lose/reached`: beacon reached within the limit. |
 | `solve(level, { maxPar })` | Exact par by iterative deepening on wall count, branching only on grass cells of the current shortest route. Returns `{ par, answer }` (answer sorted by row then column) or `null` if no wall set wins or `maxPar` is exceeded. |
 | `countAnswers(level, k, cap = 50)` | Number of distinct k-wall winning sets, exact up to `cap`. |
+| `stars(par, wallsUsed, wallBudget)` | Stars for a win: 3 at par, 2 at par + 1, 1 otherwise within budget, 0 over budget. |
 | `createRng(seed)` | Seeded PRNG (mulberry32): `next()`, `int(lo, hi)`, `pick(arr)`, `chance(p)`, `shuffle(arr)`. |
 
 Coordinates are `[x, y]` from the top left. Cell index inside the engine is `y * size + x`.

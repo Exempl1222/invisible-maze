@@ -48,7 +48,8 @@ test('teaser renders the 9x9 level and plays both acts', async ({ page }) => {
 
 test('nav links reach the play page and back', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Play', exact: true }).click();
+  // The hero button is also called Play, so use the nav one.
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Play' }).click();
   await expect(page).toHaveURL(/\/play\/$/);
   await page.getByRole('link', { name: 'Home' }).click();
   await expect(page.locator('#teaser')).toBeVisible();
