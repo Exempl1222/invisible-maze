@@ -370,7 +370,8 @@ test('daily: a given date loads that day\'s level, shows the date, and the par a
   await expect(page.locator('#move-limit')).toHaveText(String(lv.moveLimit));
   await placeAll(page, solve(lv).answer);
   await go(page).click();
-  await expect(result(page)).toHaveAttribute('data-result', 'win');
+  // A too-far win walks the whole move limit (about 300ms a move), so give a long daily room.
+  await expect(result(page)).toHaveAttribute('data-result', 'win', { timeout: 20000 });
   await expect(result(page).getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Next level' })).toHaveCount(0);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('invisible-maze:progress:v1')).best);
