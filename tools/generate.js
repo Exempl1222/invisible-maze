@@ -5,12 +5,14 @@
 //
 // Builds random terrain (rocks, one meandering river with 2-4 bridges, 1-2 teleporter
 // pairs, start and beacon on grass and far apart), solves each candidate exactly, keeps
-// those that pass the filters (route >= grid size, no ring answer, unique on 7x7/9x9), and writes them to levels/generated/size<N>-seed<S>.json.
+// those that pass the filters (route >= grid size, par in range, no ring answer, exactly one
+// par answer), and writes them to levels/generated/size<N>-seed<S>.json. Sizes 7 and 9 only
+// (5x5 is gone in rules v3). Walls are lines: [x, y, "R" | "D"].
 // Same seed, same output.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseLevel, findPath, solve, countAnswers, simulate, createRng } from '../src/game/index.js';
+import { parseLevel, buildableLines, findPath, solve, countAnswers, simulate, createRng } from '../src/game/index.js';
 
 function buildTerrain(rng, size) {
   // Built with the river running top to bottom, then transposed/flipped at the end.
@@ -83,20 +85,23 @@ function buildTerrain(rng, size) {
 }
 
 /**
- * True if a single grid cell is orthogonally adjacent to EVERY wall in the answer
- * (a "ring" around a teleporter, the beacon, the start or any tile). Players learn
- * "box it in" from these, so the generator rejects them. Pure.
- * Any one-wall answer is trivially a ring. The level argument supplies the grid size.
+ * True if a single tile is touched by EVERY line of the answer (a line touches the two
+ * tiles beside it). That is a "ring": a cage around a teleporter, the beacon, the start or
+ * any tile. Players learn "box it in" from these, so the generator rejects them. Pure.
+ * Any one-line answer is trivially a ring. The level argument supplies the grid size.
  * @param {{size:number}} level
- * @param {number[][]} answer walls as [x, y]
+ * @param {Array<[number, number, 'R'|'D']>} answer walls as [x, y, "R" | "D"]
  */
 export function isRingAnswer(level, answer) {
   if (!answer.length) return false;
-  for (let y = 0; y < level.size; y++) {
-    for (let x = 0; x < level.size; x++) {
-      if (answer.every(([wx, wy]) => Math.abs(wx - x) + Math.abs(wy - y) === 1)) return true;
-    }
+  const touches = new Map();
+  for (const [x, y, dir] of answer) {
+    const a = y * level.size + x;
+    const b = dir === 'R' ? a + 1 : a + level.size;
+    touches.set(a, (touches.get(a) ?? 0) + 1);
+    touches.set(b, (touches.get(b) ?? 0) + 1);
   }
+  for (const n of touches.values()) if (n === answer.length) return true;
   return false;
 }
 
@@ -110,40 +115,50 @@ export function generateLevels({
   seed = 1,
   minPar = 3,
   maxPar = 6,
-  unique = size >= 7,
+  unique = true,
   ringFilter = true,
   minRoute = size,
   minSlack = 2,
   maxSlack = 6,
   maxTries = 50000,
 } = {}) {
+  if (!Number.isInteger(size) || size < 7) throw new Error(`size must be 7 or more (5x5 boards are gone in rules v3), got ${size}`);
   const levels = [];
   const meta = [];
   const solveMs = [];
   const stats = {
     tried: 0,
     kept: 0,
-    rejected: { terrain: 0, ring: 0, tooShort: 0, notUnique: 0, parOutOfRange: 0 },
+    rejected: { terrain: 0, duplicate: 0, tooShort: 0, unsolvable: 0, parOutOfRange: 0, ring: 0, notUnique: 0 },
     winReasons: { blocked: 0, 'too-far': 0 },
     usesTeleporter: 0,
   };
+  const seenBoards = new Set();
   let tried = 0;
   while (levels.length < count && tried < maxTries) {
     const rng = createRng(`${seed}:${tried}`);
     tried++;
     const tiles = buildTerrain(rng, size);
     if (!tiles) { stats.rejected.terrain++; continue; }
+    const board = tiles.join('/');
+    if (seenBoards.has(board)) { stats.rejected.duplicate++; continue; }
     const probe = parseLevel({ size, tiles, moveLimit: 1, wallBudget: 0 });
     const open = findPath(probe, []);
     if (!open) { stats.rejected.terrain++; continue; }
     const routeLength = open.positions.length - 1;
     if (routeLength < minRoute) { stats.rejected.tooShort++; continue; }
     const moveLimit = routeLength + rng.int(minSlack, maxSlack);
-    const lv = parseLevel({ size, tiles, moveLimit, wallBudget: size * size });
+    const lv = parseLevel({ size, tiles, moveLimit, wallBudget: size * size * 2 });
     const t0 = performance.now();
     const s = solve(lv, { maxPar });
     solveMs.push(performance.now() - t0);
-    if (!s || s.par < minPar) { stats.rejected.parOutOfRange++; continue; }
+    if (!s) {
+      // null means either no wall set wins at all, or par is above maxPar
+      const everything = simulate(lv, buildableLines(lv)).result === 'win';
+      stats.rejected[everything ? 'parOutOfRange' : 'unsolvable']++;
+      continue;
+    }
+    if (s.par < minPar) { stats.rejected.parOutOfRange++; continue; }
     if (ringFilter && isRingAnswer(lv, s.answer)) { stats.rejected.ring++; continue; }
     const answers = countAnswers(lv, s.par, unique ? 2 : 50);
     if (unique && answers !== 1) { stats.rejected.notUnique++; continue; }
@@ -152,6 +167,7 @@ export function generateLevels({
     const usesTeleporter = open.teleports.length > 0;
     stats.winReasons[winReason] = (stats.winReasons[winReason] ?? 0) + 1;
     if (usesTeleporter) stats.usesTeleporter++;
+    seenBoards.add(board);
     levels.push({
       id: `size${size}-seed${seed}-${String(levels.length + 1).padStart(2, '0')}`,
       size,
@@ -173,7 +189,7 @@ export function formatStats(stats) {
   const w = stats.winReasons;
   return [
     `candidates tried: ${stats.tried}, kept: ${stats.kept}`,
-    `rejected: ring ${r.ring}, too-short ${r.tooShort}, not-unique ${r.notUnique}, par out of range ${r.parOutOfRange}, bad terrain ${r.terrain}`,
+    `rejected (first failing filter, in order): bad terrain ${r.terrain}, duplicate board ${r.duplicate}, route too short ${r.tooShort}, unsolvable ${r.unsolvable}, par out of range ${r.parOutOfRange}, ring ${r.ring}, not unique ${r.notUnique}`,
     `win reasons among kept: blocked ${w.blocked}, too-far ${w['too-far']}; teleporter on open route: ${stats.usesTeleporter}`,
   ].join('\n');
 }
