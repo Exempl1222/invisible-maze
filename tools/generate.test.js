@@ -57,21 +57,33 @@ test('CLI writes levels/generated-style JSON', () => {
   }
 });
 
-test('isRingAnswer: ring around a tile, and not-a-ring', () => {
+test('isRingAnswer: a tile touched by every line of the answer', () => {
   const lv = { size: 9 };
-  assert.equal(isRingAnswer(lv, [[1, 1], [0, 2], [2, 2], [1, 3]]), true); // all touch [1,2]
-  assert.equal(isRingAnswer(lv, [[1, 1], [2, 2]]), true); // both touch [1,2] and [2,1]
-  assert.equal(isRingAnswer(lv, [[1, 1], [3, 1]]), true); // both touch [2,1]
-  assert.equal(isRingAnswer(lv, [[1, 1], [4, 4]]), false);
-  assert.equal(isRingAnswer(lv, [[1, 1], [2, 2], [5, 5]]), false);
-  assert.equal(isRingAnswer(lv, [[1, 1], [0, 2], [2, 2], [1, 4]]), false); // one wall off the ring
-  assert.equal(isRingAnswer(lv, [[3, 3]]), true); // a single wall always touches a cell
+  // cage around tile [2,2]: its four lines
+  assert.equal(isRingAnswer(lv, [[1, 2, 'R'], [2, 2, 'R'], [2, 1, 'D'], [2, 2, 'D']]), true);
+  // two lines that share the tile [1,1]
+  assert.equal(isRingAnswer(lv, [[1, 1, 'R'], [1, 1, 'D']]), true);
+  // two collinear lines either side of tile [2,1]
+  assert.equal(isRingAnswer(lv, [[1, 1, 'R'], [2, 1, 'R']]), true);
+  // two lines with no tile in common
+  assert.equal(isRingAnswer(lv, [[1, 1, 'R'], [4, 4, 'D']]), false);
+  // lines [1,1,R] (tiles 1,1 and 2,1) and [2,2,D] (tiles 2,2 and 2,3) touch no common tile
+  assert.equal(isRingAnswer(lv, [[1, 1, 'R'], [2, 2, 'D']]), false);
+  // a cage with one line moved away is not a ring
+  assert.equal(isRingAnswer(lv, [[1, 2, 'R'], [2, 2, 'R'], [2, 1, 'D'], [2, 3, 'D']]), false);
+  assert.equal(isRingAnswer(lv, [[1, 1, 'R'], [2, 2, 'D'], [5, 5, 'R']]), false);
+  // any single line touches two tiles, so it is always a ring
+  assert.equal(isRingAnswer(lv, [[3, 3, 'D']]), true);
   assert.equal(isRingAnswer(lv, []), false);
 });
 
-test('isRingAnswer: ring cell may sit on the grid edge', () => {
-  assert.equal(isRingAnswer({ size: 5 }, [[0, 1], [1, 0]]), true); // around [0,0]
-  assert.equal(isRingAnswer({ size: 5 }, [[0, 0], [0, 2]]), true); // around [0,1]
+test('isRingAnswer: ring tile may sit on the grid edge', () => {
+  assert.equal(isRingAnswer({ size: 7 }, [[0, 0, 'R'], [0, 0, 'D']]), true); // around [0,0]
+  assert.equal(isRingAnswer({ size: 7 }, [[0, 0, 'D'], [0, 1, 'D']]), true); // both touch [0,1]
+});
+
+test('5x5 generation is gone', () => {
+  assert.throws(() => generateLevels({ size: 5, count: 1 }), /size/i);
 });
 
 test('generateLevels: kept levels pass the ring, route-length and unique filters', () => {
@@ -83,6 +95,7 @@ test('generateLevels: kept levels pass the ring, route-length and unique filters
     assert.equal(isRingAnswer(lv, s.answer), false, raw.id);
     assert.equal(raw.parAnswers, 1, raw.id);
     assert.ok(meta[i].routeLength >= 7, raw.id);
+    assert.equal(typeof meta[i].usesTeleporter, 'boolean');
     assert.equal(simulate(lv, s.answer).reason, meta[i].winReason);
   }
   assert.equal(stats.kept, 3);
@@ -92,7 +105,7 @@ test('generateLevels: kept levels pass the ring, route-length and unique filters
 test('generateLevels: stats count every candidate once', () => {
   const { stats } = generateLevels({ size: 7, count: 2, seed: 2, minPar: 2 });
   const r = stats.rejected;
-  const rejected = r.terrain + r.ring + r.tooShort + r.notUnique + r.parOutOfRange;
+  const rejected = r.terrain + r.ring + r.tooShort + r.notUnique + r.parOutOfRange + r.unsolvable + r.duplicate;
   assert.equal(stats.tried, stats.kept + rejected);
 });
 
