@@ -1,5 +1,5 @@
 // Public API of the puzzle engine.
-export { parseLevel } from './level.js';
+export { parseLevel, buildableLines } from './level.js';
 export { findPath, DIRS } from './path.js';
 export { simulate, validateWalls } from './simulate.js';
 export { stars } from './stars.js';
