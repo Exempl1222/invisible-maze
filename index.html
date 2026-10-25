@@ -38,10 +38,10 @@
       </div>
 
       <div class="board-frame">
-        <div class="board" id="teaser" role="img" aria-label="A nine by nine map with a river, bridges, rocks and a pair of teleporters. First the robot reaches the beacon through a teleporter. Then three walls are placed and the robot has no route left."></div>
+        <div class="board" id="teaser" role="img" aria-label="A nine by nine map with a river, bridges, rocks and two pairs of teleporters. First the robot reaches the beacon through a teleporter. Then three walls are placed on the lines between tiles and the robot has no route left."></div>
         <div class="status" aria-live="off">
           <span id="teaser-caption">No walls. The robot takes the shortest route.</span>
-          <span class="moves">Moves left <strong id="teaser-moves">13</strong></span>
+          <span class="moves">Moves left <strong id="teaser-moves">11</strong></span>
         </div>
       </div>
     </div>
@@ -56,11 +56,11 @@
           </li>
           <li>
             <h3><span class="swatch" style="background:var(--wall)"></span>Your walls</h3>
-            <p>Place them all on grass before it moves. Cut every route, or make the shortest one too long.</p>
+            <p>Draw them on the lines between tiles, all before it moves. Cut every route, or make the shortest one too long. Par tells you the fewest walls that work.</p>
           </li>
           <li>
             <h3><span class="swatch" style="background:var(--river)"></span>The terrain</h3>
-            <p>Rivers block the robot. Bridges and teleporters let it through, and you can't build on any of them.</p>
+            <p>Rivers and rocks block the robot. Bridges and teleporters let it through. A guard rule keeps you honest: you can't wall a line next to the robot, the beacon, a bridge or a teleporter.</p>
           </li>
         </ul>
       </div>
@@ -73,8 +73,9 @@
           <li class="done"><strong>Website live</strong><span>This page, auto-deployed from GitHub.</span></li>
           <li class="done"><strong>Rules locked</strong><span>Shortest-path robot, terrain, par scoring.</span></li>
           <li class="done"><strong>Puzzle engine</strong><span>Exact par solver and a level generator that keeps only the good ones.</span></li>
-          <li class="now"><strong>Playable build</strong><span>Thirty levels on the Play page, tuned for phones.</span></li>
-          <li><strong>Polish and launch</strong><span>Daily level, level packs, hints, a proper name and domain.</span></li>
+          <li class="done"><strong>Playable build</strong><span>Thirty levels on the Play page, tuned for phones.</span></li>
+          <li class="now"><strong>Rules v3</strong><span>Walls on the lines between tiles, a guard rule, par shown upfront and a daily level.</span></li>
+          <li><strong>Polish and launch</strong><span>Level packs, hints, a proper name and domain.</span></li>
         </ol>
       </div>
     </section>

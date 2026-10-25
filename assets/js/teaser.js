@@ -1,34 +1,18 @@
-// Hero teaser: a canned replay of one real level, so visitors see the idea
-// before the game exists. Paths were computed offline by the prototype solver.
-// This is NOT game logic; the engine will live in /src/game (Phase 3).
+// Hero teaser: a canned replay of one real level, so visitors see the idea before they play.
+// The level, the robot's route and the par walls live in teaser-data.js and are checked against
+// the engine by tools/teaser.test.js. This file only draws them. It is not game logic.
 //
-// Act 1: no walls. The robot takes its shortest route, through a teleporter,
-//        and reaches the beacon in 9 moves.
-// Act 2: three walls go down. Every route to the beacon is cut, so the robot
-//        has nowhere to go.
+// Act 1: no walls. The robot takes its shortest route, through a teleporter, to the beacon.
+// Act 2: three walls go down on the lines between tiles. Every route is cut, so the robot is stuck.
+import { TEASER as T } from './teaser-data.js';
+import { placeBar } from './bars.js';
 
-const LEVEL = [
-  '.....=~..',
-  '......~..',
-  '......~..',
-  '......=..',
-  '...#..~..',
-  '......=..',
-  '......=..',
-  '...#..~~.',
-  'T...#..~T',
-];
-const N = LEVEL.length;
-const START = [2, 2];
-const BEACON = [8, 7];
-const MOVE_LIMIT = 13;
-const PAR_WALLS = [[8, 6], [0, 7], [1, 8]];
-// Act 1 route. The step from [0,7] onto the teleporter at [0,8] lands on [8,8].
-const ROUTE = [[1,2],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[8,8],[8,7]];
-const TELEPORT_FROM = [0, 8];
+const N = T.size;
+const MOVE_LIMIT = T.moveLimit;
 
-const TILE_CLASS = { '.': 'grass', '#': 'rock', '~': 'river', '=': 'bridge', T: 'teleporter' };
+const TILE_CLASS = { '.': 'grass', '#': 'rock', '~': 'river', '=': 'bridge', R: 'start', B: 'beacon' };
 const key = ([x, y]) => `${x},${y}`;
+const isPortal = (c) => c >= 'a' && c <= 'z';
 
 const ROBOT_SVG = `<svg viewBox="0 0 32 32" aria-hidden="true">
   <rect x="6" y="9" width="20" height="16" rx="5" fill="var(--robot)"/>
@@ -44,9 +28,9 @@ function build(board) {
   const cells = new Map();
   for (let y = 0; y < N; y++) {
     for (let x = 0; x < N; x++) {
+      const ch = T.tiles[y][x];
       const cell = document.createElement('div');
-      cell.className = `cell ${TILE_CLASS[LEVEL[y][x]]}`;
-      if (key([x, y]) === key(BEACON)) cell.classList.add('beacon');
+      cell.className = `cell ${isPortal(ch) ? 'teleporter' : TILE_CLASS[ch]}`;
       board.appendChild(cell);
       cells.set(key([x, y]), cell);
     }
@@ -55,7 +39,7 @@ function build(board) {
   robot.className = 'robot';
   robot.innerHTML = ROBOT_SVG;
   board.appendChild(robot);
-  return { cells, robot };
+  return { cells, robot, bars: [] };
 }
 
 function place(board, robot, cells, pos, instant = false) {
@@ -71,12 +55,26 @@ function place(board, robot, cells, pos, instant = false) {
 
 export function startTeaser(board, caption, movesOut) {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let { cells, robot } = build(board);
-  let pos = START;
+  let { cells, robot, bars } = build(board);
+  let pos = T.start;
   let timer;
   const queue = [];
 
-  const reflow = () => place(board, robot, cells, pos, true);
+  const barPlace = (bar, [x, y, dir]) => {
+    const other = dir === 'R' ? [x + 1, y] : [x, y + 1];
+    placeBar(bar, board, cells.get(key([x, y])), dir, cells.get(key(other)));
+  };
+  const addWall = (w, animate = true) => {
+    const bar = document.createElement('div');
+    bar.className = `wall-bar${animate ? ' drop' : ''}`;
+    board.insertBefore(bar, robot);
+    barPlace(bar, w);
+    bars.push([bar, w]);
+  };
+  const reflow = () => {
+    place(board, robot, cells, pos, true);
+    for (const [bar, w] of bars) barPlace(bar, w);
+  };
   const say = (text) => { caption.textContent = text; };
   const moves = (n) => { movesOut.textContent = n; };
   const later = (ms, fn) => queue.push([ms, fn]);
@@ -88,8 +86,8 @@ export function startTeaser(board, caption, movesOut) {
   }
 
   function reset() {
-    ({ cells, robot } = build(board));
-    pos = START;
+    ({ cells, robot, bars } = build(board));
+    pos = T.start;
     place(board, robot, cells, pos, true);
     moves(MOVE_LIMIT);
   }
@@ -97,13 +95,14 @@ export function startTeaser(board, caption, movesOut) {
   function script() {
     // Act 1: free run.
     later(0, () => { reset(); say('No walls. The robot takes the shortest route.'); });
-    ROUTE.forEach((step, i) => {
-      const teleport = i > 0 && key(ROUTE[i - 1]) === '0,7';
-      later(i === 0 ? 1200 : 430, () => {
-        const here = cells.get(key(pos));
-        if (here.classList.contains('grass')) here.classList.add('trail');
+    T.route.forEach((step, i) => {
+      const teleport = i + 1 === T.jump.move;
+      later(i === 0 ? 1200 : teleport ? 700 : 430, () => {
+        cells.get(key(pos)).classList.add('trail');
         if (teleport) {
-          cells.get(key(TELEPORT_FROM)).classList.add('flash');
+          // Step onto the teleporter, flash it, reappear at its partner.
+          cells.get(key(T.jump.from)).classList.add('flash', 'trail');
+          cells.get(key(T.jump.to)).classList.add('flash');
           robot.classList.add('blink');
           setTimeout(() => robot.classList.remove('blink'), 360);
         }
@@ -112,12 +111,15 @@ export function startTeaser(board, caption, movesOut) {
         moves(MOVE_LIMIT - (i + 1));
       });
     });
-    later(500, () => { cells.get(key(BEACON)).classList.add('reached'); say('Through the teleporter. Beacon reached in 9 moves.'); });
+    later(500, () => {
+      cells.get(key(T.beacon)).classList.add('reached');
+      say(`Through the teleporter. Beacon reached in ${T.route.length} moves.`);
+    });
 
-    // Act 2: three walls, no way through.
-    later(2600, () => { reset(); say('Now place three walls.'); });
-    PAR_WALLS.forEach((w, i) => {
-      later(i === 0 ? 900 : 550, () => cells.get(key(w)).classList.add('wall', 'drop'));
+    // Act 2: the par walls, no way through.
+    later(2600, () => { reset(); say(`Now place ${T.walls.length} walls on the lines between tiles.`); });
+    T.walls.forEach((w, i) => {
+      later(i === 0 ? 900 : 550, () => addWall(w));
     });
     later(900, () => {
       robot.classList.add('jolt');
@@ -129,8 +131,8 @@ export function startTeaser(board, caption, movesOut) {
   // Reduced motion: a still picture of the solved level.
   if (reduced) {
     reset();
-    PAR_WALLS.forEach((w) => cells.get(key(w)).classList.add('wall'));
-    say('Three walls cut every route. The robot is stuck.');
+    T.walls.forEach((w) => addWall(w, false));
+    say(`${T.walls.length} walls cut every route. The robot is stuck.`);
     window.addEventListener('resize', reflow);
     return;
   }
