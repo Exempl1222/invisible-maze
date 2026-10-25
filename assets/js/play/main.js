@@ -4,8 +4,10 @@ import { createBoard } from './board.js';
 import { loadProgress, recordWin } from './storage.js';
 import { renderSelect } from './select.js';
 import { starsMarkup } from './icons.js';
+import { localDateString, parseDate, dayIndex, formatDaily } from './daily.js';
 
 const PACK_URL = '../assets/levels/pack-01.json';
+const DAILY_URL = '../assets/levels/daily.json';
 const STEP_MS = 300;
 
 const $ = (id) => document.getElementById(id);
@@ -14,7 +16,9 @@ const backEl = $('back');
 const selectView = $('select-view');
 const gameView = $('game-view');
 const boardEl = $('board');
+const breakEl = $('daily-break');
 const wallsUsedEl = $('walls-used');
+const parEl = $('par');
 const limitEl = $('move-limit');
 const movesLeftEl = $('moves-left');
 const statusEl = $('status');
@@ -24,28 +28,42 @@ const clearBtn = $('clear');
 const resultEl = $('result');
 
 let levels = [];
-let game = null; // { index, level, board, state: 'editing' | 'running' | 'result', token }
+let daily = null; // { start, levels } once daily.json has loaded
+let game = null; // { kind: 'level' | 'daily', index, level, board, state: 'editing' | 'running' | 'result', token }
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /* ---------- routing ---------- */
 
-function levelFromUrl() {
-  const n = Number(new URLSearchParams(location.search).get('level'));
-  return Number.isInteger(n) && n >= 1 && n <= levels.length ? n - 1 : null;
+/** What the URL asks for: the select screen, a pack level, or the daily (optionally for a given date). */
+function routeFromUrl() {
+  const q = new URLSearchParams(location.search);
+  if (q.has('daily')) {
+    const asked = q.get('date');
+    return { type: 'daily', date: parseDate(asked) !== null ? asked : localDateString() };
+  }
+  const n = Number(q.get('level'));
+  if (Number.isInteger(n) && n >= 1 && n <= levels.length) return { type: 'level', index: n - 1 };
+  return { type: 'select' };
 }
 
-function navigate(index, { push = true } = {}) {
-  if (push) history.pushState({}, '', index === null ? './' : `./?level=${index + 1}`);
-  show(index);
+function navigate(url, { push = true } = {}) {
+  if (push) history.pushState({}, '', url);
+  render();
   window.scrollTo(0, 0);
 }
+const toSelect = () => navigate('./');
+const toLevel = (i) => navigate(`./?level=${i + 1}`);
+const toDaily = () => navigate('./?daily');
 
-function show(index) {
+async function render() {
   stopGame();
-  if (index === null) showSelect();
-  else startGame(index);
+  breakEl.hidden = true;
+  const r = routeFromUrl();
+  if (r.type === 'select') showSelect();
+  else if (r.type === 'level') startGame({ kind: 'level', index: r.index, level: levels[r.index], title: `Level ${r.index + 1}` });
+  else await showDaily(r.date);
 }
 
 /* ---------- level select ---------- */
@@ -56,7 +74,53 @@ function showSelect() {
   gameView.hidden = true;
   selectView.hidden = false;
   document.title = 'Play · Invisible Maze';
-  renderSelect(selectView, levels, (i) => navigate(i));
+  renderSelect(selectView, levels, {
+    onPick: toLevel,
+    onMode: (m) => (m === 'daily' ? toDaily() : toSelect()),
+  });
+}
+
+/* ---------- daily ---------- */
+
+async function loadDaily() {
+  if (daily) return daily;
+  const res = await fetch(DAILY_URL);
+  if (!res.ok) throw new Error(`${res.status}`);
+  const data = await res.json();
+  daily = { start: data.start, levels: data.levels };
+  return daily;
+}
+
+async function showDaily(date) {
+  const pretty = formatDaily(date);
+  titleEl.textContent = 'Daily';
+  backEl.hidden = false;
+  selectView.hidden = true;
+  gameView.hidden = true;
+  let data;
+  try {
+    data = await loadDaily();
+  } catch {
+    showBreak('The daily did not load. Check your connection and try again.');
+    return;
+  }
+  if (routeFromUrl().type !== 'daily') return; // the player already moved on
+  const i = dayIndex(data.start, date);
+  if (i === null || i < 0 || i >= data.levels.length) {
+    showBreak();
+    return;
+  }
+  const level = parseLevel(data.levels[i]);
+  startGame({ kind: 'daily', index: i, level, title: `Daily, ${pretty}` });
+}
+
+function showBreak(message) {
+  titleEl.textContent = 'Daily';
+  document.title = 'Daily · Invisible Maze';
+  gameView.hidden = true;
+  selectView.hidden = true;
+  breakEl.querySelector('strong').textContent = message || 'The daily is taking a break.';
+  breakEl.hidden = false;
 }
 
 /* ---------- game ---------- */
@@ -71,23 +135,24 @@ function updateCounters() {
   clearBtn.disabled = used === 0 || game.state !== 'editing';
 }
 
-function startGame(index) {
-  const level = levels[index];
-  game = { index, level, state: 'editing', token: 0, board: null };
-  titleEl.textContent = `Level ${index + 1}`;
-  document.title = `Level ${index + 1} · Invisible Maze`;
+function startGame({ kind, index, level, title }) {
+  game = { kind, index, level, state: 'editing', token: 0, board: null };
+  titleEl.textContent = title;
+  document.title = `${title} · Invisible Maze`;
   backEl.hidden = false;
   selectView.hidden = true;
   gameView.hidden = false;
 
-  game.board = createBoard(boardEl, level, { onTap });
+  game.board = createBoard(boardEl, level, { onLine, onHelp });
+  game.board.fit();
+  parEl.textContent = String(level.par);
   limitEl.textContent = String(level.moveLimit);
   movesLeftEl.textContent = String(level.moveLimit);
   resultEl.hidden = true;
   resultEl.innerHTML = '';
   controlsEl.hidden = false;
   goBtn.disabled = false;
-  setStatus('Tap grass to place walls. Block the route, or make it too long.');
+  setStatus('Tap a line between two tiles to place a wall. Block the route, or make it too long.');
   updateCounters();
 }
 
@@ -98,27 +163,41 @@ function stopGame() {
   game = null;
 }
 
-function onTap(x, y, cell) {
+function onHelp() {
+  setStatus('Press Shift and an arrow key to place or remove a wall on that side of this tile.');
+}
+
+/** A press that can't place a wall: say why, loudly. */
+function refused(text) {
+  setStatus(text);
+  statusEl.classList.remove('refused');
+  void statusEl.offsetWidth;
+  statusEl.classList.add('refused');
+}
+
+function onLine(target) {
   if (!game || game.state !== 'editing') return;
   const { board, level } = game;
-  if (!level.buildable(x, y)) {
-    board.nope(x, y);
+  statusEl.classList.remove('refused');
+  if (!target.ok) {
+    board.refuse(target);
+    refused(target.why);
     return;
   }
-  if (board.hasWall(x, y)) {
-    board.setWall(x, y, false);
+  const line = target.line;
+  if (board.hasWall(line)) {
+    board.setWall(line, false);
     setStatus('Wall removed.');
   } else if (board.wallList().length >= level.wallBudget) {
-    board.nope(x, y);
+    board.refuse(target);
     wallsUsedEl.parentElement.classList.remove('refused');
     void wallsUsedEl.offsetWidth;
     wallsUsedEl.parentElement.classList.add('refused');
-    setStatus(`All ${plural(level.wallBudget, 'wall')} placed. Tap a wall to take it back.`);
+    refused(`All ${plural(level.wallBudget, 'wall')} placed. Tap a wall to take it back.`);
   } else {
-    board.setWall(x, y, true);
-    setStatus(board.wallList().length === level.wallBudget
-      ? 'All walls placed. Press Go.'
-      : 'Wall placed.');
+    board.setWall(line, true);
+    const used = board.wallList().length;
+    setStatus(used === level.wallBudget ? 'All walls placed. Press Go.' : `Wall placed. ${used} of ${level.wallBudget} used.`);
   }
   updateCounters();
 }
@@ -195,9 +274,10 @@ function finish(sim, walls) {
     parStrong.textContent = `Par ${g.level.par}`;
     par.append(parStrong, ` You used ${plural(walls.length, 'wall')}.`);
     resultEl.append(heading, starsEl, text, par, actions);
-    const last = g.index === levels.length - 1;
-    if (last) focusTarget = button('All levels', true, () => navigate(null));
-    else focusTarget = button('Next level', true, () => navigate(g.index + 1));
+    const last = g.kind === 'level' && g.index === levels.length - 1;
+    if (g.kind === 'daily') focusTarget = button('Back to levels', true, toSelect);
+    else if (last) focusTarget = button('All levels', true, toSelect);
+    else focusTarget = button('Next level', true, () => toLevel(g.index + 1));
     button('Replay', false, () => replay());
   } else {
     heading.textContent = 'The robot got through';
@@ -221,6 +301,7 @@ function retry() {
   controlsEl.hidden = false;
   goBtn.disabled = false;
   setStatus('Move or remove walls, then press Go.');
+  statusEl.classList.remove('refused');
   updateCounters();
   goBtn.focus({ preventScroll: true });
 }
@@ -229,7 +310,7 @@ function retry() {
 function replay() {
   game.board.clearWalls();
   retry();
-  setStatus('Fresh board. Tap grass to place walls.');
+  setStatus('Fresh board. Tap a line between two tiles to place a wall.');
 }
 
 goBtn.addEventListener('click', run);
@@ -241,9 +322,9 @@ clearBtn.addEventListener('click', () => {
 });
 backEl.addEventListener('click', (e) => {
   e.preventDefault();
-  navigate(null);
+  toSelect();
 });
-window.addEventListener('popstate', () => show(levelFromUrl()));
+window.addEventListener('popstate', () => render());
 
 /* ---------- boot ---------- */
 
@@ -268,7 +349,7 @@ async function boot() {
   }
   loading.hidden = true;
   loadProgress();
-  show(levelFromUrl());
+  render();
 }
 
 boot();
