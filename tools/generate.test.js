@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { parseLevel, solve, countAnswers, simulate } from '../src/game/index.js';
+import { parseLevel, solve, countAnswers, simulate, cutsAllRoutes } from '../src/game/index.js';
 import { generateLevels, isRingAnswer } from './generate.js';
 
 function check(levels, { minPar, unique }) {
@@ -96,10 +96,10 @@ test('generateLevels: kept levels pass the ring, route-length and unique filters
     assert.equal(raw.parAnswers, 1, raw.id);
     assert.ok(meta[i].routeLength >= 7, raw.id);
     assert.equal(typeof meta[i].usesTeleporter, 'boolean');
-    assert.equal(simulate(lv, s.answer).reason, meta[i].winReason);
+    assert.equal(simulate(lv, s.answer).reason, 'too-far', `${raw.id} every win is out of moves`);
+    assert.equal(cutsAllRoutes(lv, s.answer), false, `${raw.id} answer leaves a route`);
   }
   assert.equal(stats.kept, 3);
-  assert.equal(stats.winReasons.blocked + stats.winReasons['too-far'], 3);
 });
 
 test('generateLevels: stats count every candidate once', () => {

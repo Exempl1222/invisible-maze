@@ -33,7 +33,7 @@ export function buildDaily({ days = DAILY_DEFAULTS.days, start = DAILY_DEFAULTS.
   // (seed, start, day index) and the first N days never change when more days are added.
   const levels = [];
   const boards = new Set();
-  const total = { tried: 0, kept: 0, rejected: {}, winReasons: { blocked: 0, 'too-far': 0 }, usesTeleporter: 0 };
+  const total = { tried: 0, kept: 0, rejected: {}, usesTeleporter: 0 };
   for (let i = 0; i < days; i++) {
     let level = null;
     for (let attempt = 0; attempt < 20 && !level; attempt++) {
@@ -45,7 +45,6 @@ export function buildDaily({ days = DAILY_DEFAULTS.days, start = DAILY_DEFAULTS.
       if (!gen.levels.length || boards.has(gen.levels[0].tiles.join('/'))) continue;
       level = gen.levels[0];
       total.kept++;
-      total.winReasons[gen.meta[0].winReason]++;
       if (gen.meta[0].usesTeleporter) total.usesTeleporter++;
     }
     if (!level) { log(`day ${i}: no level found, stopping at ${levels.length}`); break; }

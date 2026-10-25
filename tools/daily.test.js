@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parseLevel, findPath, solve, countAnswers, simulate } from '../src/game/index.js';
+import { parseLevel, findPath, solve, countAnswers, simulate, cutsAllRoutes } from '../src/game/index.js';
 import { isRingAnswer } from './generate.js';
 import { addDays, buildDaily, DAILY_DEFAULTS } from './build-daily.js';
 
@@ -39,7 +39,10 @@ test('daily: every level is consistent with the engine (all of them are checked)
     assert.equal(raw.parAnswers, countAnswers(lv, s.par), `${raw.id} countAnswers`);
     assert.equal(raw.wallBudget, raw.par + 1, `${raw.id} wallBudget`);
     assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot wins with no walls`);
-    assert.equal(simulate(lv, s.answer).result, 'win', `${raw.id} par answer stops the robot`);
+    assert.equal(cutsAllRoutes(lv, s.answer), false, `${raw.id} par answer leaves a route`);
+    const won = simulate(lv, s.answer);
+    assert.equal(won.result, 'win', `${raw.id} par answer stops the robot`);
+    assert.equal(won.reason, 'too-far', `${raw.id} every win is out of moves`);
     assert.equal(isRingAnswer(lv, s.answer), false, `${raw.id} ring`);
     assert.ok(findPath(lv, []).positions.length - 1 >= raw.size, `${raw.id} route length`);
   }

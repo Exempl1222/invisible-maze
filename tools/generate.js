@@ -7,12 +7,12 @@
 // pairs, start and beacon on grass and far apart), solves each candidate exactly, keeps
 // those that pass the filters (route >= grid size, par in range, no ring answer, exactly one
 // par answer), and writes them to levels/generated/size<N>-seed<S>.json. Sizes 7 and 9 only
-// (5x5 is gone in rules v3). Walls are lines: [x, y, "R" | "D"].
+// (5x5 is gone in rules v3). Every win is "too-far" (rules v3.1: the robot must keep a route). Walls are lines: [x, y, "R" | "D"].
 // Same seed, same output.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseLevel, buildableLines, findPath, solve, countAnswers, simulate, createRng } from '../src/game/index.js';
+import { parseLevel, findPath, solve, countAnswers, simulate, createRng } from '../src/game/index.js';
 
 function buildTerrain(rng, size) {
   // Built with the river running top to bottom, then transposed/flipped at the end.
@@ -107,7 +107,8 @@ export function isRingAnswer(level, answer) {
 
 /**
  * @returns {{levels:object[], meta:object[], tried:number, solveMs:number[], stats:object}}
- * `meta[i]` describes `levels[i]`: { winReason, usesTeleporter, routeLength }.
+ * `meta[i]` describes `levels[i]`: { usesTeleporter, routeLength }. (Every win is "too-far" in
+ * rules v3.1, so there is no win reason to record.)
  */
 export function generateLevels({
   size = 9,
@@ -130,7 +131,6 @@ export function generateLevels({
     tried: 0,
     kept: 0,
     rejected: { terrain: 0, duplicate: 0, tooShort: 0, unsolvable: 0, parOutOfRange: 0, ring: 0, notUnique: 0 },
-    winReasons: { blocked: 0, 'too-far': 0 },
     usesTeleporter: 0,
   };
   const seenBoards = new Set();
@@ -153,9 +153,8 @@ export function generateLevels({
     const s = solve(lv, { maxPar });
     solveMs.push(performance.now() - t0);
     if (!s) {
-      // null means either no wall set wins at all, or par is above maxPar
-      const everything = simulate(lv, buildableLines(lv)).result === 'win';
-      stats.rejected[everything ? 'parOutOfRange' : 'unsolvable']++;
+      // null means either no legal wall set wins at all, or par is above maxPar
+      stats.rejected[solve(lv) ? 'parOutOfRange' : 'unsolvable']++;
       continue;
     }
     if (s.par < minPar) { stats.rejected.parOutOfRange++; continue; }
@@ -163,9 +162,8 @@ export function generateLevels({
     const answers = countAnswers(lv, s.par, unique ? 2 : 50);
     if (unique && answers !== 1) { stats.rejected.notUnique++; continue; }
     const final = parseLevel({ size, tiles, moveLimit, wallBudget: s.par + 1 });
-    const winReason = simulate(final, s.answer).reason;
+    if (simulate(final, s.answer).reason !== 'too-far') throw new Error('every win must be too-far under rules v3.1');
     const usesTeleporter = open.teleports.length > 0;
-    stats.winReasons[winReason] = (stats.winReasons[winReason] ?? 0) + 1;
     if (usesTeleporter) stats.usesTeleporter++;
     seenBoards.add(board);
     levels.push({
@@ -177,7 +175,7 @@ export function generateLevels({
       par: s.par,
       parAnswers: answers,
     });
-    meta.push({ winReason, usesTeleporter, routeLength });
+    meta.push({ usesTeleporter, routeLength });
   }
   stats.tried = tried;
   stats.kept = levels.length;
@@ -186,11 +184,10 @@ export function generateLevels({
 
 export function formatStats(stats) {
   const r = stats.rejected;
-  const w = stats.winReasons;
   return [
     `candidates tried: ${stats.tried}, kept: ${stats.kept}`,
     `rejected (first failing filter, in order): bad terrain ${r.terrain}, duplicate board ${r.duplicate}, route too short ${r.tooShort}, unsolvable ${r.unsolvable}, par out of range ${r.parOutOfRange}, ring ${r.ring}, not unique ${r.notUnique}`,
-    `win reasons among kept: blocked ${w.blocked}, too-far ${w['too-far']}; teleporter on open route: ${stats.usesTeleporter}`,
+    `teleporter on open route among kept: ${stats.usesTeleporter}`,
   ].join('\n');
 }
 

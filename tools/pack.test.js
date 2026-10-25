@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parseLevel, findPath, solve, countAnswers, simulate } from '../src/game/index.js';
+import { parseLevel, findPath, solve, countAnswers, simulate, cutsAllRoutes, buildableLines } from '../src/game/index.js';
 import { isRingAnswer } from './generate.js';
 
 const file = fileURLToPath(new URL('../assets/levels/pack-01.json', import.meta.url));
@@ -35,7 +35,10 @@ test('pack-01: every level is consistent with the engine', () => {
     if (n > 5) assert.ok(open.positions.length - 1 >= raw.size, `${raw.id} route ${open.positions.length - 1}`);
 
     assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot must win with no walls`);
-    assert.equal(simulate(lv, s.answer).result, 'win', `${raw.id} par answer stops the robot`);
+    assert.equal(cutsAllRoutes(lv, s.answer), false, `${raw.id} par answer leaves the robot a route`);
+    const won = simulate(lv, s.answer);
+    assert.equal(won.result, 'win', `${raw.id} par answer stops the robot`);
+    assert.equal(won.reason, 'too-far', `${raw.id} every win is out of moves`);
 
     if (n >= 6) {
       assert.equal(isRingAnswer(lv, s.answer), false, `${raw.id} ring answer`);
@@ -61,32 +64,48 @@ test('pack-01: tutorial teaches one idea at a time, in order', () => {
   const has = (l, ch) => l.tiles.some((r) => r.includes(ch));
   const tele = (l) => l.tiles.some((r) => /[a-z]/.test(r));
   const solved = t.map((raw) => ({ raw, lv: parseLevel(raw), s: solve(parseLevel(raw)) }));
+  // wall endpoints (the two tiles beside each line of an answer)
+  const ends = (s) => s.answer.flatMap(([x, y, d]) => [[x, y], d === 'R' ? [x + 1, y] : [x, y + 1]]);
+  const near = (lv, ch, dist, s) => {
+    const spots = [];
+    lv.tiles.forEach((row, y) => [...row].forEach((c, x) => { if (ch(c)) spots.push([x, y]); }));
+    return ends(s).some(([x, y]) => spots.some(([a, b]) => Math.abs(a - x) + Math.abs(b - y) <= dist));
+  };
 
-  // 1: open grass only
+  // 1: lines lengthen a route. Open grass only, and the answer is more than one wall.
   assert.ok(!has(t[0], '#') && !has(t[0], '~') && !has(t[0], '=') && !tele(t[0]));
-  // 2: rocks, nothing else new
+  assert.ok(solved[0].s.par >= 2, 'level 1 needs a fence, not a single wall');
+  // 2: rocks, nothing else new. The answer uses the rocks (a wall sits next to one).
   assert.ok(has(t[1], '#') && !has(t[1], '~') && !tele(t[1]));
-  // 3: river and bridge
-  assert.ok(has(t[2], '~') && has(t[2], '=') && !tele(t[2]));
-  // 4: a teleporter pair, used by the robot's open route
+  assert.ok(near(solved[1].lv, (c) => c === '#', 1, solved[1].s), 'level 2 answer works with a rock');
+  // 3: river and bridge, nothing else new. A bridge can't be walled, so a wall guards its approach.
+  assert.ok(has(t[2], '~') && has(t[2], '=') && !has(t[2], '#') && !tele(t[2]));
+  assert.ok(near(solved[2].lv, (c) => c === '=', 1, solved[2].s), 'level 3 answer guards a bridge approach');
+  // 4: a teleporter pair used by the robot's open route; the answer guards its approach, not the teleporter.
   assert.ok(tele(t[3]));
   assert.ok(findPath(solved[3].lv, []).teleports.length > 0, 'level 4 route uses the teleporter');
-  // 5: the move limit does the work: the par answer lengthens the route, and no wall set within
-  //    budget can block the robot completely
-  assert.equal(simulate(solved[4].lv, solved[4].s.answer).reason, 'too-far');
-  const blockable = parseLevel({ ...t[4], moveLimit: 1000, wallBudget: t[4].wallBudget });
-  assert.equal(solve(blockable, { maxPar: t[4].wallBudget }), null, 'level 5 cannot be blocked within budget');
+  assert.ok(near(solved[3].lv, (c) => c >= 'a' && c <= 'z', 2, solved[3].s), 'level 4 answer guards a teleporter approach');
+  // 5: several routes. At least two different routes fit in the move limit with no walls (walling a
+  //    line of the shortest one still leaves a route that fits), so the answer has to close all of
+  //    them but one, and the one left is longer than the limit.
+  const lv5 = solved[4].lv;
+  const free5 = findPath(lv5, []);
+  const lines5 = new Set(free5.lines);
+  const alt = buildableLines(lv5).filter((w) => lines5.has((w[1] * lv5.size + w[0]) * 2 + (w[2] === 'D' ? 1 : 0)))
+    .some((w) => { const r = findPath(lv5, [w]); return r && r.positions.length - 1 <= lv5.moveLimit; });
+  assert.ok(alt, 'level 5 has a second route within the move limit');
+  assert.ok(solved[4].s.par >= 2, 'level 5 needs a wall on each of several routes');
+  assert.equal(cutsAllRoutes(lv5, solved[4].s.answer), false, 'level 5 leaves one route open');
 
-  // every tutorial level wins on the engine's answer, with one answer only
+  // every tutorial level wins on the engine's answer (out of moves), with one answer only, and none is a ring
   solved.forEach(({ raw, lv, s }) => {
     assert.equal(raw.parAnswers, 1, raw.id);
-    assert.equal(simulate(lv, s.answer).result, 'win', raw.id);
+    const r = simulate(lv, s.answer);
+    assert.equal(r.result, 'win', raw.id);
+    assert.equal(r.reason, 'too-far', raw.id);
+    assert.equal(isRingAnswer(lv, s.answer), false, raw.id);
   });
-  // Only level 1 (a plain cut across the open board) may use a ring-shaped answer.
-  solved.forEach(({ raw, lv, s }, i) => {
-    if (i >= 1) assert.equal(isRingAnswer(lv, s.answer), false, raw.id);
-  });
-  // The bridge can't be walled: no wall in the level 3 answer touches the bridge row's bridge tiles.
+  // The bridge can't be walled: no wall in the level 3 answer touches a bridge tile.
   const bridge3 = [];
   t[2].tiles.forEach((row, y) => [...row].forEach((c, x) => { if (c === '=') bridge3.push([x, y]); }));
   for (const [x, y, d] of solved[2].s.answer) {
@@ -95,15 +114,14 @@ test('pack-01: tutorial teaches one idea at a time, in order', () => {
   }
 });
 
-test('pack-01: generated levels mix win reasons and use teleporters', () => {
+test('pack-01: generated levels use teleporters and every par answer is out of moves', () => {
   const gen = pack.levels.slice(5);
   let teleporter = 0;
-  const reasons = { blocked: 0, 'too-far': 0 };
   for (const raw of gen) {
     const lv = parseLevel(raw);
     if (findPath(lv, []).teleports.length > 0) teleporter++;
-    reasons[simulate(lv, solve(lv).answer).reason]++;
+    const r = simulate(lv, solve(lv).answer);
+    assert.equal(r.reason, 'too-far', raw.id);
   }
   assert.ok(teleporter >= gen.length / 2, `teleporter on route: ${teleporter}/${gen.length}`);
-  assert.ok(reasons.blocked >= 5 && reasons['too-far'] >= 5, JSON.stringify(reasons));
 });

@@ -6,7 +6,7 @@
 // Levels 1-5: hand-authored 7x7 tutorial (tiles below; par and parAnswers come from the engine).
 // Levels 6-20: generated 7x7, par 2-4. Levels 21-30: generated 9x9, par 3-5.
 // Generated levels are unique and ring-free (generator defaults). From each candidate
-// pool we keep a balanced mix of par, win reasons and teleporter use. Within each band the
+// pool we keep a balanced mix of par and teleporter use. Within each band the
 // levels are ordered easiest first (par, then open-route length).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -14,62 +14,67 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseLevel, solve, countAnswers } from '../src/game/index.js';
 import { generateLevels, formatStats } from './generate.js';
 
-// One new idea each: lines on open grass, rocks, river + bridge, teleporters, move limit.
-// Every one has exactly one par answer (checked by tools/pack.test.js).
+// One new idea each (rules v3.1: you can't cut every route, so every win is "out of moves"):
+//   1. Lines lengthen a route.  2. Rocks.  3. River and bridge: you can't wall the bridge, so guard
+//   its approaches.  4. Teleporter: guard the approach.  5. Several routes: leave one open and make it long.
+// Every one has exactly one par answer, no ring answer, and a too-far win (checked by tools/pack.test.js).
 export const TUTORIAL = [
-  // 1. Open grass. The robot's route is 4 moves down a two-wide strip; two lines across the strip
-  //    force a detour past the limit. Route is shorter than the grid size and the answer is
-  //    unavoidably a plain cut: both accepted for level 1.
+  // 1. Open grass. The robot walks straight down the left edge, 3 moves, and has 5. One wall
+  //    isn't enough (it steps round it in 5), so a fence of two lines across the edge makes the
+  //    way round 7 moves. Route is shorter than the grid size, which is fine for level 1.
   { tiles: [
+      'R......',
+      '.......',
+      '.......',
+      'B......',
       '.......',
       '.......',
       '.......',
-      '...R...',
-      '.......',
-      '.......',
-      '....B..',
-  ], moveLimit: 4 },
-  // 2. Rocks. They pinch the robot's start into a pocket; two lines close the last gap.
+  ], moveLimit: 5 },
+  // 2. Rocks do some of the blocking for you. They split the board into lanes; two lines under the
+  //    robot close the short ways down and the long way round through the gaps is left open.
   { tiles: [
-      '..#.#..',
-      '....B.#',
-      '.......',
-      '#......',
-      '.......',
-      '..#.#..',
       '...#.R.',
-  ], moveLimit: 8 },
-  // 3. River and bridges. A bridge can't be walled, so guard the far side of the left one;
-  //    the right bridge is too long a way round.
-  { tiles: [
-      '.......',
-      '.......',
-      '..R....',
-      '.......',
-      '~=~~~~=',
-      '.......',
-      '...B...',
-  ], moveLimit: 10 },
-  // 4. A teleporter pair is a shortcut. Wall off the approach to it, not the teleporter itself.
-  { tiles: [
-      '.......',
-      '.R.....',
-      '....a..',
-      '.......',
-      '.......',
-      '....a.B',
-      '..#...#',
-  ], moveLimit: 7 },
-  // 5. Move limit. The board is too open to block, so make the route too long instead.
-  { tiles: [
-      '.#....#',
-      '.......',
-      '..#.R..',
       '.#.#...',
-      '.#.....',
+      '...#..#',
+      '.......',
+      '.......',
+      'B......',
+      '...##..',
+  ], moveLimit: 10 },
+  // 3. River and bridges. A bridge can't be walled, so guard the far side of the bridges: two lines
+  //    on the landing zone make every crossing a long walk to the beacon.
+  { tiles: [
       '.......',
       '.B.....',
-  ], moveLimit: 9 },
+      '.......',
+      '~~~=~=~',
+      '.......',
+      '.......',
+      '......R',
+  ], moveLimit: 10 },
+  // 4. A teleporter pair is a shortcut. The lines next to it can't be walled, so guard the approach
+  //    one tile further out.
+  { tiles: [
+      '.R.....',
+      '.......',
+      '.......',
+      'a......',
+      '..a....',
+      '.......',
+      '......B',
+  ], moveLimit: 10 },
+  // 5. Several routes. Two quick ways cross the board; a wall on each leaves only the long way,
+  //    and you must leave that one open.
+  { tiles: [
+      '..#.##.',
+      'R..###.',
+      '.......',
+      '.#....#',
+      '.#..#..',
+      '#.....B',
+      '.###...',
+  ], moveLimit: 10 },
 ];
 
 const POOLS = [
@@ -79,8 +84,8 @@ const POOLS = [
 
 function pick(pool, take, quota) {
   // Take each par's quota in turn (a spread of par, not all the minimum). Within a par, greedy
-  // diversity: each step takes the candidate whose win reason and teleporter use are least
-  // represented so far (teleporter target 60%, win reasons 50/50). If a par runs short, the
+  // diversity: each step takes the candidate whose teleporter use is least represented so far
+  // (teleporter target 60%; every win is now out-of-moves, so there is no win reason to balance). If a par runs short, the
   // remaining places go to whichever pars still have candidates.
   const items = pool.levels.map((level, i) => ({ level, ...pool.meta[i] }));
   const chosen = [];
@@ -89,9 +94,7 @@ function pick(pool, take, quota) {
     let best = -1, bestScore = Infinity;
     items.forEach((it, i) => {
       if (!allowed(it)) return;
-      const score =
-        count((c) => c.winReason === it.winReason) +
-        (it.usesTeleporter ? count((c) => c.usesTeleporter) / 0.6 : count((c) => !c.usesTeleporter) / 0.4);
+      const score = it.usesTeleporter ? count((c) => c.usesTeleporter) / 0.6 : count((c) => !c.usesTeleporter) / 0.4;
       if (score < bestScore) { bestScore = score; best = i; }
     });
     if (best === -1) return false;

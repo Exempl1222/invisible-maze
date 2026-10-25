@@ -62,7 +62,9 @@ test('pointTarget: every point on the board resolves to one tile and one side', 
 });
 
 test('explainLine: buildable lines are ok; the others say why', () => {
-  const lv = parseLevel(pack.levels[5]); // p01-06, has river, bridge, teleporters, robot, beacon
+  // A fixed board with a river, bridge, rock, teleporters, robot and beacon (not a pack level, so it
+  // doesn't change when the pack is rebuilt).
+  const lv = parseLevel({ size: 7, tiles: ['...a...', '.....#.', 'B.~~.~=', '~~=~=~.', '#......', '......R', '#....a.'], moveLimit: 9, wallBudget: 4 });
   const why = (x, y, side) => explainLine(lv, lineFor(x, y, side, lv.size), { x, y, side }).why;
   // top-left corner area: ".." grass pair
   assert.equal(explainLine(lv, [1, 0, 'D'], { x: 1, y: 0, side: 'D' }).ok, lv.lineBuildable(1, 0, 'D'));
