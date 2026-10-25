@@ -1,15 +1,18 @@
 // Exact solver: par (fewest winning walls) and answer counting. Pure.
 //
-// Key fact: a route that fits the move limit and is left unblocked keeps the robot
-// alive, so every winning wall set must contain a buildable line the robot's current
-// shortest route crosses (each move crosses one line; a teleport jump crosses none).
-// Branch only on those lines. Adding walls never shortens a route, so winning is
-// monotone (any superset of a winning set also wins).
+// A wall set wins only if it leaves the robot a route AND that route is longer than the move
+// limit (rules v3.1: cutting every route is illegal). Key facts:
+//  - A winning set must contain a buildable line the robot's current shortest route crosses
+//    (otherwise that route survives and fits the limit; each move crosses one line, a
+//    teleport jump crosses none). Branch only on those lines.
+//  - Adding walls never shortens a route and never reconnects a cut, so a disconnected state
+//    is a dead end: prune it. A connected state with a too-long route wins.
 import { routeWithMask } from './path.js';
 import { buildableLines, lineIndex, lineWall } from './level.js';
 
+/** Wins only with a route left that is longer than the limit. A null route is illegal. */
 function isWin(level, route) {
-  return route === null || route.positions.length - 1 > level.moveLimit;
+  return route !== null && route.positions.length - 1 > level.moveLimit;
 }
 
 function setup(level) {
@@ -41,6 +44,7 @@ export function solve(level, opts = {}) {
 
   function dfs(rem) {
     const route = routeWithMask(level, mask);
+    if (route === null) return false; // every route cut: illegal, and more walls can't undo it
     if (isWin(level, route)) return true;
     if (rem === 0) return false;
     const key = chosen.slice().sort((a, b) => a - b).join(',');
@@ -66,8 +70,9 @@ export function solve(level, opts = {}) {
 
 /**
  * Number of distinct k-wall sets (buildable lines only) that win, counting up to `cap`.
+ * A set counts only if it leaves a route and that route is longer than the move limit.
  * Exact below the cap; returns `cap` when there are at least that many.
- * For k above par this includes sets that merely contain a smaller winning set.
+ * For k above par this includes sets that merely contain a smaller winning set (as long as they still leave a route).
  */
 // SPEC-QUESTION: the spec says "how many k-wall answers exist" without saying whether a
 // k-wall set that contains a smaller winning set is an answer. Conservative choice: yes
@@ -86,11 +91,15 @@ export function countAnswers(level, k, cap = 50) {
   }
 
   // chosen already wins with fewer than k walls: every superset of size k also wins.
+  // Extra walls can still cut every route, so each full set is re-checked (a set that is
+  // still connected is still too long: walls never shorten a route).
   function fill(from, left, pool) {
-    if (left === 0) return addFound();
+    if (left === 0) return routeWithMask(level, mask) !== null && addFound();
     for (let i = from; i <= pool.length - left; i++) {
       chosen.push(pool[i]);
+      mask[pool[i]] = 1;
       const stop = fill(i + 1, left - 1, pool);
+      mask[pool[i]] = 0;
       chosen.pop();
       if (stop) return true;
     }
@@ -99,6 +108,7 @@ export function countAnswers(level, k, cap = 50) {
 
   function dfs() {
     const route = routeWithMask(level, mask);
+    if (route === null) return false; // dead end: cut off, and more walls can't reconnect
     if (isWin(level, route)) {
       if (chosen.length === k) return addFound();
       const pool = all.filter((i) => !mask[i]);

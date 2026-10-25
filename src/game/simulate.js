@@ -29,7 +29,17 @@ export function validateWalls(level, walls) {
 }
 
 /**
- * @returns {{result:'win'|'lose', reason:'blocked'|'too-far'|'reached',
+ * True if the walls leave the robot no route to the beacon (the move is illegal in the game).
+ * Checks routing only; use validateWalls for the other wall rules.
+ */
+export function cutsAllRoutes(level, walls) {
+  return findPath(level, walls) === null;
+}
+
+/**
+ * Throws if the walls are invalid or cut every route. Results are only win/too-far and
+ * lose/reached.
+ * @returns {{result:'win'|'lose', reason:'too-far'|'reached',
  *            steps:number[][], teleports:number[], via:(number[]|null)[], movesUsed:number}}
  *  steps: positions the robot occupies, start first. teleports: indices into steps
  *  that were reached by a teleport jump.
@@ -38,7 +48,7 @@ export function simulate(level, walls) {
   validateWalls(level, walls);
   const route = findPath(level, walls);
   if (route === null) {
-    return { result: 'win', reason: 'blocked', steps: [[level.start[0], level.start[1]]], teleports: [], via: [null], movesUsed: 0 };
+    throw new Error('The walls cut every route: the robot needs at least one way through to the beacon');
   }
   const length = route.positions.length - 1;
   if (length > level.moveLimit) {

@@ -8,8 +8,8 @@ test('parses the spec example', () => {
   assert.equal(lv.size, 7);
   assert.deepEqual(lv.start, [2, 1]);
   assert.deepEqual(lv.beacon, [4, 5]);
-  assert.equal(lv.moveLimit, 9);
-  assert.equal(lv.wallBudget, 4);
+  assert.equal(lv.moveLimit, 10);
+  assert.equal(lv.wallBudget, 6);
   assert.deepEqual(lv.partner(0, 4), [6, 6]);
   assert.deepEqual(lv.partner(6, 6), [0, 4]);
   assert.equal(lv.partner(0, 0), null);

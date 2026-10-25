@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseLevel } from './level.js';
-import { simulate } from './simulate.js';
+import { simulate, cutsAllRoutes } from './simulate.js';
 import { SPEC_LEVEL, SPEC_ANSWER, makeLevel } from './fixtures.test.js';
 
 const P = (tiles, extra) => parseLevel(makeLevel(tiles, extra));
@@ -14,13 +14,12 @@ test('spec example with no walls: robot reaches the beacon in 6 moves (lose)', (
   assert.equal(r.steps.length, 7);
 });
 
-test('spec example with the par answer: win, blocked, robot is stuck at the bridge end', () => {
+test('spec example with the par answer: win, too-far, robot walks the move limit', () => {
   const r = simulate(parseLevel(SPEC_LEVEL), SPEC_ANSWER);
   assert.equal(r.result, 'win');
-  assert.equal(r.reason, 'blocked');
-  assert.equal(r.movesUsed, 0);
-  assert.deepEqual(r.steps, [[2, 1]]);
-  assert.deepEqual(r.teleports, []);
+  assert.equal(r.reason, 'too-far');
+  assert.equal(r.movesUsed, SPEC_LEVEL.moveLimit);
+  assert.equal(r.steps.length, SPEC_LEVEL.moveLimit + 1);
 });
 
 test('too far: walks exactly moveLimit moves along the route then stops', () => {
@@ -92,9 +91,9 @@ test('invalid walls are rejected with clear errors', () => {
     assert.throws(() => simulate(lv, [w]), re, name);
   }
   assert.throws(() => simulate(lv, [[0, 0, 'R'], [0, 0, 'R']]), /duplicate/i);
-  assert.throws(() => simulate(lv, [[0, 0, 'R'], [1, 0, 'R'], [2, 0, 'R'], [3, 0, 'R'], [4, 0, 'R']]), /budget/i);
+  assert.throws(() => simulate(lv, [[0, 0, 'R'], [1, 0, 'R'], [2, 0, 'R'], [3, 0, 'R'], [4, 0, 'R'], [5, 0, 'R'], [0, 1, 'R']]), /budget/i);
   assert.throws(() => simulate(lv, 'nope'), /walls/i);
-  assert.doesNotThrow(() => simulate(lv, [[0, 0, 'R'], [1, 0, 'R'], [2, 0, 'R'], [3, 0, 'R']]));
+  assert.doesNotThrow(() => simulate(lv, [[0, 0, 'R'], [1, 0, 'R'], [2, 0, 'R'], [3, 0, 'R'], [4, 0, 'R'], [5, 0, 'R']]));
 });
 
 test('via: lines up with steps and names the teleporter stepped onto', () => {
@@ -114,7 +113,39 @@ test('via is cut to the move limit on a too-far win', () => {
   assert.equal(r.via.length, r.steps.length);
 });
 
-test('via on a blocked win is just the start', () => {
-  const r = simulate(parseLevel(SPEC_LEVEL), SPEC_ANSWER);
-  assert.deepEqual(r.via, [null]);
+// A corridor with a side loop: one wall can lengthen the route, two cut it off.
+const LOOP = ['R...B', '.###.', '.....', '#####', '#####'];
+
+test('cutsAllRoutes: false with a route left, true when every route is cut', () => {
+  const lv = P(LOOP, { moveLimit: 6 });
+  assert.equal(cutsAllRoutes(lv, []), false);
+  assert.equal(cutsAllRoutes(lv, [[2, 0, 'R']]), false); // detour round the loop
+  assert.equal(cutsAllRoutes(lv, [[2, 0, 'R'], [2, 2, 'R']]), true); // top and bottom both cut
+  assert.equal(cutsAllRoutes(lv, [[2, 0, 'R'], [0, 1, 'D'], [4, 1, 'D']]), true);
+});
+
+test('cutsAllRoutes: a level with no route at all is always cut', () => {
+  assert.equal(cutsAllRoutes(P(['R#B', '###', '###']), []), true);
+});
+
+test('cutsAllRoutes: a teleporter keeps a route alive even if the walk is walled', () => {
+  const lv = P(['Ra###', '#####', '#####', '#####', 'a...B']);
+  assert.equal(cutsAllRoutes(lv, [[2, 4, 'R']]), true);
+  assert.equal(cutsAllRoutes(lv, []), false);
+});
+
+test('simulate throws a clear error when the walls cut every route', () => {
+  const lv = P(LOOP, { moveLimit: 6 });
+  assert.throws(() => simulate(lv, [[2, 0, 'R'], [2, 2, 'R']]), /at least one way|every route|no route/i);
+  assert.throws(() => simulate(P(['R#B', '###', '###']), []), /at least one way|every route|no route/i);
+});
+
+test('simulate results are only win/too-far and lose/reached', () => {
+  const lv = P(LOOP, { moveLimit: 6 });
+  const seen = new Set();
+  for (const walls of [[], [[2, 0, 'R']], [[1, 0, 'R']]]) {
+    const r = simulate(lv, walls);
+    seen.add(`${r.result}/${r.reason}`);
+  }
+  for (const k of seen) assert.ok(k === 'win/too-far' || k === 'lose/reached', k);
 });

@@ -16,7 +16,7 @@ test('spec example: 6 moves over the bridge, no walls', () => {
 
 test('spec answer walls leave a route no shorter than the limit', () => {
   const p = findPath(parseLevel(SPEC_LEVEL), SPEC_ANSWER);
-  assert.equal(p, null); // the tile past the bridge is sealed
+  assert.ok(p.positions.length - 1 > SPEC_LEVEL.moveLimit); // a route is left, and it is long
 });
 
 test('a teleport costs exactly one move', () => {
