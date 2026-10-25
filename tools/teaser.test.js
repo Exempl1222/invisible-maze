@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TEASER as T } from '../assets/js/teaser-data.js';
-import { parseLevel, findPath, simulate, solve, countAnswers } from '../src/game/index.js';
+import { parseLevel, findPath, simulate, solve, countAnswers, cutsAllRoutes } from '../src/game/index.js';
 
 const level = parseLevel({ id: T.id, size: T.size, tiles: T.tiles, moveLimit: T.moveLimit, wallBudget: T.walls.length });
 
@@ -33,4 +33,16 @@ test('teaser: the walls are the unique par answer and give the stated result', (
   const sim = simulate(level, T.walls);
   assert.equal(sim.result, T.walled.result);
   assert.equal(sim.reason, T.walled.reason);
+});
+
+test('teaser: the walls leave a route, and the replay walks it until the robot is out of moves', () => {
+  assert.equal(cutsAllRoutes(level, T.walls), false, 'rules v3.1: the walls must leave a way through');
+  assert.deepEqual(T.walled, { result: 'win', reason: 'too-far' });
+  const sim = simulate(level, T.walls);
+  assert.deepEqual(sim.steps.slice(1), T.detour);
+  assert.equal(T.detour.length, T.moveLimit);
+  assert.deepEqual(sim.teleports, [], 'the replay of the walled walk has no teleport jump');
+  // the walled route really is longer than the move limit, and it never reaches the beacon in the replay
+  assert.ok(findPath(level, T.walls).positions.length - 1 > T.moveLimit);
+  assert.notDeepEqual(T.detour.at(-1), T.beacon);
 });

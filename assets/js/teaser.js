@@ -3,7 +3,8 @@
 // the engine by tools/teaser.test.js. This file only draws them. It is not game logic.
 //
 // Act 1: no walls. The robot takes its shortest route, through a teleporter, to the beacon.
-// Act 2: three walls go down on the lines between tiles. Every route is cut, so the robot is stuck.
+// Act 2: three walls go down on the lines between tiles. The robot still has a way through, but a
+// long one: it walks until it runs out of moves and stops short of the beacon.
 import { TEASER as T } from './teaser-data.js';
 import { placeBar } from './bars.js';
 
@@ -121,9 +122,18 @@ export function startTeaser(board, caption, movesOut) {
     T.walls.forEach((w, i) => {
       later(i === 0 ? 900 : 550, () => addWall(w));
     });
-    later(900, () => {
+    later(900, () => say('The robot still has a way through. It is a long one.'));
+    T.detour.forEach((step, i) => {
+      later(i === 0 ? 700 : 330, () => {
+        cells.get(key(pos)).classList.add('trail');
+        pos = step;
+        place(board, robot, cells, pos);
+        moves(MOVE_LIMIT - (i + 1));
+      });
+    });
+    later(300, () => {
       robot.classList.add('jolt');
-      say('Every route is cut. The robot is stuck.');
+      say(`Out of moves after ${MOVE_LIMIT}. The route is longer than that.`);
     });
     later(3200, () => {});
   }
@@ -132,7 +142,7 @@ export function startTeaser(board, caption, movesOut) {
   if (reduced) {
     reset();
     T.walls.forEach((w) => addWall(w, false));
-    say(`${T.walls.length} walls cut every route. The robot is stuck.`);
+    say(`${T.walls.length} walls make the route longer than ${MOVE_LIMIT} moves. The robot runs out of moves.`);
     window.addEventListener('resize', reflow);
     return;
   }

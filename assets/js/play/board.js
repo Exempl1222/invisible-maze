@@ -395,7 +395,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
         if (sim.result === 'lose') {
           cellAt(level.beacon[0], level.beacon[1]).classList.add('reached');
         } else {
-          robot.classList.add('jolt');
+          robot.classList.add('jolt'); // out of moves: the robot stops short of the beacon
         }
       };
       if (instant) {

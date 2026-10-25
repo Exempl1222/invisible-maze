@@ -1,5 +1,5 @@
 // Play page: level select, the game screen, and the glue between taps and the engine.
-import { parseLevel, simulate, stars as scoreStars } from '../../../src/game/index.js';
+import { parseLevel, simulate, cutsAllRoutes, stars as scoreStars } from '../../../src/game/index.js';
 import { createBoard } from './board.js';
 import { loadProgress, recordWin } from './storage.js';
 import { renderSelect } from './select.js';
@@ -152,7 +152,7 @@ function startGame({ kind, index, level, title }) {
   resultEl.innerHTML = '';
   controlsEl.hidden = false;
   goBtn.disabled = false;
-  setStatus('Tap a line between two tiles to place a wall. Block the route, or make it too long.');
+  setStatus('Tap a line between two tiles to place a wall. Make the robot's route longer than its move limit. You must leave it a way through.');
   updateCounters();
 }
 
@@ -194,6 +194,10 @@ function onLine(target) {
     void wallsUsedEl.offsetWidth;
     wallsUsedEl.parentElement.classList.add('refused');
     refused(`All ${plural(level.wallBudget, 'wall')} placed. Tap a wall to take it back.`);
+  } else if (cutsAllRoutes(level, [...board.wallList(), line])) {
+    // The robot must always keep a way to the beacon (rules v3.1): refuse the wall, counters unchanged.
+    board.refuse(target);
+    refused('The robot needs at least one way through.');
   } else {
     board.setWall(line, true);
     const used = board.wallList().length;
@@ -265,9 +269,7 @@ function finish(sim, walls) {
     starsEl.setAttribute('aria-label', `${earned} of 3 stars`);
     starsEl.dataset.stars = String(earned);
     starsEl.innerHTML = starsMarkup(earned);
-    text.textContent = sim.reason === 'blocked'
-      ? 'No route left. The robot cannot reach the beacon.'
-      : `Out of moves. The route is longer than the ${g.level.moveLimit} moves it has.`;
+    text.textContent = `Out of moves. The route is longer than the ${g.level.moveLimit} moves it has.`;
     const par = document.createElement('p');
     par.className = 'par';
     const parStrong = document.createElement('strong');
