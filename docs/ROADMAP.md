@@ -9,8 +9,8 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 | 3 | **Puzzle engine** | Pure JS in `src/game/`: level parser, shortest path with teleporters, `simulate`, exact `solve` (par), `countAnswers`, plus an offline generator script that keeps only good levels. Seeded. Tests first, all green | Builder (Sonnet) | Done 25 Oct 2026 |
 | 4 | **Playable build** | `/play/` runs one full level on a phone, start to win or lose | Builder (Sonnet) + frontend-design | Done 25 Oct 2026 |
 | 5 | **Playtest loop** | A fresh agent plays 20 seeded levels with the maze-playtest skill and reports bugs and dead ends | QA agent (Sonnet, no prior context) | Done 25 Oct 2026: found the cage shortcut, hidden par, unreadable teleporters |
-| 5a | **Rules v3: engine and levels** | Line walls with the guard rule in the engine, generator and a new 30-level pack (7x7 tutorial, no 5x5), 120-day daily batch. Every level brute-force verified | Builder (Sonnet), verified by Opus | In progress |
-| 5b | **Rules v3: game screen** | Tap-to-line walls, par shown upfront, readable teleporters, trapped animation, start marker, all levels open, Daily mode, home-page replay redrawn | Builder (Sonnet) + frontend-design | Next |
+| 5a | **Rules v3: engine and levels** | Line walls with the guard rule in the engine, generator and a new 30-level pack (7x7 tutorial, no 5x5), 120-day daily batch. Every level brute-force verified | Builder (Sonnet), verified by Opus | Done 26 Oct 2026 |
+| 5b | **Rules v3: game screen** | Tap-to-line walls, par shown upfront, readable teleporters, trapped animation, start marker, all levels open, Daily mode, home-page replay redrawn | Builder (Sonnet) + frontend-design | In review |
 | 6 | **Polish and launch** | Daily level, packs of 30, hints, final name, analytics, custom domain, then ads | Mixed | Not started |
 
 ## Why this order

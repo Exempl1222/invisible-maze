@@ -13,9 +13,11 @@ index.html            landing page (hero teaser is a canned replay, not game log
 play/index.html       the game: level select, board, robot replay, results
 assets/css/site.css   site styles; colour tokens on :root
 assets/css/play.css   game page styles (uses the site tokens)
-assets/js/play/       game UI (main, board, select, storage); calls the engine
-assets/levels/        level packs (pack-01.json)
+assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
+assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
+assets/levels/        level packs (pack-01.json) and the daily batch (daily.json)
 assets/js/teaser.js   hero replay (canned, not game logic)
+assets/js/teaser-data.js  the replay's level, route and par walls; tools/teaser.test.js checks them against the engine
 src/game/             puzzle engine, pure JS, no DOM (Phase 3)
 tests/                Playwright browser tests (phone + desktop)
 docs/ROADMAP.md       phases and status
