@@ -3,7 +3,7 @@
 // waits a fixed time: it waits for elements, so animation speed can change without breaking the suite.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { parseLevel, solve, simulate, findPath, buildableLines } from '../src/game/index.js';
+import { parseLevel, solve, simulate, findPath, buildableLines, cutsAllRoutes } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const pack = readJson('../assets/levels/pack-01.json');
@@ -70,7 +70,7 @@ test('level 1: the par answer wins with 3 stars and shows its par', async ({ pag
   await expect(result(page)).toHaveAttribute('data-result', 'win');
   await expect(result(page).getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
   await expect(result(page)).toContainText(`Par ${par}`);
-  await expect(result(page)).toContainText(/No route left|Out of moves/);
+  await expect(result(page)).toContainText('Out of moves');
   await expect(page.getByRole('button', { name: 'Next level' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Replay' })).toBeVisible();
 });
@@ -514,17 +514,81 @@ test('the board is locked while the robot moves', async ({ page }) => {
   await expect(result(page)).toBeVisible();
 });
 
-for (const reason of ['blocked', 'too-far']) {
-  test(`win reason in plain words: ${reason}`, async ({ page }) => {
-    const i = firstIndex((l) => simulate(l, solve(l).answer).reason === reason);
-    expect(i, `a pack level whose par answer wins by ${reason}`).toBeGreaterThanOrEqual(0);
+test('every win shows the out-of-moves reason (all pack levels, par answer)', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const [i, lv] of levels.entries()) {
+    const { answer } = solve(lv);
+    expect(simulate(lv, answer).reason, `${lv.id} engine reason`).toBe('too-far');
     await open(page, num(i));
-    await placeAll(page, solve(levels[i]).answer);
+    await placeAll(page, answer);
     await go(page).click();
-    await expect(result(page)).toHaveAttribute('data-result', 'win');
-    await expect(result(page)).toContainText(reason === 'blocked' ? 'No route left' : 'Out of moves');
-  });
+    await expect(result(page), lv.id).toHaveAttribute('data-result', 'win');
+    await expect(result(page), lv.id).toContainText('Out of moves');
+    await expect(result(page), lv.id).not.toContainText(/No route left|cannot reach/);
+  }
+});
+
+/** Smallest list of buildable lines (at most `max`) that leaves the robot no route, or null. */
+function findCut(lv, max) {
+  const lines = buildableLines(lv);
+  const key = (w) => w.join(',');
+  function dfs(walls, left) {
+    const route = findPath(lv, walls);
+    if (route === null) return walls;
+    if (left === 0) return null;
+    const onRoute = new Set(route.lines);
+    for (const w of lines) {
+      if (!onRoute.has((w[1] * lv.size + w[0]) * 2 + (w[2] === 'D' ? 1 : 0))) continue;
+      if (walls.some((x) => key(x) === key(w))) continue;
+      const got = dfs([...walls, w], left - 1);
+      if (got) return got;
+    }
+    return null;
+  }
+  for (let k = 1; k <= max; k++) {
+    const got = dfs([], k);
+    if (got && got.length === k) return got;
+  }
+  return null;
 }
+
+test('a wall that would cut every route is refused with a message, and the counter does not change', async ({ page }) => {
+  const i = levels.findIndex((l) => {
+    const cut = findCut(l, l.wallBudget);
+    return cut !== null && cut.length >= 2;
+  });
+  expect(i, 'a pack level where a cut fits in the budget').toBeGreaterThanOrEqual(0);
+  const lv = levels[i];
+  const cut = findCut(lv, lv.wallBudget);
+  const last = cut[cut.length - 1];
+  const before = cut.slice(0, -1);
+  expect(cutsAllRoutes(lv, before)).toBe(false);
+  expect(cutsAllRoutes(lv, cut)).toBe(true);
+  await open(page, num(i));
+  await placeAll(page, before);
+  await expect(bars(page)).toHaveCount(before.length);
+  await expect(page.locator('#walls-used')).toHaveText(`${before.length} / ${lv.wallBudget}`);
+
+  const [px, py] = await pointFor(page, last[0], last[1], last[2]);
+  await page.mouse.move(px, py);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(status(page)).toHaveText('The robot needs at least one way through.');
+  await expect(status(page)).toHaveClass(/refused/);
+  await expect(hint(page)).toHaveAttribute('data-state', 'no');
+  await expect(hint(page)).toBeVisible();
+  await expect(bars(page)).toHaveCount(before.length);
+  await expect(page.locator(`#board .wall-bar[data-line="${last.join(',')}"]`)).toHaveCount(0);
+  await expect(page.locator('#walls-used')).toHaveText(`${before.length} / ${lv.wallBudget}`);
+  await expect(go(page)).toBeEnabled();
+
+  // Taking a wall back makes room: the same line is now accepted.
+  await press(page, before[0]);
+  await expect(bars(page)).toHaveCount(before.length - 1);
+  await press(page, last);
+  await expect(page.locator(`#board .wall-bar[data-line="${last.join(',')}"]`)).toBeVisible();
+});
 
 test('Replay clears the walls for a fresh attempt', async ({ page }) => {
   await open(page, 1);
