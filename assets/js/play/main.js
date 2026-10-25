@@ -152,7 +152,7 @@ function startGame({ kind, index, level, title }) {
   resultEl.innerHTML = '';
   controlsEl.hidden = false;
   goBtn.disabled = false;
-  setStatus('Tap a line between two tiles to place a wall. Make the robot's route longer than its move limit. You must leave it a way through.');
+  setStatus("Tap a line between two tiles to place a wall. Make the robot's route longer than its move limit. You must leave it a way through.");
   updateCounters();
 }
 
