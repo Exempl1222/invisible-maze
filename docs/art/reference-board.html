@@ -1,0 +1,593 @@
+<title>Gnome Sweet Gnome</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Nunito:wght@400;600;700&display=swap">
+<style>
+/* Layout: one column storybook sheet. Live garden scene first, then the gnome in four directions, then sprouting walls, portals, tile kit and style rules. Single committed daylight look. */
+:root{
+  --meadow:#e3ecd2;
+  --paper:#f8fbf1;
+  --moss:#2f4220;
+  --bark:#3b2618;
+  --cap:#c94a32;
+  --muted:#5d6e4c;
+  --line:#c9d7b2;
+  --grass:#8cbf5a;
+  --display:"Grandstander","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+body{background:var(--meadow);color:var(--moss);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+header{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cap)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,7vw,54px);line-height:1;margin:4px 0 0;text-wrap:balance}
+.tag{font-family:var(--display);font-weight:600;font-size:18px;color:var(--muted);margin:0}
+h2{font-family:var(--display);font-weight:800;font-size:22px;margin:0;text-wrap:balance}
+.lede{margin:4px 0 0;color:var(--muted);max-width:62ch;font-size:15px}
+section{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px}
+
+.scene{position:relative;width:100%;aspect-ratio:384/256;max-width:100%;border:3px solid var(--bark);border-radius:14px;overflow:hidden;background:var(--grass)}
+#board,#board>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.walker,.walker2{position:absolute;width:14%}
+.walker{bottom:51.5%;left:-2%;animation:trek 8s linear infinite}
+.walker2{left:51.3%;bottom:79%;opacity:0}
+.walker svg,.walker2 svg{width:100%;height:auto;display:block}
+@keyframes trek{0%{left:-2%;opacity:0}6%{opacity:1}86%{opacity:1}94%{left:34%;opacity:0}100%{left:34%;opacity:0}}
+.scenebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.scenebar p{margin:0;font-size:13px;color:var(--muted);max-width:52ch}
+button{font:700 14px var(--body);color:#fff;background:var(--moss);border:2px solid var(--bark);border-radius:999px;padding:8px 16px;cursor:pointer}
+button:hover{background:#3d5629}
+button:focus-visible{outline:3px solid var(--cap);outline-offset:2px}
+
+.dirs{display:flex;flex-direction:column;gap:10px}
+.dirrow{padding:10px 12px 8px;display:flex;flex-direction:column;gap:4px}
+.dirlab{font-family:var(--display);font-weight:800;font-size:16px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.dirlab small{font-family:var(--body);font-weight:600;font-size:12px;color:var(--muted)}
+.cells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted);min-width:0}
+.cell svg{width:100%;max-width:140px;height:auto;display:block}
+
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.kit{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.art{aspect-ratio:1;max-width:100%;border-radius:8px;overflow:hidden;background:var(--grass);display:flex;align-items:center;justify-content:center}
+.art svg{display:block}
+.art .sq{width:100%;height:100%}
+.art .wide{width:92%;height:auto}
+.art .tall{height:88%;width:auto}
+.tile b{font-family:var(--display);font-size:16px;line-height:1.2}
+.tile span{font-size:13px;color:var(--muted);line-height:1.35}
+.pick{font-size:14px;margin:0;padding:12px 14px;max-width:none}
+
+.rules{padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:620px){.rules{grid-template-columns:minmax(0,1fr)}}
+.rules ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.swatches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.sw{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sw i{display:block;height:30px;border-radius:6px;border:2px solid var(--bark)}
+
+/* ---------- gnome rig ---------- */
+.gnome *{transform-box:view-box}
+.gnome .rig{transform-origin:60px 131px}
+.gnome .head{transform-origin:60px 84px}
+.gnome .eyes{transform-origin:60px 61px}
+.gnome .brows{transform-origin:60px 54px}
+.gnome .arm-l{transform-origin:46px 88px}
+.gnome .arm-r{transform-origin:74px 88px}
+.gnome .boot-l{transform-origin:46px 131px}
+.gnome .boot-r{transform-origin:74px 131px}
+.side .arm-l{transform-origin:56px 86px}
+.side .arm-r{transform-origin:62px 86px}
+.side .eyes{transform-origin:71px 61px}
+.side .brows{transform-origin:71px 54px}
+.side .boot-l,.side .boot-r{transform-origin:60px 131px}
+
+.idle .rig{animation:breathe 2.4s ease-in-out infinite}
+.idle .head{animation:ponder 4.8s ease-in-out infinite}
+.idle .eyes,.walk .eyes{animation:blink 4.2s infinite}
+@keyframes breathe{50%{transform:translateY(-1.2px) scale(1,1.015)}}
+@keyframes ponder{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+
+.walk .rig{animation:bob .6s ease-in-out infinite}
+.walk .boot-l{animation:stepA .6s ease-in-out infinite}
+.walk .boot-r{animation:stepB .6s ease-in-out infinite}
+.walk .arm-l{animation:swing .6s ease-in-out infinite}
+.walk .arm-r{animation:swing .6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2.5deg)}25%,75%{transform:translateY(-3px) rotate(0)}50%{transform:translateY(0) rotate(2.5deg)}}
+@keyframes stepA{0%,50%,100%{transform:translateY(0)}25%{transform:translateY(-5px) rotate(-8deg)}}
+@keyframes stepB{0%,50%,100%{transform:translateY(0)}75%{transform:translateY(-5px) rotate(8deg)}}
+@keyframes swing{0%,100%{transform:rotate(18deg)}50%{transform:rotate(-16deg)}}
+
+.side.walk .rig{animation:bobS .6s ease-in-out infinite}
+.side.walk .boot-l{animation:stride .6s ease-in-out infinite}
+.side.walk .boot-r{animation:stride .6s ease-in-out infinite;animation-delay:-.3s}
+.side.walk .arm-l{animation:swingS .6s ease-in-out infinite;animation-delay:-.3s}
+.side.walk .arm-r{animation:swingS .6s ease-in-out infinite}
+@keyframes bobS{0%,50%,100%{transform:translateY(0) rotate(3deg)}25%,75%{transform:translateY(-3px) rotate(4deg)}}
+@keyframes stride{0%,100%{transform:translateX(7px)}25%{transform:translate(0,-4px)}50%{transform:translateX(-7px)}75%{transform:translate(0,0)}}
+@keyframes swingS{0%,100%{transform:rotate(-26deg)}50%{transform:rotate(24deg)}}
+
+.shrug .arm-l{animation:shrugL 2.2s ease-in-out infinite}
+.shrug .arm-r{animation:shrugR 2.2s ease-in-out infinite}
+.shrug .head{animation:sink 2.2s ease-in-out infinite}
+.shrug .brows{animation:brows 2.2s ease-in-out infinite}
+.side.shrug .arm-l,.side.shrug .arm-r{animation:shrugS 2.2s ease-in-out infinite}
+@keyframes shrugL{0%,15%,85%,100%{transform:rotate(0)}35%,65%{transform:rotate(64deg)}}
+@keyframes shrugR{0%,15%,85%,100%{transform:rotate(0)}35%,65%{transform:rotate(-64deg)}}
+@keyframes shrugS{0%,15%,85%,100%{transform:rotate(0)}35%,65%{transform:rotate(-78deg)}}
+@keyframes sink{0%,15%,85%,100%{transform:translateY(0) rotate(0)}35%,65%{transform:translateY(3px) rotate(-7deg)}}
+@keyframes brows{0%,15%,85%,100%{transform:translateY(0)}35%,65%{transform:translateY(-3px)}}
+
+/* ---------- sprouting walls ---------- */
+.wall{--d:0s;--w:0s}
+.wall .pc{transform-box:fill-box;transform-origin:50% 100%}
+.wall .rail{transform-box:fill-box;transform-origin:0% 50%}
+.wall .burst{transform-box:fill-box}
+.loop .soil{animation:soilL 3.6s ease-out infinite both}
+.loop .stem{animation:stemL 3.6s ease-out infinite both;animation-delay:var(--d)}
+.loop .clump{animation:popL 3.6s ease-out infinite both;animation-delay:var(--d)}
+.loop .flower{animation:flowerL 3.6s ease-out infinite both;animation-delay:var(--d)}
+.loop .burst{animation:burstL 3.6s ease-out infinite both}
+.loop .stake{animation:riseL 3.6s ease-out infinite both;animation-delay:var(--d)}
+.loop .rail{animation:railL 3.6s ease-out infinite both;animation-delay:var(--d)}
+@keyframes soilL{0%{transform:scaleX(0)}6%,86%{transform:scaleX(1)}96%,100%{transform:scaleX(0)}}
+@keyframes stemL{0%,4%{transform:scaleY(0)}14%,84%{transform:scaleY(1)}94%,100%{transform:scaleY(0)}}
+@keyframes popL{0%,8%{transform:scale(0)}20%{transform:scale(1.18)}27%,82%{transform:scale(1)}92%,100%{transform:scale(0)}}
+@keyframes flowerL{0%,26%{transform:scale(0)}33%{transform:scale(1.35)}39%,80%{transform:scale(1)}88%,100%{transform:scale(0)}}
+@keyframes burstL{0%,2%{transform:translate(0,0);opacity:0}5%{opacity:1}18%,100%{transform:translate(var(--dx),-10px);opacity:0}}
+@keyframes riseL{0%,6%{transform:translateY(34px)}16%{transform:translateY(-3px)}22%,82%{transform:translateY(0)}93%,100%{transform:translateY(34px)}}
+@keyframes railL{0%,24%{transform:scaleX(0)}34%,80%{transform:scaleX(1)}88%,100%{transform:scaleX(0)}}
+
+.once .soil{animation:grow-x .3s ease-out both;animation-delay:var(--w)}
+.once .stem{animation:grow-y .35s ease-out both;animation-delay:calc(var(--w) + .1s + var(--d))}
+.once .clump{animation:pop .45s ease-out both;animation-delay:calc(var(--w) + .25s + var(--d))}
+.once .flower{animation:pop .3s ease-out both;animation-delay:calc(var(--w) + .75s + var(--d))}
+.once .burst{animation:burst .5s ease-out both;animation-delay:var(--w)}
+@keyframes grow-x{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes grow-y{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes pop{0%{transform:scale(0)}65%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes burst{0%{transform:translate(0,0);opacity:1}100%{transform:translate(var(--dx),-10px);opacity:0}}
+.wall .railv{transform-box:fill-box;transform-origin:50% 0%}
+.loop .post{animation:postL 3.6s ease-out infinite both;animation-delay:var(--d)}
+.loop .railv{animation:railVL 3.6s ease-out infinite both;animation-delay:var(--d)}
+@keyframes postL{0%,6%{transform:scaleY(0)}16%{transform:scaleY(1.15)}22%,82%{transform:scaleY(1)}93%,100%{transform:scaleY(0)}}
+@keyframes railVL{0%,24%{transform:scaleY(0)}34%,80%{transform:scaleY(1)}88%,100%{transform:scaleY(0)}}
+.once .stake{animation:riseO .45s ease-out both;animation-delay:calc(var(--w) + var(--d))}
+.once .rail{animation:grow-x .3s ease-out both;animation-delay:calc(var(--w) + .45s + var(--d))}
+.once .post{animation:postO .4s ease-out both;animation-delay:calc(var(--w) + var(--d))}
+.once .railv{animation:grow-y .3s ease-out both;animation-delay:calc(var(--w) + .5s + var(--d))}
+@keyframes riseO{0%{transform:translateY(34px)}70%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+@keyframes postO{0%{transform:scaleY(0)}65%{transform:scaleY(1.15)}100%{transform:scaleY(1)}}
+
+
+/* ---------- hollow stumps ---------- */
+.stump *{transform-box:view-box}
+.stump .swirl{transform-origin:0 0;animation:spin 3.2s linear infinite}
+.stump .rune{animation:runeglow 2.6s ease-in-out infinite;filter:drop-shadow(0 0 1.6px currentColor)}
+.stump .aura{transform-box:fill-box;transform-origin:center;animation:aura 2.6s ease-in-out infinite}
+.stump .beam{animation:beam 2.6s ease-in-out infinite}
+.stump .shroom{filter:drop-shadow(0 0 2.5px currentColor)}
+.stump .mote{transform-box:fill-box;animation:mote 2.8s ease-out infinite both;animation-delay:var(--d)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes runeglow{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes aura{0%,100%{opacity:.18;transform:scale(.92)}50%{opacity:.4;transform:scale(1.05)}}
+@keyframes beam{0%,100%{opacity:.35}50%{opacity:.8}}
+@keyframes mote{0%{transform:translate(0,0);opacity:0}20%{opacity:1}100%{transform:translate(var(--mx),-22px);opacity:0}}
+
+/* ---------- teleport demo: 6s loop ---------- */
+.tpcard{padding:10px;display:flex;flex-direction:column;gap:8px}
+.tpcard svg{width:100%;height:auto;display:block;border-radius:8px}
+.tpcard span{font-size:13px;color:var(--muted)}
+.tp .gw{transform-box:view-box;transform-origin:0 0}
+.tp .aout,.tp .ain,.tp .bin{opacity:0}
+.tp .bout{transform:translate(184px,88px)}
+.tp .aout{animation:aOut 6s ease-in-out infinite both}
+.tp .ain{animation:aIn 6s ease-in-out infinite both}
+.tp .bin{animation:bIn 6s ease-in-out infinite both}
+.tp .bout{animation:bOut 6s ease-in-out infinite both}
+.tp .flash{transform-box:fill-box;transform-origin:center}
+.tp .fa{animation:flashA 6s ease-out infinite both}
+.tp .fb{animation:flashB 6s ease-out infinite both}
+@keyframes aOut{0%{transform:translate(10px,88px);opacity:0}4%{transform:translate(10px,88px);opacity:1}
+  9%{transform:translate(10px,88px) scale(1.12,.86)}12%{transform:translate(16px,82px) scale(.92,1.1)}
+  17%{transform:translate(34px,44px) scale(1,1)}21.9%{transform:translate(50px,56px) scale(1,1);opacity:1}
+  22%,100%{transform:translate(50px,56px);opacity:0}}
+@keyframes aIn{0%,21.9%{transform:translate(50px,56px);opacity:0}22%{transform:translate(50px,56px) scale(1,1);opacity:1}
+  25%{transform:translate(50px,57px) scale(1.12,.86);opacity:1}28%{transform:translate(50px,51px) scale(.94,1.08);opacity:1}
+  35.9%{transform:translate(50px,98px) scale(.75,1);opacity:1}36%,100%{transform:translate(50px,98px);opacity:0}}
+@keyframes bIn{0%,41.9%{transform:translate(150px,98px) scale(.75,1);opacity:0}42%{transform:translate(150px,98px) scale(.75,1);opacity:1}
+  48%{transform:translate(150px,48px) scale(.94,1.1);opacity:1}51.9%{transform:translate(150px,56px) scale(1,1);opacity:1}
+  52%,100%{transform:translate(150px,56px);opacity:0}}
+@keyframes bOut{0%,51.9%{transform:translate(150px,56px);opacity:0}52%{transform:translate(150px,56px) scale(1,1);opacity:1}
+  55%{transform:translate(150px,57px) scale(1.1,.88)}60%{transform:translate(166px,40px) scale(1,1)}
+  65%{transform:translate(184px,88px) scale(1,1)}67%{transform:translate(184px,89px) scale(1.12,.86)}
+  71%{transform:translate(184px,88px) scale(1,1)}92%{transform:translate(184px,88px);opacity:1}97%,100%{transform:translate(184px,88px);opacity:0}}
+@keyframes flashA{0%,32%{transform:scale(.4);opacity:0}35%{opacity:.95}42%,100%{transform:scale(2.4);opacity:0}}
+@keyframes flashB{0%,37%{transform:scale(.4);opacity:0}41%{opacity:.95}48%,100%{transform:scale(2.4);opacity:0}}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.walker{left:20%}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Art direction v3</div>
+    <h1>Gnome Sweet Gnome</h1>
+    <p class="tag">a fence-building puzzle</p>
+  </header>
+
+  <section>
+    <div>
+      <h2>The garden, all together</h2>
+      <p class="lede">One gnome crosses the bridge facing right. The other walks down, hits a freshly built wall and shrugs.</p>
+    </div>
+    <div class="scene" id="scene">
+      <div id="board"></div>
+      <div class="walker" id="w1"></div>
+      <div class="walker2" id="w2"></div>
+    </div>
+    <div class="scenebar">
+      <p>Walls build in the order they were placed, so a burst of taps reads as a row of fences going up.</p>
+      <button type="button" id="replay">Build walls again</button>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Four directions, three moves</h2>
+      <p class="lede">Twelve states in total. Left is the right-facing art flipped, which is standard for sprite sets and keeps both sides identical.</p>
+    </div>
+    <div class="dirs" id="dirs"></div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Wooden walls</h2>
+      <p class="lede">Each one loops here so you can watch the full build. In the game it plays once, the moment the player places a wall.</p>
+    </div>
+    <div class="grid3" id="walls"></div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Hollow stump portals</h2>
+      <p class="lede">The gnome hops up, drops into the hollow, and pops out of the twin stump in a flash of light. Each pair shares a glow colour so players can match them at a glance.</p>
+    </div>
+    <div class="card tpcard"><div id="tpdemo"></div><span>Teleport, 6 second loop: hop in, flash, flash, pop out, hop down.</span></div>
+    <div class="grid2" id="portals"></div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Tile kit</h2>
+      <p class="lede">The fixed pieces of each level, drawn on a 64 unit grid.</p>
+    </div>
+    <div class="kit" id="kit"></div>
+  </section>
+
+  <section>
+    <h2>Style rules for the builder</h2>
+    <div class="card rules">
+      <ul>
+        <li>Dark brown outline on every shape, never black. Thicker on the gnome than on tiles.</li>
+        <li>Two tones per surface: base colour plus one shade on the lower right. One small highlight, top left.</li>
+        <li>Rounded, slightly lumpy shapes. Nothing perfectly geometric.</li>
+        <li>Strong red is kept for the hat and the goal. Glow colours only ever mean magic.</li>
+        <li>Facing left is always the right-facing sprite flipped.</li>
+      </ul>
+      <div class="swatches" id="sw"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const INK='#3b2618';
+let cid=0;
+const O=(w)=>`stroke="${INK}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
+function part(d,fill,shade,shadeFill,w=2.2){
+  const id='c'+(++cid);
+  return `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${fill}"/>`+
+    (shade?`<g clip-path="url(#${id})"><path d="${shade}" fill="${shadeFill}"/></g>`:'')+
+    `<path d="${d}" fill="none" ${O(w)}/>`;
+}
+const SKIN='#f4c7a4',SKIN2='#e2a684',GREEN='#4f7a3a',GREEN2='#3c5f2b',WHITE='#f6f3ed',WHITE2='#dcd5c9',BOOT='#6b4226',BOOT2='#55331d';
+const HAT='#c94a32',HAT2='#a8382a',HAT3='#8f2e22';
+
+/* ---------- gnome parts ---------- */
+function bodyFront(back){
+  return `
+    <g class="boot-l">${part('M36 131 C34 124 38 119 46 119 C52 119 55 123 55 131 Z',BOOT,'M46 126 H60 V135 H40 Z',BOOT2)}</g>
+    <g class="boot-r">${part('M65 131 C65 123 68 119 74 119 C82 119 86 124 84 131 Z',BOOT,'M74 126 H90 V135 H70 Z',BOOT2)}</g>
+    ${part('M44 112 L76 112 L76 122 L66 122 L64 117 L56 117 L54 122 L44 122 Z','#7a5230','M64 110 H80 V125 H64 Z','#644225')}
+    ${part('M42 82 C35 94 33 108 35 118 C46 121 74 121 85 118 C87 108 85 94 78 82 Z',GREEN,'M70 80 C80 92 82 106 80 122 L92 122 L92 80 Z',GREEN2)}
+    ${part('M35 104 C50 107 70 107 85 104 L85 111 C70 114 50 114 35 111 Z','#5a3a22')}
+    ${back
+      ? part('M39 108 H50 V116 C50 118 49 119 47 119 H42 C40 119 39 118 39 116 Z','#8d5d38','M45 106 H53 V121 H45 Z','#74492a',1.8)
+      : part('M70 108 H81 V116 C81 118 80 119 78 119 H73 C71 119 70 118 70 116 Z','#8d5d38','M76 106 H84 V121 H76 Z','#74492a',1.8)+
+        `<rect x="55" y="103" width="10" height="10" rx="1.5" fill="#e9b949" ${O(1.8)}/><rect x="58" y="106" width="4" height="4" fill="#5a3a22"/>`}
+    ${back?`<path d="M60 84 V104" stroke="${GREEN2}" stroke-width="1.6" stroke-linecap="round"/>`:''}
+    <g class="arm-l">
+      ${part('M46 84 C38 88 31 97 30 105 C33 108 38 108 40 106 C41 99 45 94 49 92 Z',GREEN,'M28 100 H44 V112 H28 Z',GREEN2)}
+      ${part('M29 107 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0',SKIN,'M35 108 a6 6 0 0 0 8 4 V116 H30 Z',SKIN2)}
+    </g>
+    <g class="arm-r">
+      ${part('M74 84 C82 88 89 97 90 105 C87 108 82 108 80 106 C79 99 75 94 71 92 Z',GREEN,'M80 96 H94 V112 H80 Z',GREEN2)}
+      ${part('M79 107 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0',SKIN,'M85 108 a6 6 0 0 0 8 4 V116 H80 Z',SKIN2)}
+    </g>`;
+}
+const ears=`${part('M43 62 C35 60 29 54 29 50 C35 50 41 54 45 57 Z',SKIN)}
+  <path d="M38 56 C35 55 33 53 33 52 C36 52 39 54 41 56 Z" fill="#e39b84"/>
+  ${part('M77 62 C85 60 91 54 91 50 C85 50 79 54 75 57 Z',SKIN,'M80 52 L95 48 L95 64 L76 62 Z',SKIN2)}
+  <path d="M82 56 C85 55 87 53 87 52 C84 52 81 54 79 56 Z" fill="#d68c75"/>`;
+function headFront(){
+  return `<g class="head">${ears}
+    ${part('M41 64 a19 18 0 1 0 38 0 a19 18 0 1 0 -38 0',SKIN,'M70 44 C78 54 78 72 66 86 L90 86 L90 44 Z',SKIN2)}
+    <circle cx="47" cy="69" r="4.5" fill="#ee9a86" opacity=".55"/><circle cx="73" cy="69" r="4.5" fill="#ee9a86" opacity=".55"/>
+    <g class="eyes">
+      <ellipse cx="52" cy="61" rx="3.6" ry="4.2" fill="#fff" ${O(1.5)}/><circle cx="52.7" cy="61.8" r="2.2" fill="#2b1a10"/><circle cx="53.5" cy="60.8" r=".8" fill="#fff"/>
+      <ellipse cx="68" cy="61" rx="3.6" ry="4.2" fill="#fff" ${O(1.5)}/><circle cx="67.3" cy="61.8" r="2.2" fill="#2b1a10"/><circle cx="68.1" cy="60.8" r=".8" fill="#fff"/>
+    </g>
+    <g class="brows">
+      ${part('M44 55 C47 50 54 49 58 53 C54 53 49 54 45 57 Z',WHITE,null,null,1.6)}
+      ${part('M76 55 C73 50 66 49 62 53 C66 53 71 54 75 57 Z',WHITE,'M68 48 H80 V58 H68 Z',WHITE2,1.6)}
+    </g>
+    ${part('M40 66 C37 82 42 98 50 106 C53 103 56 107 60 111 C64 107 67 103 70 106 C78 98 83 82 80 66 C75 75 67 79 60 79 C53 79 45 75 40 66 Z',WHITE,'M66 76 C74 74 80 68 84 64 L84 112 L64 112 C70 100 70 88 66 76 Z',WHITE2)}
+    <path d="M50 85 C51 92 53 98 55 102 M60 84 V104 M70 85 C69 92 67 98 65 102 M45 80 C45 86 47 92 49 96" fill="none" stroke="#cbc2b3" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M55 79 Q60 85 65 79 Z" fill="#7a2e22" ${O(1.5)}/>
+    ${part('M60 73 C54 70 45 71 42 78 C48 79 54 78 60 76 C66 78 72 79 78 78 C75 71 66 70 60 73 Z',WHITE,'M40 76 H80 V82 H40 Z',WHITE2,1.8)}
+    ${part('M53 69 a7 6.5 0 1 0 14 0 a7 6.5 0 1 0 -14 0','#e8917a','M62 70 a7 6.5 0 0 0 7 -2 V80 H58 Z','#d27762',1.8)}
+    <ellipse cx="57.5" cy="66.5" rx="2" ry="1.4" fill="#f6c0ae"/>
+    ${part('M38 54 C36 34 44 18 58 12 C70 7 84 10 91 20 C95 27 94 36 88 36 C84 36 82 31 79 29 C82 37 83 46 82 54 C68 50 52 50 38 54 Z',HAT,'M66 8 C78 12 86 24 84 56 L100 56 L100 0 L66 0 Z',HAT2)}
+    <path d="M50 46 C50 36 54 26 60 19 M67 47 C69 39 72 32 77 27" fill="none" stroke="${HAT2}" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M45 42 C45 33 49 25 55 19" fill="none" stroke="#e57a60" stroke-width="2.4" stroke-linecap="round"/>
+    ${part('M36 52 C52 47 68 47 84 52 L84 59 C68 54 52 54 36 59 Z',HAT2,'M68 46 H90 V62 H68 Z',HAT3,2)}
+  </g>`;
+}
+function headBack(){
+  return `<g class="head">
+    ${part('M40 70 C38 80 40 88 45 93 C47 86 47 78 45 70 Z',WHITE,null,null,1.8)}
+    ${part('M80 70 C82 80 80 88 75 93 C73 86 73 78 75 70 Z',WHITE,'M74 70 H86 V96 H74 Z',WHITE2,1.8)}
+    ${ears}
+    ${part('M41 64 a19 18 0 1 0 38 0 a19 18 0 1 0 -38 0',WHITE,'M68 44 C78 54 78 72 66 86 L90 86 L90 44 Z',WHITE2)}
+    <path d="M50 70 C51 74 52 78 54 80 M60 70 V81 M70 70 C69 74 68 78 66 80" fill="none" stroke="#cbc2b3" stroke-width="1.4" stroke-linecap="round"/>
+    ${part('M82 54 C84 34 76 18 62 12 C50 7 36 10 29 20 C25 27 26 36 32 36 C36 36 38 31 41 29 C38 37 37 46 38 54 C52 50 68 50 82 54 Z',HAT,'M66 10 C78 16 84 30 84 56 L100 56 L100 0 L66 0 Z',HAT2)}
+    <path d="M70 46 C70 36 66 26 60 19 M53 47 C51 39 48 32 43 27" fill="none" stroke="${HAT2}" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M46 42 C47 33 50 25 54 20" fill="none" stroke="#e57a60" stroke-width="2.4" stroke-linecap="round"/>
+    ${part('M36 52 C52 47 68 47 84 52 L84 59 C68 54 52 54 36 59 Z',HAT2,'M68 46 H90 V62 H68 Z',HAT3,2)}
+  </g>`;
+}
+function sideAll(){
+  const boot='M50 132 C49 125 52 121 58 121 C64 121 69 125 73 129 C74 131 73 132 71 132 Z';
+  return `
+    <g class="boot-l"><g transform="translate(-8 -1)">${part(boot,BOOT2)}</g></g>
+    <g class="arm-l">
+      ${part('M53 84 C51 92 51 100 53 106 C56 108 59 108 60 106 C60 98 60 92 59 86 Z',GREEN2)}
+      ${part('M51 108 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0',SKIN2)}
+    </g>
+    <g class="boot-r">${part(boot,BOOT,'M62 126 H78 V134 H62 Z',BOOT2)}</g>
+    ${part('M50 112 H70 V123 H50 Z','#7a5230','M62 110 H72 V125 H62 Z','#644225')}
+    ${part('M47 82 C41 94 40 108 42 118 C52 121 68 121 78 118 C80 108 78 94 73 82 Z',GREEN,'M66 80 C74 92 76 106 74 122 L90 122 L90 80 Z',GREEN2)}
+    ${part('M41 104 C54 107 66 107 79 104 L79 111 C66 114 54 114 41 111 Z','#5a3a22')}
+    ${part('M37 107 H47 V115 C47 117 46 118 44 118 H40 C38 118 37 117 37 115 Z','#8d5d38','M43 105 H50 V120 H43 Z','#74492a',1.8)}
+    <rect x="70" y="103.5" width="7" height="9" rx="1.2" fill="#e9b949" ${O(1.6)}/>
+    <g class="arm-r">
+      ${part('M58 84 C56 92 56 100 58 106 C61 108 65 108 66 106 C66 98 66 92 65 86 Z',GREEN,'M62 80 H70 V110 H62 Z',GREEN2)}
+      ${part('M56 109 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0',SKIN,'M62 110 a5.5 5.5 0 0 0 6 3 V118 H56 Z',SKIN2)}
+    </g>
+    <g class="head">
+      ${part('M47 60 C41 57 36 51 37 47 C42 49 47 53 50 57 Z',SKIN)}
+      <path d="M43 55 C40 53 39 51 39 50 C42 51 44 53 46 55 Z" fill="#e39b84"/>
+      ${part('M44 64 a18 18 0 1 0 36 0 a18 18 0 1 0 -36 0',SKIN,'M70 46 C80 56 80 72 68 84 L90 84 L90 46 Z',SKIN2)}
+      <circle cx="68" cy="70" r="4" fill="#ee9a86" opacity=".55"/>
+      <g class="eyes"><ellipse cx="71" cy="61" rx="3" ry="4" fill="#fff" ${O(1.5)}/><circle cx="72.4" cy="61.8" r="2" fill="#2b1a10"/><circle cx="73" cy="60.8" r=".7" fill="#fff"/></g>
+      <g class="brows">${part('M64 55 C67 50 74 50 78 54 C74 54 69 55 65 57 Z',WHITE,null,null,1.6)}</g>
+      ${part('M50 68 C47 82 53 98 64 106 C68 103 72 105 75 101 C81 91 82 80 80 72 C74 78 64 78 56 74 Z',WHITE,'M70 76 C78 74 82 70 84 68 L84 110 L66 110 C72 98 72 86 70 76 Z',WHITE2)}
+      <path d="M58 84 C59 92 61 98 64 102 M67 84 C67 92 68 97 70 101 M53 78 C53 84 55 90 57 94" fill="none" stroke="#cbc2b3" stroke-width="1.4" stroke-linecap="round"/>
+      ${part('M81 72 C75 70 67 72 64 79 C70 80 77 79 83 78 C86 77 85 73 81 72 Z',WHITE,'M60 77 H90 V84 H60 Z',WHITE2,1.8)}
+      ${part('M75 68 a7 6.5 0 1 0 14 0 a7 6.5 0 1 0 -14 0','#e8917a','M83 70 a7 6.5 0 0 0 7 -2 V80 H78 Z','#d27762',1.8)}
+      <ellipse cx="79.5" cy="65.5" rx="2" ry="1.4" fill="#f6c0ae"/>
+      ${part('M42 56 C41 44 42 34 44 26 C40 30 36 34 32 34 C27 32 28 24 34 18 C40 12 50 9 58 10 C70 12 78 26 82 52 C70 48 54 50 42 56 Z',HAT,'M62 8 C74 14 80 28 84 56 L100 56 L100 0 L62 0 Z',HAT2)}
+      <path d="M53 48 C53 38 55 28 58 20 M68 48 C68 38 66 28 63 20" fill="none" stroke="${HAT2}" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M48 44 C47 36 48 28 51 21" fill="none" stroke="#e57a60" stroke-width="2.4" stroke-linecap="round"/>
+      ${part('M41 52 C54 46 70 44 83 48 L84 56 C70 52 56 53 42 59 Z',HAT2,'M70 40 H90 V62 H70 Z',HAT3,2)}
+    </g>`;
+}
+function gnome(mode,dir='front'){
+  const side=dir==='left'||dir==='right';
+  const inner=side?sideAll():bodyFront(dir==='back')+(dir==='back'?headBack():headFront());
+  const body=`<ellipse cx="60" cy="131" rx="30" ry="5" fill="#2d4a1f" opacity=".22"/><g class="rig">${inner}</g>`;
+  return `<svg class="gnome ${mode} ${side?'side':dir}" viewBox="0 0 120 140" role="img" aria-label="Gnome ${mode}, facing ${dir}">`+
+    (dir==='left'?`<g transform="translate(120 0) scale(-1 1)">${body}</g>`:body)+`</svg>`;
+}
+
+/* ---------- tiles ---------- */
+const T=1.8;
+const grass=()=>`<rect width="64" height="64" fill="#8cbf5a"/>
+  <path d="M9 18 l2 -5 l2 5 M44 12 l2 -5 l2 5 M14 48 l2 -5 l2 5 M48 44 l2 -5 l2 5 M30 30 l2 -4 l2 4" fill="none" stroke="#6e9e44" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="24" cy="54" r="1.6" fill="#f6f3ed"/><circle cx="54" cy="24" r="1.6" fill="#f2d35b"/>`;
+const rock=()=>part('M10 50 C8 36 18 22 32 20 C46 18 56 30 56 44 C56 52 48 56 32 56 C18 56 12 54 10 50 Z','#9aa3a6','M38 26 C50 32 52 46 44 56 L60 60 L60 20 Z','#7c8588',T)+
+  `<path d="M18 34 C20 28 26 24 31 24" fill="none" stroke="#c4cbcd" stroke-width="2.4" stroke-linecap="round"/>
+   <path d="M14 48 C16 44 22 44 26 46 C24 50 18 51 14 48 Z" fill="#6f9a3f"/><path d="M34 40 L40 36 M36 46 L42 44" stroke="#6b7477" stroke-width="1.4" stroke-linecap="round"/>`;
+const bush=()=>part('M8 50 C4 42 8 32 18 32 C18 22 30 16 38 22 C46 18 58 26 54 36 C62 40 60 54 50 54 L14 54 C11 54 9 52 8 50 Z','#3f7a34','M36 36 C48 38 52 46 48 56 L64 58 L64 30 Z','#2f6128',T)+
+  `<path d="M16 38 C18 34 22 32 26 33 M30 25 C33 22 37 22 40 24" fill="none" stroke="#6aa04c" stroke-width="2.2" stroke-linecap="round"/>
+   <circle cx="24" cy="44" r="2.4" fill="#7a5bd0" stroke="${INK}" stroke-width="1"/><circle cx="42" cy="42" r="2.4" fill="#7a5bd0" stroke="${INK}" stroke-width="1"/><circle cx="34" cy="49" r="2.4" fill="#7a5bd0" stroke="${INK}" stroke-width="1"/><circle cx="30" cy="38" r="2.4" fill="#7a5bd0" stroke="${INK}" stroke-width="1"/>`;
+const water=()=>`<path d="M14 0 C10 16 16 32 12 48 C10 56 12 62 13 64 L51 64 C52 56 54 48 52 40 C50 26 54 12 50 0 Z" fill="#5aa9d6"/>
+  <path d="M38 0 C40 12 36 26 40 40 C42 50 40 58 42 64 L51 64 C52 56 54 48 52 40 C50 26 54 12 50 0 Z" fill="#4892c0"/>
+  <path d="M14 0 C10 16 16 32 12 48 C10 56 12 62 13 64 M51 64 C52 56 54 48 52 40 C50 26 54 12 50 0" fill="none" ${O(T)}/>
+  <path d="M22 12 q4 -3 8 0 M28 30 q4 -3 8 0 M20 46 q4 -3 8 0 M34 54 q3 -2 6 0" fill="none" stroke="#bfe3f4" stroke-width="2" stroke-linecap="round"/>`;
+const river=()=>grass()+water();
+const bridge=()=>grass()+water()+
+  part('M4 22 H60 C63 22 63 31 60 31 H4 C1 31 1 22 4 22 Z','#a0703f','M4 28 H64 V34 H0 Z','#86592f',T)+
+  part('M4 33 H60 C63 33 63 42 60 42 H4 C1 42 1 33 4 33 Z','#a0703f','M4 39 H64 V45 H0 Z','#86592f',T)+
+  `<ellipse cx="4.5" cy="26.5" rx="2.6" ry="4" fill="#d9a066" ${O(1.4)}/><ellipse cx="4.5" cy="37.5" rx="2.6" ry="4" fill="#d9a066" ${O(1.4)}/>
+   <path d="M12 26 H40 M20 37 H52" stroke="#86592f" stroke-width="1.4" stroke-linecap="round"/>
+   <path d="M30 20 V44" stroke="#5a3a22" stroke-width="2.4" stroke-linecap="round"/>`;
+const house=()=>part('M24 34 H40 V56 H24 Z','#f2e6cf','M33 34 H44 V58 H33 Z','#dccbab',T)+
+  `<path d="M28 56 V47 a4 4 0 0 1 8 0 V56 Z" fill="#8d5d38" ${O(1.6)}/><circle cx="34" cy="51.5" r=".9" fill="#e9b949"/>`+
+  part('M6 36 C6 18 20 8 32 8 C44 8 58 18 58 36 C50 39 14 39 6 36 Z','#c94a32','M40 8 C52 14 56 24 56 40 L64 40 L64 0 Z','#a8382a',T)+
+  `<circle cx="20" cy="22" r="3.2" fill="#f6f3ed"/><circle cx="34" cy="16" r="2.4" fill="#f6f3ed"/><circle cx="44" cy="26" r="3.6" fill="#f6f3ed"/><circle cx="30" cy="29" r="2" fill="#f6f3ed"/>
+   <circle cx="32" cy="42" r="2.6" fill="#f2d35b" ${O(1.2)}/>`;
+
+/* ---------- hollow stump portal ---------- */
+function stump(glow){
+  const g='sg'+(++cid), b='sb'+(++cid), hc='sh'+(++cid);
+  const spiral='M0 0 c2 -1 4 1 3 3 c-1 3 -5 3 -7 1 c-3 -3 -1 -8 3 -9 c4 -1 8 2 8 6';
+  const motes=[[28,24,-3,0],[34,22,3,.7],[31,25,-1,1.4],[37,24,4,2.1]].map(([x,y,mx,d])=>
+    `<circle class="mote" cx="${x}" cy="${y}" r="1.2" fill="${glow}" style="--mx:${mx}px;--d:${d}s"/>`).join('');
+  return `<g class="stump"><defs>
+    <radialGradient id="${g}" cx="50%" cy="55%" r="60%"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="${glow}"/><stop offset="1" stop-color="#140d0a"/></radialGradient>
+    <linearGradient id="${b}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${glow}" stop-opacity=".75"/><stop offset="1" stop-color="${glow}" stop-opacity="0"/></linearGradient>
+    <clipPath id="${hc}"><ellipse cx="32" cy="26" rx="12" ry="4.4"/></clipPath></defs>
+    <ellipse class="aura" cx="32" cy="57" rx="29" ry="6.5" fill="${glow}"/>
+    ${part('M14 26 C14 34 13 46 11 52 C9 55 6 56 4 58 C9 59 13 57 16 58 C20 60 26 59 32 59 C38 59 44 60 48 58 C51 57 55 59 60 58 C58 56 55 55 53 52 C51 46 50 34 50 26 Z','#7b5434','M38 24 C43 36 43 48 41 62 L66 62 L66 20 Z','#5f3f25',T)}
+    <path d="M19 32 C19 40 18 46 17 52 M45 32 C45 40 46 46 47 52 M32 46 V56" stroke="#5f3f25" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    <g class="rune" style="color:${glow}"><path d="M23 36 v8 M23 36 l4 3 l-4 3 M30.5 35 l3 9 M33.5 35 l-3 9 M40 36 v8 M40 40 l4 -4 M40 40 l4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g class="shroom" style="color:${glow}">
+      <rect x="9.4" y="50" width="2.4" height="5" rx="1" fill="#f2e6cf" ${O(1)}/><path d="M5.5 51 C5.5 47 8 45.5 10.6 45.5 C13 45.5 15.6 47 15.6 51 Z" fill="${glow}" ${O(1.2)}/><circle cx="9" cy="48.2" r=".8" fill="#fff"/>
+      <rect x="54.6" y="52" width="1.8" height="3.6" rx=".8" fill="#f2e6cf" ${O(.9)}/><path d="M52.5 53 C52.5 50 54 49 55.5 49 C57 49 58.5 50 58.5 53 Z" fill="${glow}" ${O(1)}/></g>
+    <ellipse cx="32" cy="26" rx="18" ry="7" fill="#d9a066" ${O(T)}/>
+    <ellipse cx="32" cy="26" rx="15" ry="5.6" fill="none" stroke="#b07a45" stroke-width="1"/>
+    ${part('M14 25 C14 21 18 19.5 22 20.5 C19.5 22.5 17 24.5 14.5 27.5 Z','#86b84e',null,null,1.2)}
+    <ellipse cx="32" cy="26" rx="12" ry="4.4" fill="url(#${g})"/>
+    <g clip-path="url(#${hc})">
+      <g transform="translate(32 26.4) scale(1.25 .42)"><g class="swirl">
+        <path d="${spiral}" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".9"/>
+        <path d="${spiral}" transform="rotate(180)" fill="none" stroke="${glow}" stroke-width="1.4" stroke-linecap="round"/>
+      </g></g>
+      <ellipse cx="32" cy="27.8" rx="12" ry="4.4" fill="none" stroke="#140d0a" stroke-width="2.6" opacity=".75"/>
+    </g>
+    <ellipse cx="32" cy="26" rx="12" ry="4.4" fill="none" ${O(1.2)}/>
+    <path class="beam" d="M21 26 L25 -2 H39 L43 26 Z" fill="url(#${b})"/>
+    ${motes}</g>`;
+}
+/* the front rim, drawn over a gnome that is inside the stump */
+const lip=()=>`<path d="M14 26 A18 7 0 0 0 50 26 L44 26 A12 4.4 0 0 1 20 26 Z" fill="#d9a066"/>
+  <path d="M17 26 A15 5.6 0 0 0 47 26" fill="none" stroke="#b07a45" stroke-width="1"/>
+  <path d="M14 26 A18 7 0 0 0 50 26" fill="none" ${O(T)}/><path d="M20 26 A12 4.4 0 0 0 44 26" fill="none" ${O(1.2)}/>`;
+
+/* ---------- sprouting walls ---------- */
+function hedgeH(){
+  const xs=[8,20,32,44,56];
+  return `<g class="pc soil">${part('M2 28 C10 24 54 24 62 28 C63 30 61 32 58 32 H6 C3 32 1 30 2 28 Z','#7a5230','M40 24 H64 V34 H40 Z','#644225',1.6)}</g>`+
+    [-8,-4,4,8].map((dx,i)=>`<circle class="burst" cx="${12+i*13}" cy="27" r="1.6" fill="#7a5230" style="--dx:${dx}px"/>`).join('')+
+    xs.map((x,i)=>`<path class="pc stem" style="--d:${i*.08}s" d="M${x} 28 V16" stroke="#5a3a22" stroke-width="2.2" stroke-linecap="round"/>`).join('')+
+    [14,26,38,50].map((x,i)=>`<g class="pc clump" style="--d:${.04+i*.08}s">${part(`M${x-8} 12 a8 7.5 0 1 0 16 0 a8 7.5 0 1 0 -16 0`,'#4f8a3c',null,null,1.6)}</g>`).join('')+
+    xs.map((x,i)=>`<g class="pc clump" style="--d:${i*.08}s">${part(`M${x-9} 17 a9 8.5 0 1 0 18 0 a9 8.5 0 1 0 -18 0`,'#6aa84f',`M${x+1} 7 C${x+8} 12 ${x+9} 20 ${x+3} 27 L${x+12} 27 L${x+12} 7 Z`,'#4f8a3c',1.6)}<path d="M${x-5} 13 q3 -4 7 -3" stroke="#9fd07a" stroke-width="1.8" fill="none" stroke-linecap="round"/></g>`).join('')+
+    [[14,11],[38,9],[50,19],[24,21]].map(([x,y],i)=>`<g class="pc flower" style="--d:${i*.1}s"><circle cx="${x}" cy="${y}" r="2.1" fill="#fff" stroke="${INK}" stroke-width=".8"/><circle cx="${x}" cy="${y}" r=".9" fill="#f2d35b"/></g>`).join('');
+}
+function hedgeV(){
+  const ys=[10,22,34,46,58];
+  return `<g class="pc soil">${part('M5 10 C5 4 19 4 19 10 V64 C19 70 5 70 5 64 Z','#7a5230','M13 2 H24 V72 H13 Z','#644225',1.6)}</g>`+
+    [-6,6,-5,5].map((dx,i)=>`<circle class="burst" cx="12" cy="${14+i*14}" r="1.6" fill="#7a5230" style="--dx:${dx}px"/>`).join('')+
+    [16,28,40,52].map((y,i)=>`<g class="pc clump" style="--d:${.04+i*.08}s">${part(`M${i%2?10:-2} ${y} a8 7.5 0 1 0 16 0 a8 7.5 0 1 0 -16 0`,'#4f8a3c',null,null,1.6)}</g>`).join('')+
+    ys.map((y,i)=>`<g class="pc clump" style="--d:${i*.08}s">${part(`M3 ${y} a9 8.5 0 1 0 18 0 a9 8.5 0 1 0 -18 0`,'#6aa84f',`M13 ${y-10} C20 ${y-5} 21 ${y+3} 15 ${y+10} L24 ${y+10} L24 ${y-10} Z`,'#4f8a3c',1.6)}<path d="M7 ${y-4} q3 -4 7 -3" stroke="#9fd07a" stroke-width="1.8" fill="none" stroke-linecap="round"/></g>`).join('')+
+    [[8,20],[16,42],[9,60]].map(([x,y],i)=>`<g class="pc flower" style="--d:${i*.1}s"><circle cx="${x}" cy="${y}" r="2.1" fill="#fff" stroke="${INK}" stroke-width=".8"/><circle cx="${x}" cy="${y}" r=".9" fill="#f2d35b"/></g>`).join('');
+}
+function woodWall(){
+  const cl='wc'+(++cid);
+  return `<defs><clipPath id="${cl}"><rect x="-2" y="-30" width="68" height="59"/></clipPath></defs>
+    <g class="pc soil">${part('M2 28 C10 25 54 25 62 28 C63 30 61 32 58 32 H6 C3 32 1 30 2 28 Z','#7a5230',null,null,1.6)}</g>
+    <g clip-path="url(#${cl})">`+
+    [5,19,33,47].map((x,i)=>`<g class="stake" style="--d:${i*.09}s">${part(`M${x} 30 L${x} 8 L${x+6} 2 L${x+12} 8 L${x+12} 30 Z`,'#c48a52',`M${x+7} 0 H${x+14} V32 H${x+7} Z`,'#a87140',1.6)}<path d="M${x+3} 12 V24" stroke="#a87140" stroke-width="1.2" stroke-linecap="round"/></g>`).join('')+
+    `</g>`+
+    [10,23].map((y,i)=>`<g class="rail" style="--d:${i*.12}s"><path d="M2 ${y} H62 V${y+5} H2 Z" fill="#8d5d38" ${O(1.6)}/><circle cx="12" cy="${y+2.5}" r=".9" fill="${INK}"/><circle cx="52" cy="${y+2.5}" r=".9" fill="${INK}"/></g>`).join('')+
+    [-9,-5,5,9].map((dx,i)=>`<circle class="burst" cx="${10+i*14}" cy="27" r="2.2" fill="#d9c9a8" style="--dx:${dx}px"/>`).join('');
+}
+
+
+function woodWallV(){
+  const ys=[16,30,44,58,70];
+  return `<g class="pc soil">${part('M5 10 C5 4 19 4 19 10 V66 C19 72 5 72 5 66 Z','#7a5230','M13 2 H24 V74 H13 Z','#644225',1.6)}</g>`+
+    ys.map((y,i)=>`<g class="pc post" style="--d:${i*.09}s">${part(`M6 ${y} L6 ${y-12} L12 ${y-17} L18 ${y-12} L18 ${y} Z`,'#c48a52',`M12 ${y-20} H20 V${y+2} H12 Z`,'#a87140',1.6)}</g>`).join('')+
+    `<g class="railv"><path d="M10 6 H14 V66 H10 Z" fill="#8d5d38" ${O(1.4)}/></g>`+
+    [-7,7,-6,6].map((dx,i)=>`<circle class="burst" cx="12" cy="${16+i*14}" r="2.2" fill="#d9c9a8" style="--dx:${dx}px"/>`).join('');
+}
+
+/* ---------- scene ---------- */
+const at=(x,y,inner,w=64,h=64,vb='0 0 64 64',extra='')=>`<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${vb}" overflow="visible" ${extra}>${inner}</svg>`;
+const layout=[
+  ['g','g','r','g','b','h'],
+  ['g','k','br','g','g','g'],
+  ['l1','g','r','g','k','l2'],
+  ['g','b','r','g','g','b'],
+];
+function buildBoard(){
+  let s='<svg viewBox="0 0 384 256" preserveAspectRatio="xMidYMid slice" aria-label="Garden board">';
+  layout.forEach((row,ry)=>row.forEach((c,cx)=>{s+=at(cx*64,ry*64,grass())}));
+  layout.forEach((row,ry)=>row.forEach((c,cx)=>{
+    const m={r:river,br:bridge,k:rock,b:bush,h:house,l1:()=>stump('#5ff0d8'),l2:()=>stump('#5ff0d8')}[c];
+    if(m) s+=at(cx*64,ry*64,m());
+  }));
+  s+=at(192,104,woodWall(),64,32,'0 0 64 32','class="wall once" style="--w:.2s"');
+  s+=at(256,104,woodWall(),64,32,'0 0 64 32','class="wall once" style="--w:.6s"');
+  s+=at(308,186,woodWallV(),24,72,'0 0 24 72','class="wall once" style="--w:1s"');
+  s+='</svg>';
+  document.getElementById('board').innerHTML=s;
+}
+buildBoard();
+document.getElementById('replay').addEventListener('click',buildBoard);
+
+document.getElementById('w1').innerHTML=gnome('walk','right');
+const w2=document.getElementById('w2');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function downAndShrug(){
+  w2.innerHTML=gnome('walk','front');
+  w2.style.transition='none';w2.style.bottom='79%';w2.style.opacity='0';
+  void w2.offsetWidth;
+  w2.style.transition='bottom 2.6s linear, opacity .4s';
+  w2.style.bottom='59.4%';w2.style.opacity='1';
+  setTimeout(()=>w2.querySelector('svg').setAttribute('class','gnome shrug front'),2600);
+  setTimeout(()=>{w2.style.opacity='0'},2600+2400);
+  setTimeout(downAndShrug,2600+2400+700);
+}
+if(reduce){w2.innerHTML=gnome('shrug','front');w2.style.bottom='59.4%';w2.style.opacity='1'}else downAndShrug();
+
+/* ---------- directions ---------- */
+const dirs=[['front','Down','front'],['back','Up','back'],['left','Left','flipped from right'],['right','Right','side profile']];
+document.getElementById('dirs').innerHTML=dirs.map(([d,lab,note])=>
+  `<div class="card dirrow"><div class="dirlab">Facing ${lab}<small>${note}</small></div><div class="cells">`+
+  ['idle','walk','shrug'].map(m=>`<div class="cell">${gnome(m,d)}${m[0].toUpperCase()+m.slice(1)}</div>`).join('')+`</div></div>`).join('');
+
+/* ---------- walls ---------- */
+const walls=[
+  ['Horizontal','Stakes punch up out of the ground with a dust puff, then the rails snap across.',`<svg class="wide wall loop" viewBox="0 0 64 32" overflow="visible">${woodWall()}</svg>`],
+  ['Vertical','Posts pop up top to bottom, then the rail drops in, for walls on a vertical grid line.',`<svg class="tall wall loop" viewBox="0 0 24 72" overflow="visible">${woodWallV()}</svg>`],
+];
+document.getElementById('walls').innerHTML=walls.map(([n,d,a])=>`<div class="card tile"><div class="art">${a}</div><b>${n}</b><span>${d}</span></div>`).join('');
+
+/* ---------- portals ---------- */
+const gAt=(svg)=>svg.replace('<svg ','<svg x="-15" y="-33" width="30" height="35" ');
+const tpA='#5ff0d8';
+document.getElementById('tpdemo').innerHTML=`<svg class="tp" viewBox="0 0 200 100" role="img" aria-label="Gnome jumps into one stump and pops out of the other">
+  <defs><clipPath id="clA"><rect x="0" y="-80" width="100" height="140.4"/></clipPath><clipPath id="clB"><rect x="100" y="-80" width="100" height="140.4"/></clipPath></defs>
+  <rect width="200" height="100" fill="#8cbf5a"/>
+  <path d="M12 30 l2 -5 l2 5 M96 20 l2 -5 l2 5 M190 26 l2 -5 l2 5 M100 80 l2 -5 l2 5 M8 74 l2 -5 l2 5" fill="none" stroke="#6e9e44" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  ${at(18,30,stump(tpA))}${at(118,30,stump(tpA))}
+  <g clip-path="url(#clA)"><g class="gw ain">${gAt(gnome('idle','front'))}</g></g>
+  <g clip-path="url(#clB)"><g class="gw bin">${gAt(gnome('idle','front'))}</g></g>
+  ${at(18,30,lip())}${at(118,30,lip())}
+  <ellipse class="flash fa" cx="50" cy="56" rx="12" ry="5" fill="#fff"/>
+  <ellipse class="flash fb" cx="150" cy="56" rx="12" ry="5" fill="#fff"/>
+  <g class="gw aout">${gAt(gnome('idle','front'))}</g>
+  <g class="gw bout">${gAt(gnome('idle','front'))}</g>
+</svg>`;
+const portals=[['Stump pair A','Teal glow. Every level with portals has this pair.','#5ff0d8'],['Stump pair B','Violet glow, for levels with a second pair.','#c79bff']];
+document.getElementById('portals').innerHTML=portals.map(([n,d,c])=>`<div class="card tile"><div class="art"><svg class="sq" viewBox="0 0 64 64" overflow="visible">${grass()}${stump(c)}</svg></div><b>${n}</b><span>${d}</span></div>`).join('');
+
+/* ---------- kit ---------- */
+const kit=[
+  ['Rock','Fixed obstacle, pre-built on the map.',()=>grass()+rock()],
+  ['Berry bush','Fixed obstacle with a bit of colour.',()=>grass()+bush()],
+  ['River','Blocks walking. Gnome must find a crossing.',river],
+  ['Log bridge','The only way over the river.',bridge],
+  ['Toadstool house','Goal. Where the gnome is headed.',()=>grass()+house()],
+];
+document.getElementById('kit').innerHTML=kit.map(([n,d,f])=>`<div class="card tile"><div class="art"><svg class="sq" viewBox="0 0 64 64">${f()}</svg></div><b>${n}</b><span>${d}</span></div>`).join('');
+
+document.getElementById('sw').innerHTML=[['Hat','#c94a32'],['Tunic','#4f7a3a'],['Wood','#c48a52'],['Water','#5aa9d6'],['Portal A','#5ff0d8'],['Portal B','#c79bff'],['Beard','#f6f3ed'],['Outline','#3b2618']]
+  .map(([n,c])=>`<div class="sw"><i style="background:${c}"></i>${n}<br>${c}</div>`).join('');
+</script>

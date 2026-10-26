@@ -56,16 +56,16 @@ export function explainLine(level, line, target) {
   const pair = [a, b];
   if (pair.includes('~')) return { ok: false, why: "There's nothing to block next to a river." };
   if (pair.includes('#')) return { ok: false, why: "There's nothing to block next to a rock." };
-  if (pair.includes('R')) return { ok: false, why: "Lines next to the robot can't be walled." };
-  if (pair.includes('B')) return { ok: false, why: "Lines next to the beacon can't be walled." };
+  if (pair.includes('R')) return { ok: false, why: "Lines next to the gnome can't be walled." };
+  if (pair.includes('B')) return { ok: false, why: "Lines next to the house can't be walled." };
   if (pair.includes('=')) return { ok: false, why: "Lines next to a bridge can't be walled." };
-  if (pair.some(isPortal)) return { ok: false, why: "Lines next to a teleporter can't be walled." };
+  if (pair.some(isPortal)) return { ok: false, why: "Lines next to a stump can't be walled." };
   return { ok: false, why: "That line can't be walled." };
 }
 
 /** Why a wall would break the lab's side cap ("start" or "beacon", from the engine's wouldBreakCap). */
 export function capMessage(kind) {
-  return kind === 'beacon' ? 'The beacon can only be walled on two sides.' : 'The robot can only be walled on two sides.';
+  return kind === 'beacon' ? 'The house can only be walled on two sides.' : 'The gnome can only be walled on two sides.';
 }
 
 const SIDE_WORD = { U: 'top', R: 'right', D: 'bottom', L: 'left' };

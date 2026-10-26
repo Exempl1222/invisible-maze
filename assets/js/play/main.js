@@ -5,12 +5,13 @@ import { loadProgress, recordWin, loadHints, hintCount, spendHint, earnDailyHint
 import { renderSelect, renderLab } from './select.js';
 import { capMessage } from './lines.js';
 import { starsMarkup } from './icons.js';
+import { preloadSprites, sprite } from '../sprites.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from './daily.js';
 
 const PACK_URL = '../assets/levels/pack-01.json';
 const DAILY_URL = '../assets/levels/daily.json';
 const LAB_URL = '../assets/levels/lab.json';
-const STEP_MS = 300;
+const STEP_MS = 220;
 
 const $ = (id) => document.getElementById(id);
 const titleEl = $('title');
@@ -89,7 +90,7 @@ function showSelect() {
   backEl.hidden = true;
   gameView.hidden = true;
   selectView.hidden = false;
-  document.title = 'Play · Invisible Maze';
+  document.title = 'Play · Gnome Sweet Gnome';
   renderSelect(selectView, levels, {
     onPick: toLevel,
     onMode: toMode,
@@ -101,7 +102,7 @@ function showLab() {
   backEl.hidden = true;
   gameView.hidden = true;
   selectView.hidden = false;
-  document.title = 'Lab · Invisible Maze';
+  document.title = 'Lab · Gnome Sweet Gnome';
   renderLab(selectView, labLevels, { onPick: toLabLevel, onMode: toMode, failed: labFailed });
 }
 
@@ -141,7 +142,7 @@ async function showDaily(date) {
 
 function showBreak(message) {
   titleEl.textContent = 'Daily';
-  document.title = 'Daily · Invisible Maze';
+  document.title = 'Daily · Gnome Sweet Gnome';
   gameView.hidden = true;
   selectView.hidden = true;
   breakEl.querySelector('strong').textContent = message || 'The daily is taking a break.';
@@ -166,7 +167,7 @@ function updateCounters() {
 function startGame({ kind, index, level, title }) {
   game = { kind, index, level, state: 'editing', token: 0, board: null };
   titleEl.textContent = title;
-  document.title = `${title} · Invisible Maze`;
+  document.title = `${title} · Gnome Sweet Gnome`;
   backEl.hidden = false;
   backEl.href = kind === 'lab' ? './?lab' : './';
   backEl.textContent = kind === 'lab' ? 'All lab levels' : 'All levels';
@@ -184,8 +185,8 @@ function startGame({ kind, index, level, title }) {
   goBtn.disabled = false;
   hintPanel.hidden = true;
   setStatus(kind === 'lab'
-    ? 'Lab rules: you can wall next to bridges and teleporters, and up to two sides of the robot and beacon. Leave the robot a way through.'
-    : "Tap a line between two tiles to place a wall. Make the robot's route longer than its move limit. You must leave it a way through.");
+    ? 'Lab rules: you can wall next to bridges and stumps, and up to two sides of the gnome and house. Leave the gnome a way through.'
+    : "Tap a line between two tiles to place a wall. Make the gnome's route longer than his move limit. You must leave him a way through.");
   updateCounters();
 }
 
@@ -231,13 +232,13 @@ function onLine(target) {
     wallsUsedEl.parentElement.classList.add('refused');
     refused(`All ${plural(level.wallBudget, 'wall')} placed. Tap a wall to take it back.`);
   } else if (wouldBreakCap(level, board.wallList(), line)) {
-    // Lab rules v4: at most two sides of the robot, and of the beacon, in one wall set.
+    // Lab rules v4: at most two sides of the gnome, and of the house, in one wall set.
     board.refuse(target);
     refused(capMessage(wouldBreakCap(level, board.wallList(), line)));
   } else if (cutsAllRoutes(level, [...board.wallList(), line])) {
     // The robot must always keep a way to the beacon (rules v3.1): refuse the wall, counters unchanged.
     board.refuse(target);
-    refused('The robot needs at least one way through.');
+    refused('The gnome needs at least one way through.');
   } else {
     board.setWall(line, true);
     const used = board.wallList().length;
@@ -262,7 +263,7 @@ async function run() {
   clearBtn.disabled = true;
   g.board.setLocked(true);
   movesLeftEl.textContent = String(g.level.moveLimit);
-  setStatus('The robot is moving.');
+  setStatus('The gnome is on the move.');
 
   const done = await g.board.play(sim, {
     stepMs: STEP_MS,
@@ -272,6 +273,19 @@ async function run() {
   });
   if (!done || cancelled()) return;
   finish(sim, walls);
+}
+
+/** The result panel's top row: a picture (the gnome or the house) beside the heading and one more element. */
+function resultHead(picture, heading, extra) {
+  const row = document.createElement('div');
+  row.className = 'result-head';
+  const pic = picture.classList.contains('picture') ? picture : document.createElement('div');
+  if (pic !== picture) { pic.className = 'picture'; pic.appendChild(picture); }
+  const titles = document.createElement('div');
+  titles.className = 'titles';
+  titles.append(heading, extra);
+  row.append(pic, titles);
+  return row;
 }
 
 function finish(sim, walls) {
@@ -304,20 +318,20 @@ function finish(sim, walls) {
     const earned = scoreStars(g.level.par, walls.length, g.level.wallBudget, hintsUsed);
     recordWin(g.level.id, earned); // keeps the highest ever earned
     const gotHint = g.kind === 'daily' && earnDailyHint(g.level.id.slice(2));
-    heading.textContent = 'Robot stopped';
+    heading.textContent = 'Fenced in!';
     const starsEl = document.createElement('div');
     starsEl.className = 'result-stars';
     starsEl.setAttribute('role', 'img');
     starsEl.setAttribute('aria-label', `${earned} of 3 stars`);
     starsEl.dataset.stars = String(earned);
     starsEl.innerHTML = starsMarkup(earned);
-    text.textContent = `Out of moves. The route is longer than the ${g.level.moveLimit} moves it has.`;
+    text.textContent = `Out of moves. The route is longer than the ${g.level.moveLimit} moves he has.`;
     const par = document.createElement('p');
     par.className = 'par';
     const parStrong = document.createElement('strong');
     parStrong.textContent = `Par ${g.level.par}`;
     par.append(parStrong, ` You used ${plural(walls.length, 'wall')}.`);
-    resultEl.append(heading, starsEl, text, par);
+    resultEl.append(resultHead(sprite('gnome-down-shrug', 'gnome-sprite'), heading, starsEl), text, par);
     if (hintsUsed > 0) {
       const hp = document.createElement('p');
       hp.className = 'hint-used';
@@ -341,9 +355,12 @@ function finish(sim, walls) {
     else focusTarget = button('Next level', true, () => toLevel(g.index + 1));
     button('Replay', false, () => replay());
   } else {
-    heading.textContent = 'The robot got through';
-    text.textContent = `The robot reached the beacon in ${plural(sim.movesUsed, 'move')}.`;
-    resultEl.append(heading, text, actions);
+    heading.textContent = 'He made it home';
+    text.textContent = `He reached the house in ${plural(sim.movesUsed, 'move')}. Try a different fence line.`;
+    const house = document.createElement('div');
+    house.className = 'picture house';
+    house.setAttribute('aria-hidden', 'true');
+    resultEl.append(resultHead(house, heading, text), actions);
     focusTarget = button('Try again', true, () => retry());
   }
   focusTarget.focus({ preventScroll: true });
@@ -396,7 +413,7 @@ function whyNot(line) {
   if (walls.length >= level.wallBudget) return `All ${plural(level.wallBudget, 'wall')} are placed, so there is no room for a hint wall. Take one of your walls back first.`;
   const cap = wouldBreakCap(level, walls, line);
   if (cap) return `${capMessage(cap)} Take a wall back to make room for the hint.`;
-  if (cutsAllRoutes(level, [...walls, line])) return 'Your walls leave no room for that hint: it would cut off the robot completely. Take a wall back and try again.';
+  if (cutsAllRoutes(level, [...walls, line])) return 'Your walls leave no room for that hint: it would cut off the gnome completely. Take a wall back and try again.';
   return null;
 }
 
@@ -467,6 +484,20 @@ async function boot() {
     labLevels = (await res.json()).levels.map((l) => parseLevel(l));
   } catch {
     labFailed = true; // the Lab tab says so; the rest of the game still works
+  }
+  try {
+    await preloadSprites();
+  } catch {
+    loading.textContent = '';
+    const p = document.createElement('p');
+    p.textContent = 'The game art did not load. Check your connection and try again.';
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'btn';
+    retryBtn.textContent = 'Reload';
+    retryBtn.addEventListener('click', () => location.reload());
+    loading.append(p, retryBtn);
+    return;
   }
   loading.hidden = true;
   loadProgress();

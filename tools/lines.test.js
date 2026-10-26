@@ -70,15 +70,15 @@ test('explainLine: buildable lines are ok; the others say why', () => {
   assert.equal(explainLine(lv, [1, 0, 'D'], { x: 1, y: 0, side: 'D' }).ok, lv.lineBuildable(1, 0, 'D'));
   assert.match(why(0, 0, 'U'), /edge of the board/);
   // beacon at (0,2): line between (0,2) and (1,2)
-  assert.match(why(0, 2, 'R'), /beacon/);
+  assert.match(why(0, 2, 'R'), /house/);
   // robot at (6,5)
-  assert.match(why(6, 5, 'L'), /robot/);
+  assert.match(why(6, 5, 'L'), /gnome/);
   // river at (2,2)
   assert.match(why(1, 2, 'R'), /river/);
   // bridge at (6,2)? row "B.~~.~=" has the bridge at x=6
   assert.match(why(6, 2, 'U'), /bridge/);
   // teleporter at (3,0)
-  assert.match(why(3, 0, 'R'), /teleporter/);
+  assert.match(why(3, 0, 'R'), /stump/);
   // rock at (5,1)
   assert.match(why(5, 1, 'L'), /rock/);
 });
@@ -108,6 +108,6 @@ test('wallSidesText: reads walls around a tile', () => {
 
 test('capMessage: the two lab refusal messages', async () => {
   const { capMessage } = await import('../assets/js/play/lines.js');
-  assert.equal(capMessage('start'), 'The robot can only be walled on two sides.');
-  assert.equal(capMessage('beacon'), 'The beacon can only be walled on two sides.');
+  assert.equal(capMessage('start'), 'The gnome can only be walled on two sides.');
+  assert.equal(capMessage('beacon'), 'The house can only be walled on two sides.');
 });

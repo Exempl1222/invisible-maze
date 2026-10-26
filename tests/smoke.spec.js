@@ -41,7 +41,7 @@ test('teaser renders the 9x9 level and plays both acts', async ({ page }) => {
   await expect(page.locator('#teaser .cell.start')).toHaveCount(1);
   // Act 1: the robot moves and uses up moves.
   // Each value only shows for ~0.4s, so check the count has dropped, not an exact number.
-  await expect(page.locator('#teaser-moves')).not.toHaveText('11', { timeout: 5000 });
+  await expect(page.locator('#teaser-moves')).not.toHaveText('14', { timeout: 5000 });
   await expect(page.locator('#teaser .cell.beacon.reached')).toHaveCount(1, { timeout: 10000 });
   // Act 2: exactly the three par walls go down, as bars on the lines between tiles.
   await expect(page.locator('#teaser .wall-bar')).toHaveCount(3, { timeout: 12000 });

@@ -3,22 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Invisible Maze</title>
-  <meta name="description" content="A puzzle game for your phone. The robot always takes the shortest route. Stop it with as few walls as you can.">
-  <meta name="theme-color" content="#17232d">
-  <meta property="og:title" content="Invisible Maze">
-  <meta property="og:description" content="Stop the robot with as few walls as you can.">
+  <title>Gnome Sweet Gnome</title>
+  <meta name="description" content="Gnome Sweet Gnome, a fence-building puzzle. A garden gnome is heading home by the shortest path. Fence him in with as few fences as you can.">
+  <meta name="theme-color" content="#e3ecd2">
+  <meta property="og:title" content="Gnome Sweet Gnome">
+  <meta property="og:description" content="A fence-building puzzle. Fence the gnome in before he gets home.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/site.css">
+  <link rel="stylesheet" href="assets/css/sprites.css">
 </head>
 <body>
   <header class="wrap site-header">
     <a class="wordmark" href="./">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="11" width="20" height="15" rx="5" fill="var(--robot)"/><rect x="10" y="16" width="4" height="4" rx="1" fill="var(--night)"/><rect x="18" y="16" width="4" height="4" rx="1" fill="var(--night)"/><rect x="15" y="5" width="2" height="6" fill="var(--robot)"/><circle cx="16" cy="5" r="2" fill="var(--robot)"/></svg>
-      Invisible Maze
+      <img src="assets/sprites/icon-gnome.svg" alt="" width="36" height="36">
+      Gnome Sweet Gnome
     </a>
     <nav class="site-nav" aria-label="Main">
       <a href="./" aria-current="page">Home</a>
@@ -29,8 +30,9 @@
   <main>
     <div class="wrap hero">
       <div>
-        <h1>Stop the robot.</h1>
-        <p>A puzzle game for your phone. The robot always takes the shortest route to the beacon. Place your walls, press go, and see if it gets there. Fewer walls, more stars.</p>
+        <h1>Gnome Sweet Gnome</h1>
+        <p class="tagline">a fence-building puzzle</p>
+        <p>A garden gnome has run away and is heading home by the shortest path. Build wooden fences on the lines between tiles so the walk is too long for him. Use as few fences as you can.</p>
         <div class="actions">
           <a class="btn" href="#how-it-works">See how it plays</a>
           <a class="btn quiet" href="play/">Play</a>
@@ -38,10 +40,10 @@
       </div>
 
       <div class="board-frame">
-        <div class="board" id="teaser" role="img" aria-label="A nine by nine map with a river, bridges, a rock and two pairs of teleporters. First the robot reaches the beacon through a teleporter. Then three walls are placed on the lines between tiles. The robot's route is now longer than its move limit, so it runs out of moves."></div>
+        <div class="board play-board teaser" id="teaser" role="img" aria-label="A nine by nine garden with a river, bridges, a rock and two pairs of hollow stumps. First the gnome gets home through a stump. Then three fences are built on the lines between tiles. His route is now longer than his move limit, so he runs out of moves."></div>
         <div class="status" aria-live="off">
-          <span id="teaser-caption">No walls. The robot takes the shortest route.</span>
-          <span class="moves">Moves left <strong id="teaser-moves">11</strong></span>
+          <span id="teaser-caption">No fences. The gnome takes the shortest path home.</span>
+          <span class="moves">Moves left <strong id="teaser-moves">14</strong></span>
         </div>
       </div>
     </div>
@@ -51,16 +53,19 @@
         <h2>How a level works</h2>
         <ul class="rules">
           <li>
-            <h3><span class="swatch" style="background:var(--robot)"></span>The robot</h3>
-            <p>It always takes the shortest route to the beacon, and it has a move limit. Teleporters count as one step.</p>
+            <div class="art" aria-hidden="true"><span class="art-gnome"></span><span class="tile" style="background-image:url(assets/sprites/tile-house.svg)"></span></div>
+            <h3>The gnome</h3>
+            <p>He always heads home by the shortest path, and he only has so many steps in him. Stumps count as one step.</p>
           </li>
           <li>
-            <h3><span class="swatch" style="background:var(--wall)"></span>Your walls</h3>
-            <p>Draw them on the lines between tiles, all before it moves. Make the robot's route longer than its move limit. You must leave it a way through. Par tells you the fewest walls that work.</p>
+            <div class="art" aria-hidden="true"><span class="art-wall"></span></div>
+            <h3>Your fences</h3>
+            <p>Build them on the lines between tiles, all before he sets off. Make his walk longer than his move limit, but always leave him a way through. Par is the fewest fences that work.</p>
           </li>
           <li>
-            <h3><span class="swatch" style="background:var(--river)"></span>The terrain</h3>
-            <p>Rivers and rocks block the robot. Bridges and teleporters let it through. A guard rule keeps you honest: you can't wall a line next to the robot, the beacon, a bridge or a teleporter.</p>
+            <div class="art" aria-hidden="true"><span class="tile" style="background-image:url(assets/sprites/stump-a.svg)"></span><span class="tile" style="background-image:url(assets/sprites/stump-a.svg)"></span></div>
+            <h3>The garden</h3>
+            <p>Rivers and rocks stop him. Bridges and hollow stumps let him through. You can't fence a line next to the gnome, his house, a bridge or a stump.</p>
           </li>
         </ul>
       </div>
@@ -71,22 +76,28 @@
         <h2>Where the build is at</h2>
         <ol class="roadmap">
           <li class="done"><strong>Website live</strong><span>This page, auto-deployed from GitHub.</span></li>
-          <li class="done"><strong>Rules locked</strong><span>Shortest-path robot, terrain, par scoring.</span></li>
+          <li class="done"><strong>Rules locked</strong><span>Shortest-path gnome, terrain, par scoring.</span></li>
           <li class="done"><strong>Puzzle engine</strong><span>Exact par solver and a level generator that keeps only the good ones.</span></li>
           <li class="done"><strong>Playable build</strong><span>Thirty levels on the Play page, tuned for phones.</span></li>
           <li class="now"><strong>Rules v3</strong><span>Walls on the lines between tiles, a guard rule, par shown upfront and a daily level.</span></li>
-          <li><strong>Polish and launch</strong><span>Level packs, hints, a proper name and domain.</span></li>
+          <li><strong>Polish and launch</strong><span>Level packs, hints and a domain.</span></li>
         </ol>
       </div>
     </section>
   </main>
 
   <footer class="site-footer"><div class="wrap">
-    Invisible Maze is a working title. The game is in development.</div>
+    Gnome Sweet Gnome is in development.</div>
   </footer>
 
   <script type="module">
     import { startTeaser } from './assets/js/teaser.js';
+    import { preloadSprites, sprite } from './assets/js/sprites.js';
+    try {
+      await preloadSprites();
+      document.querySelector('.art-gnome').replaceWith(sprite('gnome-right-walk', 'gnome-sprite'));
+      document.querySelector('.art-wall').replaceWith(sprite('wall-h', 'wall-art'));
+    } catch { /* the illustrations are decoration; the replay below falls back to a still board */ }
     startTeaser(
       document.getElementById('teaser'),
       document.getElementById('teaser-caption'),

@@ -75,7 +75,7 @@ test('lab: the tab lists 5 levels with the experimental-rules note', async ({ pa
   await expect(page.locator('h1')).toHaveText('Lab');
   await expect(tabs.getByRole('link', { name: 'Lab' })).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('#select-view .level-btn')).toHaveCount(5);
-  await expect(page.locator('#lab-note')).toHaveText('Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the robot and beacon.');
+  await expect(page.locator('#lab-note')).toHaveText('Experimental rules: walls can go next to bridges, stumps, and up to two sides of the gnome and house.');
   await expect(page.getByRole('button', { name: 'Lab 1, not played' })).toBeVisible();
   // the other tabs still work from here
   await tabs.getByRole('link', { name: 'Levels' }).click();
@@ -173,7 +173,7 @@ for (const kind of ['start', 'beacon']) {
     await placeAll(page, first);
     await expect(bars(page)).toHaveCount(2);
     if (hasTouch) await tapLine(page, third); else await press(page, third);
-    await expect(status(page)).toHaveText(kind === 'start' ? 'The robot can only be walled on two sides.' : 'The beacon can only be walled on two sides.');
+    await expect(status(page)).toHaveText(kind === 'start' ? 'The gnome can only be walled on two sides.' : 'The house can only be walled on two sides.');
     await expect(status(page)).toHaveClass(/refused/);
     await expect(bars(page)).toHaveCount(2);
     await expect(page.locator('#walls-used')).toHaveText(`2 / ${labLevels[i].wallBudget}`);
@@ -316,7 +316,7 @@ test('hint: refused, not spent, when the player\'s walls leave no legal answer w
   await placeAll(page, own);
   await expect(bars(page)).toHaveCount(2);
   await hintBtn(page).click();
-  await expect(status(page)).toContainText('cut off the robot');
+  await expect(status(page)).toContainText('cut off the gnome');
   await expect(status(page)).toContainText('No hint used');
   await expect(hintBtn(page)).toHaveText('Hint (3)');
   await expect(hintBars(page)).toHaveCount(0);
