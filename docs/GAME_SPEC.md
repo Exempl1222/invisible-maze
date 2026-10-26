@@ -68,20 +68,23 @@ A robot wants to reach the beacon and always takes the shortest route. Before it
 | Robot start | `R` | Yes | Yes, at most 2 sides |
 | Beacon | `B` | Yes | Yes, at most 2 sides |
 
+**Bridges link two pieces of land:** a bridge tile has walkable land (not river, rock or another bridge, and on the board) on both opposite sides along one axis, and river on both sides of the other axis. Rocks never sit on a bridge's landing tiles. (Audit of the v3.1 data on 26 Oct: 38 of 79 pack bridges and 309 of 544 daily bridges broke this, by leading into river at a bend, touching the board edge, or landing on a rock. The generator now enforces it and the tests check every shipped bridge.)
+
 **Teleporters:** stepping onto one moves the robot straight to its partner. Forced, two-way, and the whole jump counts as one move. The robot then continues from the partner tile. Walking onto the partner tile directly also teleports it back.
 
 ## Boards and levels
 
 | Size | Use |
 |---|---|
-| 7x7 | Tutorial (first 5 levels, one new idea each) and main levels |
+| 5x5 | Tutorial (first 5 levels, one new idea each) |
+| 7x7 | Main levels |
 | 9x9 | Hard levels and the daily |
 
 - **Level pack 1 (v4):** 30 levels, budget par + 2, a single par answer not required.
-  - 1 to 5: hand-authored 7x7 tutorial (par 2 to 3), one idea each.
+  - 1 to 5: hand-authored **5x5** tutorial (par 1 to 3), one idea each.
   - 6 to 15: 7x7, par 3 to 4.
   - 16 to 25: 9x9, par 4 to 5.
-  - 26 to 30: 9x9, par 6 to 7 (including the two hardest Lab levels).
+  - 26 to 30: 9x9, par 6 to 7 (generated; at least one par 7).
 - **All levels are open while in development.** No locks. Locks come back at launch.
 - **Levels are generated offline and verified**, not made on the phone. The phone only plays and scores.
 
