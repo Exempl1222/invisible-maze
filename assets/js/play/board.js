@@ -347,16 +347,16 @@ export function createBoard(root, level, { onLine, onHelp }) {
     isHintWall: (line) => walls.get(lineKey(line))?.hint === true,
     hintLines: () => [...walls.values()].filter((w) => w.hint).map((w) => w.line),
     /** Place or remove a wall. `hint: true` draws it in the hint style; hint walls are only removed with force. */
-    setWall(line, on, { hint = false, force = false } = {}) {
+    setWall(line, on, { hint: isHint = false, force = false } = {}) {
       const k = lineKey(line);
       if (!on && walls.get(k)?.hint && !force) return;
       if (on && !walls.has(k)) {
-        const bar = el(hint ? 'wall-bar hinted drop' : 'wall-bar drop');
+        const bar = el(isHint ? 'wall-bar hinted drop' : 'wall-bar drop');
         bar.dataset.line = k;
-        if (hint) bar.dataset.hint = '1';
+        if (isHint) bar.dataset.hint = '1';
         bar.setAttribute('aria-hidden', 'true');
-        root.insertBefore(bar, hint);
-        const w = { line, bar, hint };
+        root.insertBefore(bar, hint); // `hint` here is the line-highlight element: walls sit under it
+        const w = { line, bar, hint: isHint };
         walls.set(k, w);
         placeWallBar(w);
       } else if (!on && walls.has(k)) {

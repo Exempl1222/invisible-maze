@@ -137,5 +137,5 @@ Prototype (9x9, same maps): relaxing the line rules alone lowers par (mean 3.2 t
 
 - A hint places one wall from a par answer that isn't already on the board, drawn in a distinct hint style. It counts toward walls used. If the board already has every answer wall, the hint says so and isn't spent.
 - **Inventory:** start with 3. Finishing a daily level (any stars) earns 1, once per date. Stored up to 10. A "Get more hints" button is reserved for ads; until Phase 6 it says ads are coming soon.
-- Hints don't change stars.
+- **Hints cost stars (Eric, 26 Oct):** each hint used on an attempt lowers that win's stars by 1, minimum 1 star. Best stars per level keep the highest ever earned, so a level can be replayed for 3 stars without hints.
 - Levels carry their par answer as `"answer"` for hints (pack, daily and lab). This lets a curious player read answers from the files; accepted for now.

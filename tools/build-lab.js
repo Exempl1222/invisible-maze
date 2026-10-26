@@ -24,7 +24,7 @@ export const SLOTS = [
   { size: 7, pars: [4], slack: [4, 7], count: 10, tries: 4000, maxNodes: 200000 },
   { size: 9, pars: [5], slack: [6, 9], count: 6, tries: 3000, maxNodes: 300000 },
   { size: 9, pars: [6], slack: [8, 11], count: 6, tries: 3000, maxNodes: 600000 },
-  { size: 9, pars: [7, 6], slack: [10, 14], count: 6, tries: 3000, maxNodes: 1500000 }, // par 7 wanted; 6 only if 7 is not found
+  { size: 9, pars: [7, 6], slack: [10, 14], count: 2, tries: 3000, maxNodes: 1500000 }, // par 7 wanted; 6 only if 7 is not found
 ];
 
 /** Best candidate: uses a new line, then fewest par answers, then longest free route. */
