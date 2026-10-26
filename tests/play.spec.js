@@ -97,7 +97,7 @@ test('a wrong wall loses, and Try again keeps the wall', async ({ page }) => {
   await expect(bars(page)).toHaveCount(1);
   await go(page).click();
   await expect(result(page)).toHaveAttribute('data-result', 'lose');
-  await expect(result(page)).toContainText(/reached the beacon in \d+ moves/);
+  await expect(result(page)).toContainText(/reached the house in \d+ moves/);
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(result(page)).toBeHidden();
   await expect(bars(page)).toHaveCount(1);
@@ -125,8 +125,8 @@ test('the wall budget is enforced and a placed wall can be taken back', async ({
 const GUARD_CASES = [
   ['river', (p) => p.includes('~'), /nothing to block next to a river/],
   ['rock', (p) => p.includes('#') && !p.includes('~'), /nothing to block next to a rock/],
-  ['robot', (p) => p.includes('R') && !p.includes('~') && !p.includes('#'), /next to the robot can't be walled/],
-  ['beacon', (p) => p.includes('B') && !p.includes('~') && !p.includes('#'), /next to the beacon can't be walled/],
+  ['robot', (p) => p.includes('R') && !p.includes('~') && !p.includes('#'), /next to the gnome can't be walled/],
+  ['beacon', (p) => p.includes('B') && !p.includes('~') && !p.includes('#'), /next to the house can't be walled/],
   ['bridge', (p) => p.includes('=') && !p.some((c) => '~#RB'.includes(c)), /next to a bridge can't be walled/],
   ['teleporter', (p) => p.some((c) => c >= 'a' && c <= 'z') && !p.some((c) => '~#RB='.includes(c)), /next to a teleporter can't be walled/],
 ];
@@ -575,7 +575,7 @@ test('a wall that would cut every route is refused with a message, and the count
   await page.mouse.move(px, py);
   await page.mouse.down();
   await page.mouse.up();
-  await expect(status(page)).toHaveText('The robot needs at least one way through.');
+  await expect(status(page)).toHaveText('The gnome needs at least one way through.');
   await expect(status(page)).toHaveClass(/refused/);
   await expect(hint(page)).toHaveAttribute('data-state', 'no');
   await expect(hint(page)).toBeVisible();
@@ -609,10 +609,10 @@ test('touch: a tapped wall and a refused cut keep their own status message', asy
   await expect(status(page)).not.toContainText('Shift');
   const [px, py] = await pointFor(page, last[0], last[1], last[2]);
   await page.touchscreen.tap(px, py);
-  await expect(status(page)).toHaveText('The robot needs at least one way through.');
+  await expect(status(page)).toHaveText('The gnome needs at least one way through.');
   // Give a late follow-up click time to arrive, then check the message survived it.
   await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
-  await expect(status(page)).toHaveText('The robot needs at least one way through.');
+  await expect(status(page)).toHaveText('The gnome needs at least one way through.');
   await expect(page.locator('#walls-used')).toHaveText(`${before.length} / ${lv.wallBudget}`);
 });
 
@@ -652,4 +652,38 @@ test('after a teleport the gnome has no dive or pop class left on', async ({ pag
   await go(page).click();
   await expect(result(page)).toHaveAttribute('data-result', 'lose');
   await expect(page.locator('#robot')).not.toHaveClass(/\b(dive|pop)\b/);
+});
+
+/* ---------- Gnome Sweet Gnome menus ---------- */
+
+test('the header wordmark says Gnome Sweet Gnome', async ({ page }) => {
+  await page.goto('/play/');
+  await expect(page.locator('.wordmark')).toHaveText('Gnome Sweet Gnome');
+  await expect(page).toHaveTitle('Play · Gnome Sweet Gnome');
+});
+
+test('the next level to play has a gnome peeking over it', async ({ page }) => {
+  await page.goto('/play/');
+  const next = page.locator('.level-btn.next');
+  await expect(next).toHaveCount(1);
+  await expect(next.locator('.gnome-sprite')).toHaveCount(1);
+  await expect(page.locator('.level-btn .gnome-sprite')).toHaveCount(1);
+  await expect(next).toHaveAttribute('aria-label', 'Level 1, not played');
+});
+
+test('a win shows Fenced in! with the shrugging gnome', async ({ page }) => {
+  await open(page, 1);
+  await placeAll(page, solve(levels[0]).answer);
+  await go(page).click();
+  await expect(result(page)).toHaveAttribute('data-result', 'win');
+  await expect(result(page).getByRole('heading', { name: 'Fenced in!' })).toBeVisible();
+  await expect(result(page).locator('.gnome-sprite')).toHaveAttribute('data-sprite', 'gnome-down-shrug');
+});
+
+test('a loss shows He made it home', async ({ page }) => {
+  await open(page, 1);
+  await go(page).click();
+  await expect(result(page)).toHaveAttribute('data-result', 'lose');
+  await expect(result(page).getByRole('heading', { name: 'He made it home' })).toBeVisible();
+  await expect(result(page).getByRole('button', { name: 'Try again' })).toBeVisible();
 });

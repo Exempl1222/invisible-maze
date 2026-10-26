@@ -317,6 +317,16 @@
       "buildSeconds": 1.15
     }
   },
+  "icon": {
+    "icon-gnome": {
+      "file": "assets/sprites/icon-gnome.svg",
+      "size": [
+        64,
+        64
+      ],
+      "crop": "head of gnome-down-idle"
+    }
+  },
   "palette": {
     "glow": {
       "a": "#5ff0d8",

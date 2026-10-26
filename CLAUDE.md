@@ -4,7 +4,7 @@ Handbook for any Claude session or agent working in this repo. Read this first, 
 
 ## What this is
 
-Invisible Maze, a mobile-first puzzle game. Plain HTML, CSS and JavaScript (ES modules). No framework, no build step. Hosted on GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main`.
+Gnome Sweet Gnome (repo `invisible-maze`), a mobile-first fence-building puzzle. The engine keeps its words (robot, beacon); players see gnome and house. Plain HTML, CSS and JavaScript (ES modules). No framework, no build step. Hosted on GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to `main`.
 
 ## Layout
 
@@ -13,6 +13,13 @@ index.html            landing page (hero teaser is a canned replay, not game log
 play/index.html       the game: level select, board, robot replay, results
 assets/css/site.css   site styles; colour tokens on :root
 assets/css/play.css   game page styles (uses the site tokens)
+assets/js/sprites.js   loads the sprites; inline gnome and walls, one-shot animations
+assets/js/tiles.js     which art variant each tile gets (shared by game and home replay)
+assets/css/sprites.css tile, wall and gnome art placement
+assets/sprites/        generated art (29 sprites, icon-gnome.svg, manifest.json). Never hand-edit
+tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mjs`
+tools/sprites.html     dev gallery of every sprite
+docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs
 assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
 assets/levels/        level packs (pack-01.json), the daily batch (daily.json) and the lab pack (lab.json, rules v4)
@@ -41,7 +48,8 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
    - Stone grey `#9aa3a6`, bush green `#3f7a34`: pre-built, permanent
    - Outline `#3b2618`: every shape. Never black
 7. **Verify before claiming done.** Run `npm test`, and for UI changes run the maze-playtest skill and look at the screenshots.
-8. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
+8. **Art is generated.** Change `tools/build-sprites.mjs` and rebuild, never hand-edit `assets/sprites/`.
+9. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
 
 ## Agent roles
 

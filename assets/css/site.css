@@ -1,24 +1,31 @@
-/* Invisible Maze site styles
-   Colour roles map to game objects, so the palette doubles as a legend:
-   amber = robot, cyan = player walls, lilac = beacon, pink = teleporters,
-   blue = river, timber = bridge, slate = rock. */
+/* Gnome Sweet Gnome site styles: a daylight storybook garden.
+   Colour roles map to game objects, so the palette doubles as a legend (docs/ART_SPEC.md):
+   hat red = the gnome and his house, timber = player walls, gold = hints,
+   teal / violet / amber = teleporter pairs, blue = river, brown = bridge, grey and green = permanent. */
 
 :root {
-  --night: #17232d;      /* page background */
-  --panel: #1e2d39;      /* raised surfaces */
-  --grid: #2c3e4c;       /* grid lines, borders */
-  --chalk: #e6edf1;      /* primary text */
-  --muted: #9fb2bf;      /* secondary text */
-  --robot: #f5b83d;      /* the robot, primary actions */
-  --wall: #5fe0d6;       /* walls the player places */
-  --beacon: #b996ff;     /* the robot's goal */
-  --teleporter: #ff7ab6; /* teleporter pairs */
-  --river: #2f78b7;      /* impassable water */
-  --bridge: #b98d5c;     /* crossings, can't be walled */
-  --rock: #52616c;       /* pre-built, permanent */
+  --page: #e3ecd2;       /* page background */
+  --panel: #f8fbf1;      /* cards, stats, result panel */
+  --grid: #c9d7b2;       /* borders */
+  --chalk: #2f4220;      /* primary text */
+  --muted: #5d6e4c;      /* secondary text */
+  --robot: #c94a32;      /* the gnome, primary actions, current level. White text on it */
+  --robot-deep: #a8382a; /* pressed and hover state of --robot */
+  --wall: #c48a52;       /* anything about player walls (fills, never text) */
+  --sign: #8d5d38;       /* wooden sign boards: timber dark enough for cream text */
+  --sign-deep: #6b4226;  /* the sign you are on */
+  --beacon: #c94a32;     /* the house, used sparingly */
+  --teleporter: #3fb8a3; /* teleporter badges and link line (graphics, with an outline) */
+  --teleporter-ink: #1f6f5f; /* teleporter colour when it has to be text on cream */
+  --gold: #e9b949;       /* stars, hints */
+  --outline: #3b2618;    /* 2px outlines on buttons and cards, like the art */
+  --grass: #8cbf5a;
+  --river: #5aa9d6;
+  --bridge: #a0703f;
+  --rock: #9aa3a6;
 
-  --font-display: "Chakra Petch", system-ui, sans-serif;
-  --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --font-display: "Grandstander", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --step--1: 0.875rem;
   --step-0: 1.0625rem;
@@ -28,7 +35,7 @@
 
   --gutter: 16px;
   --measure: 62ch;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -37,15 +44,15 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: var(--night);
+  background: var(--page);
   color: var(--chalk);
   font-family: var(--font-body);
   font-size: var(--step-0);
   line-height: 1.55;
 }
 
-a { color: var(--wall); text-underline-offset: 3px; }
-a:hover { color: var(--chalk); }
+a { color: var(--chalk); text-decoration-color: var(--robot); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:hover { color: var(--robot-deep); }
 
 :focus-visible {
   outline: 3px solid var(--robot);
@@ -72,64 +79,89 @@ a:hover { color: var(--chalk); }
   align-items: center;
   gap: 0.6rem;
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 800;
   font-size: var(--step-1);
   color: var(--chalk);
   text-decoration: none;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
 }
-.wordmark svg { width: 28px; height: 28px; }
+.wordmark:hover { color: var(--chalk); }
+.wordmark img { width: 36px; height: 36px; display: block; }
 .site-nav a {
   color: var(--muted);
+  font-weight: 700;
   text-decoration: none;
   margin-left: 1.25rem;
+  display: inline-block;
+  padding-block: 0.6rem;
 }
-.site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--chalk); }
+.site-nav a:hover { color: var(--chalk); }
+.site-nav a[aria-current="page"] { color: var(--chalk); text-decoration: underline; text-decoration-color: var(--robot); text-decoration-thickness: 3px; text-underline-offset: 6px; }
 
 /* Hero */
 .hero {
   display: grid;
   gap: 2.5rem;
   align-items: center;
-  padding-block: 2.5rem 4rem;
+  padding-block: 1.5rem 3rem;
 }
 @media (min-width: 860px) {
-  .hero { grid-template-columns: 1.05fr 1fr; padding-block: 4rem 6rem; }
+  .hero { grid-template-columns: 1.05fr 1fr; padding-block: 3rem 5rem; }
 }
 .hero h1 {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--step-3);
   line-height: 1.02;
   letter-spacing: -0.01em;
-  margin: 0 0 1.25rem;
+  margin: 0 0 0.5rem;
+  text-wrap: balance;
+}
+.hero .tagline {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--step-1);
+  line-height: 1.25;
+  color: var(--robot-deep);
+  margin: 0 0 1.1rem;
 }
 .hero p {
   max-width: 44ch;
   color: var(--muted);
-  font-size: var(--step-1);
-  line-height: 1.5;
-  margin: 0 0 2rem;
-}
-
-.btn {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-weight: 600;
   font-size: var(--step-0);
-  padding: 0.8rem 1.4rem;
-  border-radius: 6px;
-  text-decoration: none;
-  border: 2px solid var(--robot);
-  background: var(--robot);
-  color: var(--night);
+  line-height: 1.55;
+  margin: 0 0 1.75rem;
 }
-.btn:hover { background: transparent; color: var(--robot); }
-.btn.quiet { background: transparent; color: var(--chalk); border-color: var(--grid); }
-.btn.quiet:hover { border-color: var(--chalk); }
+.hero p.tagline { max-width: none; }
+
+/* Buttons: rounded pills with a 2px outline and a small offset shadow that flattens on press. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-0);
+  line-height: 1.2;
+  min-height: 48px;
+  padding: 0.7rem 1.5rem;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 2px solid var(--outline);
+  background: var(--robot);
+  color: #fff;
+  box-shadow: 0 2px 0 var(--outline);
+  cursor: pointer;
+  transition: transform 80ms ease, box-shadow 80ms ease, background-color 120ms ease;
+}
+.btn:hover { background: var(--robot-deep); color: #fff; }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--outline); }
+.btn.quiet { background: var(--panel); color: var(--chalk); }
+.btn.quiet:hover { background: var(--grid); color: var(--chalk); }
 .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 
-/* Teaser board */
+/* Board pieces shared by the game and the home-page replay. sprites.css draws the art. */
 .board-frame {
   justify-self: center;
   width: min(440px, 100%);
@@ -142,45 +174,30 @@ a:hover { color: var(--chalk); }
   gap: 3px;
   aspect-ratio: 1 / 1;
   position: relative;
+  box-shadow: 0 0 0 3px var(--outline); /* the board frame (a border would shift the measured bar positions) */
+  border-radius: 14px;
 }
 .cell {
   position: relative;
-  background: var(--panel);
-  border: 1px solid var(--grid);
-  border-radius: 4px;
-  transition: background-color 180ms ease, box-shadow 180ms ease;
+  background: var(--grass);
 }
-.cell.rock { background: var(--rock); border-color: var(--rock); border-radius: 30%; }
-.cell.river { background: var(--river); border-color: var(--river); border-radius: 2px; }
-.cell.bridge {
-  border-color: var(--bridge);
-  background: repeating-linear-gradient(90deg, var(--bridge) 0 3px, color-mix(in srgb, var(--bridge) 55%, var(--panel)) 3px 6px);
-}
-.cell.teleporter {
-  border-color: var(--teleporter);
-  background: radial-gradient(circle, transparent 0 22%, var(--teleporter) 23% 34%, var(--panel) 35%);
-}
-.cell.teleporter.flash { box-shadow: 0 0 16px var(--teleporter); }
-.cell.beacon {
-  border-color: var(--beacon);
-  background: radial-gradient(circle, var(--beacon) 0 30%, color-mix(in srgb, var(--beacon) 20%, var(--panel)) 31%);
-}
-.cell.beacon.reached { box-shadow: 0 0 0 3px var(--beacon), 0 0 20px var(--beacon); }
+.cell.teleporter.flash { box-shadow: 0 0 0 3px var(--teleporter), 0 0 16px var(--teleporter); z-index: 1; }
+.cell.beacon.reached { box-shadow: 0 0 0 3px var(--beacon), 0 0 20px color-mix(in srgb, var(--beacon) 60%, transparent); z-index: 1; }
 .cell.trail::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: color-mix(in srgb, var(--robot) 16%, transparent);
+  background: color-mix(in srgb, var(--gold) 38%, transparent);
   pointer-events: none;
 }
-/* The dock the robot starts from. It stays marked after the robot leaves. */
+/* The spot the gnome starts from. It stays marked after he leaves. */
 .cell.start::after {
   content: "";
   position: absolute;
-  inset: 24%;
-  border: 2px dashed color-mix(in srgb, var(--robot) 80%, transparent);
-  border-radius: 5px;
+  inset: 14%;
+  border: 2px dashed color-mix(in srgb, var(--outline) 55%, transparent);
+  border-radius: 50%;
   pointer-events: none;
 }
 
@@ -188,13 +205,8 @@ a:hover { color: var(--chalk); }
 .wall-bar {
   position: absolute;
   z-index: 1;
-  border-radius: 3px;
-  background: var(--wall);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--wall) 55%, transparent);
   pointer-events: none;
 }
-.wall-bar.drop { animation: bar-drop 260ms cubic-bezier(.3,1.4,.5,1); }
-@keyframes bar-drop { from { opacity: 0; transform: scale(2.2); } }
 
 .robot {
   position: absolute;
@@ -204,11 +216,6 @@ a:hover { color: var(--chalk); }
   pointer-events: none;
   transition: transform 300ms cubic-bezier(.4,.1,.3,1);
 }
-.robot svg { width: 76%; height: 76%; }
-.robot.blink { animation: blink 360ms ease; }
-@keyframes blink { 0% { opacity: 0; transform-origin: center; } 100% { opacity: 1; } }
-.robot.jolt svg { animation: jolt 500ms ease 2; }
-@keyframes jolt { 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
 
 .status {
   display: flex;
@@ -221,35 +228,59 @@ a:hover { color: var(--chalk); }
   color: var(--muted);
 }
 .status .moves { white-space: nowrap; }
-.status strong { font-family: var(--font-display); color: var(--robot); font-size: var(--step-0); }
+.status strong { font-family: var(--font-display); color: var(--robot-deep); font-size: var(--step-0); }
 
 /* Sections */
-section { padding-block: 3rem; border-top: 1px solid var(--grid); }
+section { padding-block: 3rem; border-top: 2px solid var(--grid); }
 h2 {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 800;
   font-size: var(--step-2);
   line-height: 1.15;
   margin: 0 0 1.5rem;
 }
 .rules {
   display: grid;
-  gap: 1.75rem;
+  gap: 1.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-@media (min-width: 760px) { .rules { grid-template-columns: repeat(3, 1fr); gap: 2.5rem; } }
+@media (min-width: 760px) { .rules { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; } }
+.rules li {
+  background: var(--panel);
+  border: 2px solid var(--outline);
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1.2rem;
+}
 .rules h3 {
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: var(--step-1);
   margin: 0 0 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
-.rules h3 .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; }
 .rules p { margin: 0; color: var(--muted); max-width: 34ch; }
+/* Small inline sprites as illustrations. */
+.rules .art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 84px;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  background: var(--grass);
+  overflow: hidden;
+}
+.rules .art .tile { width: 64px; height: 64px; flex: none; background: center / 100% 100% no-repeat; }
+.rules .art .wall-art { position: relative; display: block; width: 96px; }
+.rules .art .gnome-sprite { display: block; width: 76px; height: 76px; }
+.rules .art .gnome-sprite svg { display: block; width: 100%; height: 100%; }
+.rules .art .wall-art svg { display: block; width: 100%; height: auto; }
 
 .roadmap { list-style: none; margin: 0; padding: 0; max-width: var(--measure); counter-reset: phase; }
 .roadmap li {
@@ -260,34 +291,39 @@ h2 {
 .roadmap li::before {
   content: counter(phase);
   position: absolute; left: 0; top: 0.05rem;
-  width: 1.8rem; height: 1.8rem;
+  width: 1.9rem; height: 1.9rem;
   display: grid; place-items: center;
-  font-family: var(--font-display); font-weight: 600; font-size: var(--step--1);
-  border: 2px solid var(--grid); border-radius: 50%;
+  font-family: var(--font-display); font-weight: 800; font-size: var(--step--1);
+  border: 2px solid var(--outline); border-radius: 50%;
+  background: var(--panel);
   color: var(--muted);
 }
-.roadmap li.done::before { border-color: var(--wall); color: var(--wall); }
-.roadmap li.now::before { border-color: var(--robot); background: var(--robot); color: var(--night); }
-.roadmap strong { font-family: var(--font-display); font-weight: 600; }
+.roadmap li.done::before { background: var(--grid); color: var(--chalk); }
+.roadmap li.now::before { background: var(--robot); color: #fff; }
+.roadmap strong { font-family: var(--font-display); font-weight: 800; }
 .roadmap span { display: block; color: var(--muted); }
 
 /* Simple content pages */
 .page { padding-block: 3rem 5rem; max-width: var(--measure); }
-.page h1 { font-family: var(--font-display); font-size: var(--step-3); line-height: 1.05; margin: 0 0 1rem; }
+.page h1 { font-family: var(--font-display); font-weight: 800; font-size: var(--step-3); line-height: 1.05; margin: 0 0 1rem; }
 .page p { color: var(--muted); font-size: var(--step-1); }
 
 .site-footer {
-  border-top: 1px solid var(--grid);
+  border-top: 2px solid var(--grid);
   padding-block: 2rem 3rem;
   color: var(--muted);
   font-size: var(--step--1);
 }
 
 @media (max-width: 420px) {
-  .site-nav a { margin-left: 0.9rem; }
+  .site-header { padding-block: 0.5rem; }
+  .wordmark { font-size: 1.125rem; gap: 0.45rem; }
+  .wordmark img { width: 32px; height: 32px; }
+  .site-nav { white-space: nowrap; }
+  .site-nav a { margin-left: 0.7rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .robot, .cell { transition: none; }
-  .robot.jolt svg, .robot.blink, .wall-bar.drop { animation: none; }
+  .robot, .cell, .btn { transition: none; }
+  .robot.blink, .wall-bar.drop { animation: none; }
 }

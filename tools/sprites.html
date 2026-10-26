@@ -26,6 +26,7 @@
 <h2>Gnome</h2><div class="grid" id="gnome"></div>
 <h2>Walls</h2><p><button type="button" id="rebuild">Build walls again</button></p><div class="grid" id="walls"></div>
 <h2>Teleporters</h2><div class="grid" id="tele"></div>
+<h2>Icon</h2><div class="grid" id="icon"></div>
 <h2>Tiles</h2><div class="grid" id="tiles"></div>
 <script type="module">
   import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../assets/js/sprites.js';
@@ -39,6 +40,7 @@
   drawWalls();
   document.getElementById('rebuild').addEventListener('click', drawWalls);
   document.getElementById('tele').innerHTML = Object.entries(m.teleporter).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
+  document.getElementById('icon').innerHTML = Object.entries(m.icon || {}).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
   document.getElementById('tiles').innerHTML = Object.entries(m.tiles).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
 </script>
 </body>

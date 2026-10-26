@@ -3,8 +3,13 @@
    computed from the sprite anchors; docs/ART_SPEC.md shows the working. */
 
 /* ---------- board ground ---------- */
-.play-board { --bank: #6b4226; --grass-gap: #6e9e44; background: var(--grass-gap); border-radius: 10px; }
+.play-board { --bank: #6b4226; --grass-gap: #6e9e44; background: var(--grass-gap); border-radius: 14px; }
 .play-board .cell { position: relative; border: 0; border-radius: 0; background: center / 100% 100% no-repeat; }
+/* The four corner tiles follow the board frame's 14px radius (minus its 3px outline). */
+.play-board .cell.c-tl { border-top-left-radius: 11px; }
+.play-board .cell.c-tr { border-top-right-radius: 11px; }
+.play-board .cell.c-bl { border-bottom-left-radius: 11px; }
+.play-board .cell.c-br { border-bottom-right-radius: 11px; }
 
 /* ---------- tiles: static art as backgrounds ---------- */
 .play-board .cell.grass                { background-image: url(../sprites/tile-grass-1.svg); }

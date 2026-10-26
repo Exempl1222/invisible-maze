@@ -359,7 +359,7 @@ function svgDoc(w, h, css, body, label, root = '') {
   return `<svg xmlns="http://www.w3.org/2000/svg"${cls} viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${label}">` +
     (css ? `<style>${scope(css.replace(/\s*\n\s*/g, ''), '.' + root)}</style>` : '') + body.replace(/\n\s*/g, '') + `</svg>\n`;
 }
-const manifest = { version: 1, generatedBy: 'tools/build-sprites.mjs', gnome: {}, tiles: {}, teleporter: {}, wall: {} };
+const manifest = { version: 1, generatedBy: 'tools/build-sprites.mjs', gnome: {}, tiles: {}, teleporter: {}, wall: {}, icon: {} };
 function write(name, svg, meta, group) {
   writeFileSync(join(OUT, name), svg);
   manifest[group][name.replace('.svg', '')] = { file: `assets/sprites/${name}`, ...meta };
@@ -395,7 +395,15 @@ for (const hint of [false, true]) {
   write(`wall-v${sfx}.svg`, svgDoc(24, 72, WALL_CSS, wallV(hint), hint ? 'Wooden wall from a hint' : 'Wooden wall', 'gsg-wall'),
     { size: [24, 72], centreLine: 12, once: true, buildSeconds: hint ? 1.15 : 0.8 }, 'wall');
 }
+// The wordmark icon and favicon: the down-facing gnome's head, hat to beard, on a grass tile. Static.
+cid = 0; PFX = 'gsg-icon-';
+{
+  const head = headFront().replace('<g class="head">', '<g>');
+  const svg = svgDoc(64, 64, '', `<clipPath id="gsg-icon-clip"><rect width="64" height="64" rx="14"/></clipPath><g clip-path="url(#gsg-icon-clip)"><rect width="64" height="64" fill="${C.grass}"/><svg viewBox="14 2 112 112" width="64" height="64">${head}</svg></g><rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="${C.ink}" stroke-width="2"/>`, 'Gnome Sweet Gnome');
+  write('icon-gnome.svg', svg, { size: [64, 64], crop: 'head of gnome-down-idle' }, 'icon');
+  writeFileSync(join(ROOT, 'assets', 'favicon.svg'), svg);
+}
 manifest.palette = { glow: GLOW, wood: C.stake, hat: C.hat, water: C.water, grass: C.grass, outline: C.ink };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-const count = ['gnome', 'tiles', 'teleporter', 'wall'].reduce((n, g) => n + Object.keys(manifest[g]).length, 0);
+const count = ['gnome', 'tiles', 'teleporter', 'wall', 'icon'].reduce((n, g) => n + Object.keys(manifest[g]).length, 0);
 console.log(`wrote ${count} sprites and manifest.json to assets/sprites`);

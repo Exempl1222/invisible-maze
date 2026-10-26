@@ -2,12 +2,13 @@
 // Every level is open while the game is in development (no locks).
 import { bestStars } from './storage.js';
 import { starsMarkup } from './icons.js';
+import { sprite } from '../sprites.js';
 
 const TUTORIAL_COUNT = 5; // the first five levels teach one idea each
 
 function groupFor(level, i) {
-  if (level.size === 9) return 'Hard, 9x9';
-  return i < TUTORIAL_COUNT ? 'Tutorial, 7x7' : 'Main, 7x7';
+  if (level.size === 9) return 'The Wild Wood \u00b7 9x9';
+  return i < TUTORIAL_COUNT ? 'Seedlings \u00b7 7x7' : 'The Garden \u00b7 7x7';
 }
 
 /** Tabs shared by the select screens. `current` is "levels", "daily" or "lab". */
@@ -42,7 +43,7 @@ export function renderSelect(root, levels, { onPick, onMode }) {
   const summary = document.createElement('p');
   summary.className = 'select-summary';
   summary.textContent = won === 0
-    ? 'Stop the robot with as few walls as you can.'
+    ? 'Fence the gnome in before he gets home. Fewer walls, more stars.'
     : `${won} of ${levels.length} solved. ${total} of ${levels.length * 3} stars.`;
   intro.appendChild(summary);
   const cont = document.createElement('button');
@@ -77,12 +78,20 @@ export function renderSelect(root, levels, { onPick, onMode }) {
     const label = stars === 0 ? 'not played' : `${stars} star${stars === 1 ? '' : 's'}`;
     b.setAttribute('aria-label', `Level ${i + 1}, ${label}`);
     b.innerHTML = `<span class="num">${i + 1}</span><span class="level-stars">${starsMarkup(stars)}</span>`;
+    if (i === nextIndex) {
+      // A small idle gnome peeks over the top edge of the level to play next.
+      const peek = document.createElement('span');
+      peek.className = 'peek';
+      peek.setAttribute('aria-hidden', 'true');
+      peek.appendChild(sprite('gnome-down-idle', 'gnome-sprite'));
+      b.appendChild(peek);
+    }
     b.addEventListener('click', () => onPick(i));
     grid.appendChild(b);
   });
 }
 
-export const LAB_NOTE = 'Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the robot and beacon.';
+export const LAB_NOTE = 'Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the gnome and house.';
 
 /** The Lab tab: its note and a button per lab level with best stars. */
 export function renderLab(root, levels, { onPick, onMode, failed = false }) {

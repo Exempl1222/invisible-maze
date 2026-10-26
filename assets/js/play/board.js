@@ -3,9 +3,10 @@
 // Go come from the engine; this file only turns presses into lines and draws results.
 import { sprite, setGnome, playOnce, DIR_OF_STEP } from '../sprites.js';
 import { placeBar } from '../bars.js';
+import { decorateTile } from '../tiles.js';
 import { pointTarget, lineFor, lineKey, explainLine, wallSidesText } from './lines.js';
 
-const NAMES = { '.': 'Grass', '#': 'Rock', '~': 'River', '=': 'Bridge', R: 'Robot start', B: 'Beacon' };
+const NAMES = { '.': 'Grass', '#': 'Rock', '~': 'River', '=': 'Bridge', R: 'Gnome start', B: 'House' };
 const CLASS = { '.': 'grass', '#': 'rock', '~': 'river', '=': 'bridge', R: 'start', B: 'beacon' };
 const STEP = { U: [0, -1], R: [1, 0], D: [0, 1], L: [-1, 0] };
 const ARROWS = { ArrowUp: 'U', ArrowRight: 'R', ArrowDown: 'D', ArrowLeft: 'L' };
@@ -50,24 +51,10 @@ export function createBoard(root, level, { onLine, onHelp }) {
       b.className = `cell ${portal ? 'teleporter' : CLASS[ch]}`;
       b.dataset.tile = portal ? 'teleporter' : CLASS[ch];
       b.tabIndex = -1;
-      if (ch === '.') b.dataset.v = String(((x * 7 + y * 13) % 3) + 1);
-      else if (ch === '#') b.dataset.v = (x + y) % 3 === 0 ? '2' : '1';
-      else if (ch === '=') {
-        const isRiver = (cx, cy) => cx >= 0 && cy >= 0 && cx < n && cy < n && level.tiles[cy][cx] === '~';
-        if (isRiver(x - 1, y) && isRiver(x + 1, y)) b.classList.add('across-v');
-      } else if (ch === '~') {
-        const flows = (cx, cy) => cx >= 0 && cy >= 0 && cx < n && cy < n && (level.tiles[cy][cx] === '~' || level.tiles[cy][cx] === '=');
-        if (y > 0 && !flows(x, y - 1)) b.classList.add('bank-u');
-        if (x < n - 1 && !flows(x + 1, y)) b.classList.add('bank-r');
-        if (y < n - 1 && !flows(x, y + 1)) b.classList.add('bank-d');
-        if (x > 0 && !flows(x - 1, y)) b.classList.add('bank-l');
-      }
-      if (portal) {
-        b.dataset.pairN = String(letters.indexOf(ch) + 1);
-        if (letters.length > 1) {
-          b.textContent = String(letters.indexOf(ch) + 1);
-          b.dataset.pair = ch;
-        }
+      decorateTile(b, level.tiles, n, x, y, letters);
+      if (portal && letters.length > 1) {
+        b.textContent = String(letters.indexOf(ch) + 1);
+        b.dataset.pair = ch;
       }
       cells.set(key(x, y), b);
       root.appendChild(b);
@@ -95,7 +82,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
     const where = `row ${y + 1} column ${x + 1}`;
     if (isPortal(ch)) {
       const num = letters.length > 1 ? ` ${letters.indexOf(ch) + 1}` : '';
-      return `Teleporter${num}, ${where}`;
+      return `Stump${num}, ${where}`;
     }
     if (ch === '.') {
       const ws = wallSidesText(x, y, n, hasWall);
