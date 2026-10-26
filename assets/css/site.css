@@ -325,5 +325,5 @@ h2 {
 
 @media (prefers-reduced-motion: reduce) {
   .robot, .cell, .btn { transition: none; }
-  .robot.blink, .wall-bar.drop { animation: none; }
+  .wall-bar.drop { animation: none; }
 }

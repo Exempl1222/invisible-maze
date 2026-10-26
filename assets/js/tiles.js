@@ -21,8 +21,13 @@ export function decorateTile(el, tiles, n, x, y, letters) {
   if (ch === '.') el.dataset.v = String(((x * 7 + y * 13) % 3) + 1);
   else if (ch === '#') el.dataset.v = (x + y) % 3 === 0 ? '2' : '1'; // every third rock is a berry bush
   else if (ch === '=') {
-    // The gnome crosses top to bottom when the river runs left and right.
-    if (at(x - 1, y) === '~' && at(x + 1, y) === '~') el.classList.add('across-v');
+    // Planks follow the way the gnome walks across: the axis with more walkable neighbours (not
+    // river, rock or the board edge). On a tie (a bend), run them across the axis with more water.
+    const walk = (cx, cy) => { const c = at(cx, cy); return c !== null && c !== '~' && c !== '#' ? 1 : 0; };
+    const wet = (cx, cy) => (at(cx, cy) === '~' ? 1 : 0);
+    const wv = walk(x, y - 1) + walk(x, y + 1);
+    const wh = walk(x - 1, y) + walk(x + 1, y);
+    if (wv > wh || (wv === wh && wet(x - 1, y) + wet(x + 1, y) > wet(x, y - 1) + wet(x, y + 1))) el.classList.add('across-v');
   } else if (ch === '~') {
     const water = (cx, cy) => at(cx, cy) === '~' || at(cx, cy) === '=';
     if (y > 0 && !water(x, y - 1)) el.classList.add('bank-u');

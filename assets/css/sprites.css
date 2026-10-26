@@ -58,8 +58,8 @@
 
 /* Teleport, part 1: hop onto the stump rim, squash, sink into the hollow (560ms).
    The robot box is clipped at the hollow's centre line (41% down the tile) once he is on the rim. */
-.play-board .robot.dive .gnome-sprite { animation: gsg-dive 560ms ease-in both; }
-.play-board .robot.dive { animation: gsg-clip-dive 560ms linear both; }
+.play-board .robot.dive .gnome-sprite { animation: gsg-dive var(--dive-ms, 560ms) ease-in both; }
+.play-board .robot.dive { animation: gsg-clip-dive var(--dive-ms, 560ms) linear both; }
 @keyframes gsg-dive {
   0%   { transform: translateY(0); }
   35%  { transform: translateY(-43.8%); }
@@ -72,8 +72,8 @@
 }
 
 /* Teleport, part 2: pop up out of the twin stump, land on the rim, hop down (520ms). */
-.play-board .robot.pop .gnome-sprite { animation: gsg-pop 520ms ease-out both; }
-.play-board .robot.pop { animation: gsg-clip-pop 520ms linear both; }
+.play-board .robot.pop .gnome-sprite { animation: gsg-pop var(--pop-ms, 520ms) ease-out both; }
+.play-board .robot.pop { animation: gsg-clip-pop var(--pop-ms, 520ms) linear both; }
 @keyframes gsg-pop {
   0%   { transform: translateY(59.3%) scale(.8, 1); }
   45%  { transform: translateY(-38%) scale(.95, 1.08); }

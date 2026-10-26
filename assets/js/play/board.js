@@ -429,7 +429,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
           mark(sim.steps[i]);
           if (sim.via[i]) mark(sim.via[i]);
         }
-        for (let i = 1; i <= last; i++) face(sim.via[i] || sim.steps[i - 1], sim.steps[i]);
+        for (let i = 1; i <= last; i++) face(sim.steps[i - 1], sim.via[i] || sim.steps[i]); // a jump faces the stump he walked onto
         setGnome(robot, lastDir, 'idle');
         moveRobot(sim.steps[last], { instant: true });
         if (onMove) onMove(last);
@@ -452,14 +452,19 @@ export function createBoard(root, level, { onLine, onHelp }) {
           await sleep(stepMs * 0.45);
           if (cancelled()) return false;
           mark(via);
-          await playOnce(robot, 'dive', 560, { keep: true });
+          // Dive and pop scale with the step time, so speeding up the replay speeds up teleports too.
+          const diveMs = Math.round(stepMs * 2.55);
+          const popMs = Math.round(stepMs * 2.36);
+          robot.style.setProperty('--dive-ms', `${diveMs}ms`);
+          robot.style.setProperty('--pop-ms', `${popMs}ms`);
+          await playOnce(robot, 'dive', diveMs, { keep: true });
           if (cancelled()) { robot.classList.remove('dive'); return false; }
           pulse(via, 'flash');
           pulse(sim.steps[i], 'flash');
           const link = drawLink(via, sim.steps[i], 'jump');
           moveRobot(sim.steps[i], { instant: true });
           robot.classList.remove('dive');
-          await playOnce(robot, 'pop', 520);
+          await playOnce(robot, 'pop', popMs);
           removeLink(link);
           if (cancelled()) return false;
         } else {
