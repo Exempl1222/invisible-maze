@@ -3,12 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseLevel, findPath, solve, countAnswers, simulate, cutsAllRoutes, capViolation, sideCounts, wouldBreakCap } from '../src/game/index.js';
-import { isRingAnswer } from './generate.js';
+import { isRingAnswer, invalidBridges } from './generate.js';
 
 const file = fileURLToPath(new URL('../assets/levels/pack-01.json', import.meta.url));
 const pack = JSON.parse(readFileSync(file, 'utf8'));
-const labFile = fileURLToPath(new URL('../assets/levels/lab.json', import.meta.url));
-const lab = JSON.parse(readFileSync(labFile, 'utf8'));
 
 // the two tiles beside a wall line
 const ends = (lv, [x, y, d]) => [[x, y], d === 'R' ? [x + 1, y] : [x, y + 1]].map(([a, b]) => lv.tile(a, b));
@@ -19,7 +17,7 @@ test('pack-01: shape, 30 levels, ids in order, sizes by band, all rules v4', () 
   assert.equal(pack.levels.length, 30);
   pack.levels.forEach((l, i) => {
     assert.equal(l.id, `p01-${String(i + 1).padStart(2, '0')}`);
-    assert.equal(l.size, i < 15 ? 7 : 9, l.id);
+    assert.equal(l.size, i < 5 ? 5 : i < 15 ? 7 : 9, l.id);
     assert.equal(l.rules, 'v4', `${l.id} rules`);
   });
 });
@@ -63,7 +61,7 @@ test('pack-01: every level is consistent with the engine (v4)', () => {
 
 test('pack-01: par bands', () => {
   const band = (lo, hi) => pack.levels.slice(lo - 1, hi);
-  for (const l of band(1, 5)) assert.ok(l.par >= 2 && l.par <= 3, `${l.id} tutorial par ${l.par}`);
+  for (const l of band(1, 5)) assert.ok(l.par >= 1 && l.par <= 3, `${l.id} tutorial par ${l.par}`);
   for (const l of band(6, 15)) assert.ok(l.par >= 3 && l.par <= 4, `${l.id} 7x7 par ${l.par}`);
   for (const l of band(16, 25)) assert.ok(l.par >= 4 && l.par <= 5, `${l.id} 9x9 par ${l.par}`);
   for (const l of band(26, 30)) assert.ok(l.par >= 6 && l.par <= 7, `${l.id} hard par ${l.par}`);
@@ -86,14 +84,21 @@ test('pack-01: easiest first within each band', () => {
   }
 });
 
-test('pack-01: the last band carries the two hardest Lab levels, re-id\'d', () => {
-  const same = (a, b) => ['size', 'tiles', 'rules', 'moveLimit', 'wallBudget', 'par', 'parAnswers', 'answer'].every((k) => JSON.stringify(a[k]) === JSON.stringify(b[k]));
-  for (const labId of ['lab-04', 'lab-05']) {
-    const l = lab.levels.find((x) => x.id === labId);
-    assert.ok(pack.levels.slice(25).some((p) => same(p, l)), `${labId} is in p01-26 to p01-30`);
+test('pack-01: the hard band is generated (par 6 and at least one par 7), not reused from the Lab', () => {
+  const last = pack.levels.slice(25);
+  assert.equal(last.filter((l) => l.par === 6).length, 4);
+  assert.ok(last.some((l) => l.par === 7), 'one par 7');
+  const labBoards = new Set(JSON.parse(readFileSync(fileURLToPath(new URL('../assets/levels/lab.json', import.meta.url)), 'utf8')).levels.map((l) => l.tiles.join('/')));
+  for (const l of pack.levels) assert.ok(!labBoards.has(l.tiles.join('/')), `${l.id} is a Lab board`);
+});
+
+test('pack-01: every bridge in every level spans a river (tutorial included)', () => {
+  let bridges = 0;
+  for (const l of pack.levels) {
+    assert.deepEqual(invalidBridges(l.tiles), [], `${l.id}\n${l.tiles.join('\n')}`);
+    bridges += l.tiles.join('').split('=').length - 1;
   }
-  assert.equal(lab.levels.find((x) => x.id === 'lab-04').par, 6);
-  assert.equal(lab.levels.find((x) => x.id === 'lab-05').par, 7);
+  assert.ok(bridges > 20, `${bridges} bridges checked`);
 });
 
 test('pack-01: tutorial teaches one idea at a time, in order, and each answer uses it', () => {
@@ -105,6 +110,7 @@ test('pack-01: tutorial teaches one idea at a time, in order, and each answer us
   // 1: walls lengthen a route. Open grass only; the answer is a fence of more than one wall away from the robot and beacon.
   assert.ok(!has(t[0], '#') && !has(t[0], '~') && !has(t[0], '=') && !tele(t[0]));
   assert.ok(t[0].par >= 2, 'level 1 needs a fence, not a single wall');
+  t.forEach((raw) => assert.equal(raw.size, 5, `${raw.id} is 5x5`));
   assert.ok(t[0].answer.every((w) => ends(lvs[0], w).every((c) => c === '.')), 'level 1 answer is plain walls on grass');
   const open1 = findPath(lvs[0], []).positions.length - 1;
   assert.ok(open1 <= t[0].moveLimit, 'level 1: the robot reaches the beacon with no walls');
@@ -135,7 +141,7 @@ test('pack-01: tutorial teaches one idea at a time, in order, and each answer us
   const capped = c5.beacon === 2 ? 'beacon' : 'start';
   const [cx, cy] = capped === 'beacon' ? lvs[4].beacon : lvs[4].start;
   const third = [[cx, cy - 1, 'D'], [cx, cy, 'D'], [cx - 1, cy, 'R'], [cx, cy, 'R']]
-    .filter(([x, y]) => x >= 0 && y >= 0 && x < 7 && y < 7)
+    .filter(([x, y]) => x >= 0 && y >= 0 && x < lvs[4].size && y < lvs[4].size)
     .filter((w) => lvs[4].lineBuildable(...w) && !t[4].answer.some((a) => a.join() === w.join()));
   assert.ok(third.some((w) => wouldBreakCap(lvs[4], t[4].answer, w) === capped), 'level 5: one more side would be refused by the cap');
 
@@ -144,8 +150,8 @@ test('pack-01: tutorial teaches one idea at a time, in order, and each answer us
     const r = simulate(lvs[i], raw.answer);
     assert.equal(r.result, 'win', raw.id);
     assert.equal(r.reason, 'too-far', raw.id);
-    // Level 4 is the one exception: sealing the corner teleporter IS the lesson (a ring around it).
-    if (i !== 3) assert.equal(isRingAnswer(lvs[i], raw.answer), false, raw.id);
+    // Level 4 is an exception (sealing the corner teleporter IS the lesson, a ring around it); a one-wall answer is trivially a ring.
+    if (i !== 3 && raw.answer.length > 1) assert.equal(isRingAnswer(lvs[i], raw.answer), false, raw.id);
   });
 });
 
