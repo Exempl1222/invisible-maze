@@ -32,7 +32,14 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 3. **Engine stays pure.** Nothing in `src/game/` touches the DOM, `window` or timers. Randomness takes a seed.
 4. **Mobile first.** Design at 390px wide. No horizontal scroll. Touch targets at least 44px.
 5. **Relative paths only.** The site is served from `/invisible-maze/`, so `/assets/...` breaks. Use `assets/...` or `../assets/...`.
-6. **Colour means something.** Amber is the robot and primary actions, cyan is a player wall, lilac is the beacon, pink is a teleporter, blue is river, timber is bridge, slate is rock. Don't reuse them for decoration.
+6. **Colour means something** (the palette doubles as a legend, see `docs/ART_SPEC.md`). Don't reuse these for decoration:
+   - Hat red `#c94a32`: the gnome, and the toadstool house he's heading for
+   - Timber `#c48a52`: a wall the player placed
+   - Gold `#e9b949`: a hint wall (ribbon)
+   - Teal `#5ff0d8`, violet `#c79bff`, amber `#ffcf5a`: teleporter pairs 1, 2, 3. Glow only ever means magic
+   - Water `#5aa9d6`: river. Log brown `#a0703f`: bridge
+   - Stone grey `#9aa3a6`, bush green `#3f7a34`: pre-built, permanent
+   - Outline `#3b2618`: every shape. Never black
 7. **Verify before claiming done.** Run `npm test`, and for UI changes run the maze-playtest skill and look at the screenshots.
 8. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
 

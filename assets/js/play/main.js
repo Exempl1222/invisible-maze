@@ -5,12 +5,13 @@ import { loadProgress, recordWin, loadHints, hintCount, spendHint, earnDailyHint
 import { renderSelect, renderLab } from './select.js';
 import { capMessage } from './lines.js';
 import { starsMarkup } from './icons.js';
+import { preloadSprites } from '../sprites.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from './daily.js';
 
 const PACK_URL = '../assets/levels/pack-01.json';
 const DAILY_URL = '../assets/levels/daily.json';
 const LAB_URL = '../assets/levels/lab.json';
-const STEP_MS = 300;
+const STEP_MS = 220;
 
 const $ = (id) => document.getElementById(id);
 const titleEl = $('title');
@@ -467,6 +468,20 @@ async function boot() {
     labLevels = (await res.json()).levels.map((l) => parseLevel(l));
   } catch {
     labFailed = true; // the Lab tab says so; the rest of the game still works
+  }
+  try {
+    await preloadSprites();
+  } catch {
+    loading.textContent = '';
+    const p = document.createElement('p');
+    p.textContent = 'The game art did not load. Check your connection and try again.';
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'btn';
+    retryBtn.textContent = 'Reload';
+    retryBtn.addEventListener('click', () => location.reload());
+    loading.append(p, retryBtn);
+    return;
   }
   loading.hidden = true;
   loadProgress();

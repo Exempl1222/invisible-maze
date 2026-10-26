@@ -625,3 +625,31 @@ test('Replay clears the walls for a fresh attempt', async ({ page }) => {
   await expect(bars(page)).toHaveCount(0);
   await expect(go(page)).toBeEnabled();
 });
+
+/* ---------- Gnome Sweet Gnome sprites ---------- */
+
+test('the board draws the gnome sprite inside #robot', async ({ page }) => {
+  await open(page, 1);
+  await expect(page.locator('#robot .gnome-sprite')).toHaveCount(1);
+  await expect(page.locator('#robot .gnome-sprite')).toHaveAttribute('data-sprite', 'gnome-down-idle');
+});
+
+test('placing a wall adds a wall sprite inside its bar', async ({ page }) => {
+  await open(page, 1);
+  const { answer } = solve(levels[0]);
+  await press(page, answer[0]);
+  await expect(bars(page)).toHaveCount(1);
+  await expect(bars(page).first().locator('.wall-art svg')).toHaveCount(1);
+  await expect(bars(page).first()).toHaveAttribute('data-dir', /^[hv]$/);
+});
+
+test('after a teleport the gnome has no dive or pop class left on', async ({ page }) => {
+  const i = firstIndex((l) => {
+    const r = findPath(l, []);
+    return r && r.teleports.length > 0 && simulate(l, []).result === 'lose';
+  });
+  await open(page, num(i));
+  await go(page).click();
+  await expect(result(page)).toHaveAttribute('data-result', 'lose');
+  await expect(page.locator('#robot')).not.toHaveClass(/\b(dive|pop)\b/);
+});

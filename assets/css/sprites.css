@@ -45,7 +45,6 @@
 /* ---------- the gnome ---------- */
 /* Sprite box is 130% of a tile, square, anchored so his feet land 82% down the tile. */
 .play-board .robot { overflow: visible; }
-.play-board .robot > svg { display: none; } /* old robot icon, until it is removed from icons.js */
 .play-board .robot .gnome-sprite {
   position: absolute; left: -15%; bottom: 9.6%; width: 130%; height: 130%;
   transform-origin: 50% 93.6%; /* his feet: anchor (70, 131) on the 140 canvas */
