@@ -14,6 +14,27 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseLevel, findPath, solve, countAnswers, simulate, createRng } from '../src/game/index.js';
 
+/**
+ * True if the bridge tile at (x, y) links two pieces of land: walkable land (not river, rock, another
+ * bridge, and on the board) on both opposite sides along one axis, and river on both sides of the
+ * other axis. Pure; `tiles` is the array of row strings. A tile that is not a bridge is never valid.
+ */
+export function isValidBridge(tiles, x, y) {
+  const at = (a, b) => (a >= 0 && b >= 0 && b < tiles.length && a < tiles[b].length ? tiles[b][a] : null);
+  if (at(x, y) !== '=') return false;
+  const land = (c) => c !== null && c !== '~' && c !== '#' && c !== '=';
+  const river = (c) => c === '~';
+  const [l, r, u, d] = [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)];
+  return (land(l) && land(r) && river(u) && river(d)) || (land(u) && land(d) && river(l) && river(r));
+}
+
+/** Every bridge of a board that fails isValidBridge, as [x, y] pairs in reading order. */
+export function invalidBridges(tiles) {
+  const bad = [];
+  tiles.forEach((row, y) => [...row].forEach((c, x) => { if (c === '=' && !isValidBridge(tiles, x, y)) bad.push([x, y]); }));
+  return bad;
+}
+
 function buildTerrain(rng, size) {
   // Built with the river running top to bottom, then transposed/flipped at the end.
   const g = Array.from({ length: size }, () => Array(size).fill('.'));
@@ -37,14 +58,23 @@ function buildTerrain(rng, size) {
     putRiver(rx, y);
   }
 
+  // Bridges must span the river: land on both sides along one axis and river on both sides of the other
+  // (isValidBridge). Pick river cells that already satisfy that, then clear any rock on the landing tiles.
   const bridgeCount = rng.int(2, 4);
   const usedRows = new Set();
+  const at = (x, y) => (x >= 0 && y >= 0 && x < size && y < size ? g[y][x] : null);
+  const isLand = (c) => c !== null && c !== '~' && c !== '=';
   for (const [x, y] of rng.shuffle(riverCells)) {
     if (usedRows.size >= bridgeCount) break;
     if (usedRows.has(y) || usedRows.has(y - 1) || usedRows.has(y + 1)) continue;
+    const lr = isLand(at(x - 1, y)) && isLand(at(x + 1, y)) && at(x, y - 1) === '~' && at(x, y + 1) === '~';
+    if (!lr) continue; // the river runs top to bottom here, so a crossing goes left to right
     usedRows.add(y);
     g[y][x] = '=';
+    g[y][x - 1] = g[y][x - 1] === '#' ? '.' : g[y][x - 1];
+    g[y][x + 1] = g[y][x + 1] === '#' ? '.' : g[y][x + 1];
   }
+  if (usedRows.size < 2) return null;
 
   const grass = () => {
     const out = [];
@@ -81,7 +111,8 @@ function buildTerrain(rng, size) {
   if (rng.chance(0.5)) out = out[0].map((_, x) => out.map((row) => row[x])); // transpose
   if (rng.chance(0.5)) out = out.map((row) => row.slice().reverse()); // mirror
   if (rng.chance(0.5)) out = out.slice().reverse(); // flip
-  return out.map((row) => row.join(''));
+  const rows = out.map((row) => row.join(''));
+  return invalidBridges(rows).length === 0 ? rows : null;
 }
 
 /**
