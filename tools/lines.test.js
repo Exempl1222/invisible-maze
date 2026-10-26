@@ -104,6 +104,6 @@ test('wallSidesText: reads walls around a tile', () => {
 
 test('capMessage: the two lab refusal messages', async () => {
   const { capMessage } = await import('../assets/js/play/lines.js');
-  assert.equal(capMessage('start'), 'The robot can only be walled on two sides.');
-  assert.equal(capMessage('beacon'), 'The beacon can only be walled on two sides.');
+  assert.equal(capMessage('start'), 'The gnome can only be walled on two sides.');
+  assert.equal(capMessage('beacon'), 'The house can only be walled on two sides.');
 });

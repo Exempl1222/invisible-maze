@@ -1,12 +1,4 @@
 // Small inline SVGs shared by the level select and the game.
-export const ROBOT_SVG = `<svg viewBox="0 0 32 32" aria-hidden="true">
-  <rect x="6" y="9" width="20" height="16" rx="5" fill="var(--robot)"/>
-  <rect x="10" y="14" width="4" height="4" rx="1" fill="var(--night)"/>
-  <rect x="18" y="14" width="4" height="4" rx="1" fill="var(--night)"/>
-  <rect x="15" y="3" width="2" height="6" fill="var(--robot)"/>
-  <circle cx="16" cy="3" r="2" fill="var(--robot)"/>
-</svg>`;
-
 const STAR_PATH = 'M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z';
 
 /** Three stars, `n` of them filled. Decorative: the caller labels the group. */

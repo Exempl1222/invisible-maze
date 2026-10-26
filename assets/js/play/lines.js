@@ -61,7 +61,7 @@ export function explainLine(level, line, target) {
 
 /** Why a wall would break the side cap ("start" or "beacon", from the engine's wouldBreakCap). */
 export function capMessage(kind) {
-  return kind === 'beacon' ? 'The beacon can only be walled on two sides.' : 'The robot can only be walled on two sides.';
+  return kind === 'beacon' ? 'The house can only be walled on two sides.' : 'The gnome can only be walled on two sides.';
 }
 
 const SIDE_WORD = { U: 'top', R: 'right', D: 'bottom', L: 'left' };

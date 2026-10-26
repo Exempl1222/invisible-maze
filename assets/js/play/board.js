@@ -1,11 +1,12 @@
 // The board: tiles as buttons, walls as bars on the lines between them, the robot, and the
 // step-by-step replay of a simulation. No rules here. Which lines take walls and what happens on
 // Go come from the engine; this file only turns presses into lines and draws results.
-import { ROBOT_SVG } from './icons.js';
+import { sprite, setGnome, playOnce, DIR_OF_STEP } from '../sprites.js';
 import { placeBar } from '../bars.js';
+import { decorateTile } from '../tiles.js';
 import { pointTarget, lineFor, lineKey, explainLine, wallSidesText } from './lines.js';
 
-const NAMES = { '.': 'Grass', '#': 'Rock', '~': 'River', '=': 'Bridge', R: 'Robot start', B: 'Beacon' };
+const NAMES = { '.': 'Grass', '#': 'Rock', '~': 'River', '=': 'Bridge', R: 'Gnome start', B: 'House' };
 const CLASS = { '.': 'grass', '#': 'rock', '~': 'river', '=': 'bridge', R: 'start', B: 'beacon' };
 const STEP = { U: [0, -1], R: [1, 0], D: [0, 1], L: [-1, 0] };
 const ARROWS = { ArrowUp: 'U', ArrowRight: 'R', ArrowDown: 'D', ArrowLeft: 'L' };
@@ -50,6 +51,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
       b.className = `cell ${portal ? 'teleporter' : CLASS[ch]}`;
       b.dataset.tile = portal ? 'teleporter' : CLASS[ch];
       b.tabIndex = -1;
+      decorateTile(b, level.tiles, n, x, y, letters);
       if (portal && letters.length > 1) {
         b.textContent = String(letters.indexOf(ch) + 1);
         b.dataset.pair = ch;
@@ -68,7 +70,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
   const robot = el('robot');
   robot.id = 'robot';
   robot.setAttribute('aria-hidden', 'true');
-  robot.innerHTML = ROBOT_SVG;
+  setGnome(robot, 'down', 'idle');
   root.appendChild(robot);
 
   const hasWall = (line) => walls.has(lineKey(line));
@@ -80,7 +82,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
     const where = `row ${y + 1} column ${x + 1}`;
     if (isPortal(ch)) {
       const num = letters.length > 1 ? ` ${letters.indexOf(ch) + 1}` : '';
-      return `Teleporter${num}, ${where}`;
+      return `Stump${num}, ${where}`;
     }
     if (ch === '.') {
       const ws = wallSidesText(x, y, n, hasWall);
@@ -353,6 +355,9 @@ export function createBoard(root, level, { onLine, onHelp }) {
       if (on && !walls.has(k)) {
         const bar = el(isHint ? 'wall-bar hinted drop' : 'wall-bar drop');
         bar.dataset.line = k;
+        const dir = line[2] === 'D' ? 'h' : 'v';
+        bar.dataset.dir = dir;
+        bar.appendChild(sprite(`wall-${dir}${isHint ? '-hint' : ''}`, 'wall-art'));
         if (isHint) bar.dataset.hint = '1';
         bar.setAttribute('aria-hidden', 'true');
         root.insertBefore(bar, hint); // `hint` here is the line-highlight element: walls sit under it
@@ -385,7 +390,8 @@ export function createBoard(root, level, { onLine, onHelp }) {
     resetRun() {
       for (const c of cells.values()) c.classList.remove('trail', 'reached', 'flash', 'linked');
       for (const l of [...links]) removeLink(l);
-      robot.classList.remove('jolt', 'vanish');
+      robot.classList.remove('jolt', 'vanish', 'dive', 'pop', 'home');
+      setGnome(robot, 'down', 'idle');
       moveRobot(level.start, { instant: true });
     },
     fit,
@@ -402,11 +408,20 @@ export function createBoard(root, level, { onLine, onHelp }) {
         if (pos[0] === level.beacon[0] && pos[1] === level.beacon[1]) return;
         cellAt(pos[0], pos[1]).classList.add('trail');
       };
+      let lastDir = 'down';
+      const face = (from, to) => {
+        const dx = to[0] - from[0];
+        const dy = to[1] - from[1];
+        const d = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'R' : dx < 0 ? 'L' : null) : (dy > 0 ? 'D' : 'U');
+        if (d) lastDir = DIR_OF_STEP[d];
+        return lastDir;
+      };
       const verdict = () => {
         if (sim.result === 'lose') {
           cellAt(level.beacon[0], level.beacon[1]).classList.add('reached');
+          playOnce(robot, 'home', 600, { keep: true }); // runs while the tail sleep below counts down
         } else {
-          robot.classList.add('jolt'); // out of moves: the robot stops short of the beacon
+          setGnome(robot, lastDir, 'shrug'); // out of moves: the gnome stops short of the house
         }
       };
       if (instant) {
@@ -414,42 +429,55 @@ export function createBoard(root, level, { onLine, onHelp }) {
           mark(sim.steps[i]);
           if (sim.via[i]) mark(sim.via[i]);
         }
+        for (let i = 1; i <= last; i++) face(sim.steps[i - 1], sim.via[i] || sim.steps[i]); // a jump faces the stump he walked onto
+        setGnome(robot, lastDir, 'idle');
         moveRobot(sim.steps[last], { instant: true });
         if (onMove) onMove(last);
-        verdict();
+        if (sim.result === 'lose') {
+          cellAt(level.beacon[0], level.beacon[1]).classList.add('reached');
+          robot.classList.add('home');
+        } else setGnome(robot, lastDir, 'shrug');
         return true;
       }
-      await sleep(350);
+      await sleep(250);
       for (let i = 1; i <= last; i++) {
         if (cancelled()) return false;
         mark(sim.steps[i - 1]);
         if (onMove) onMove(i);
         const via = sim.via[i];
         if (via) {
-          // Step onto the teleporter, light the pair and join it to its partner, then reappear there.
+          // Step onto the stump, hop on and sink in, then pop out of its twin.
+          setGnome(robot, face(sim.steps[i - 1], via), 'walk');
           moveRobot(via, { ms: stepMs * 0.45 });
-          await sleep(stepMs * 0.55);
+          await sleep(stepMs * 0.45);
           if (cancelled()) return false;
           mark(via);
+          // Dive and pop scale with the step time, so speeding up the replay speeds up teleports too.
+          const diveMs = Math.round(stepMs * 2.55);
+          const popMs = Math.round(stepMs * 2.36);
+          robot.style.setProperty('--dive-ms', `${diveMs}ms`);
+          robot.style.setProperty('--pop-ms', `${popMs}ms`);
+          await playOnce(robot, 'dive', diveMs, { keep: true });
+          if (cancelled()) { robot.classList.remove('dive'); return false; }
           pulse(via, 'flash');
           pulse(sim.steps[i], 'flash');
           const link = drawLink(via, sim.steps[i], 'jump');
-          robot.classList.add('vanish');
-          await sleep(stepMs * 0.9);
-          if (cancelled()) return false;
           moveRobot(sim.steps[i], { instant: true });
-          robot.classList.remove('vanish');
-          await sleep(stepMs * 0.6);
+          robot.classList.remove('dive');
+          await playOnce(robot, 'pop', popMs);
           removeLink(link);
+          if (cancelled()) return false;
         } else {
+          setGnome(robot, face(sim.steps[i - 1], sim.steps[i]), 'walk');
           moveRobot(sim.steps[i], { ms: stepMs * 0.75 });
           await sleep(stepMs);
         }
       }
       if (cancelled()) return false;
       mark(sim.steps[last]);
+      if (sim.result === 'lose') setGnome(robot, lastDir, 'idle');
       verdict();
-      await sleep(450);
+      await sleep(sim.result === 'lose' ? 500 : 450);
       return !cancelled();
     },
   };

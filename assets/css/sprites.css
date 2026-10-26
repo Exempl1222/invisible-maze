@@ -1,0 +1,102 @@
+/* Gnome Sweet Gnome sprites on the game board. Load after play.css.
+   Art lives in assets/sprites/ (built by tools/build-sprites.mjs). Geometry numbers below were
+   computed from the sprite anchors; docs/ART_SPEC.md shows the working. */
+
+/* ---------- board ground ---------- */
+.play-board { --bank: #6b4226; --grass-gap: #6e9e44; background: var(--grass-gap); border-radius: 14px; }
+.play-board .cell { position: relative; border: 0; border-radius: 0; background: center / 100% 100% no-repeat; }
+/* The four corner tiles follow the board frame's 14px radius (minus its 3px outline). */
+.play-board .cell.c-tl { border-top-left-radius: 11px; }
+.play-board .cell.c-tr { border-top-right-radius: 11px; }
+.play-board .cell.c-bl { border-bottom-left-radius: 11px; }
+.play-board .cell.c-br { border-bottom-right-radius: 11px; }
+
+/* ---------- tiles: static art as backgrounds ---------- */
+.play-board .cell.grass                { background-image: url(../sprites/tile-grass-1.svg); }
+.play-board .cell.grass[data-v="2"]    { background-image: url(../sprites/tile-grass-2.svg); }
+.play-board .cell.grass[data-v="3"]    { background-image: url(../sprites/tile-grass-3.svg); }
+.play-board .cell.rock                 { background-image: url(../sprites/tile-rock.svg); }
+.play-board .cell.rock[data-v="2"]     { background-image: url(../sprites/tile-bush.svg); } /* some rocks are berry bushes, for variety */
+.play-board .cell.river                { background-image: url(../sprites/tile-river.svg); }
+.play-board .cell.bridge               { background-image: url(../sprites/tile-bridge-h.svg); }
+.play-board .cell.bridge.across-v      { background-image: url(../sprites/tile-bridge-v.svg); }
+.play-board .cell.beacon               { background-image: url(../sprites/tile-house.svg); }
+.play-board .cell.start                { background-image: url(../sprites/tile-start.svg); }
+.play-board .cell.teleporter                    { background-image: url(../sprites/stump-a.svg); }
+.play-board .cell.teleporter[data-pair-n="2"]   { background-image: url(../sprites/stump-b.svg); }
+.play-board .cell.teleporter[data-pair-n="3"]   { background-image: url(../sprites/stump-c.svg); }
+
+/* River banks: a muddy edge wherever the next tile isn't water. The board sets bank-u/r/d/l. */
+.play-board .cell.river::after { content: ""; position: absolute; inset: 0; border: 0 solid var(--bank); pointer-events: none; }
+.play-board .cell.river.bank-u::after { border-top-width: 3px; }
+.play-board .cell.river.bank-r::after { border-right-width: 3px; }
+.play-board .cell.river.bank-d::after { border-bottom-width: 3px; }
+.play-board .cell.river.bank-l::after { border-left-width: 3px; }
+
+/* Pair number stays as a small badge so colour is never the only cue. */
+.play-board .cell.teleporter[data-pair] { place-items: end end; color: #fff; font-size: clamp(0.6rem, 2.6vw, 0.85rem); text-shadow: 0 1px 2px #000; padding: 0 4px 2px 0; }
+
+/* ---------- walls: the bar keeps its geometry, the wooden art overflows it ---------- */
+.wall-bar { background: none; box-shadow: none; border-radius: 0; overflow: visible; }
+.wall-bar.drop { animation: none; } /* the sprite has its own build */
+.wall-bar.hinted { background: none; outline: none; }
+.wall-bar .wall-art { position: absolute; display: block; pointer-events: none; }
+.wall-bar .wall-art svg { display: block; width: 100%; height: 100%; }
+/* Horizontal art is 2:1 with the ground line 28/32 down, so it sits on the bar's centre line. */
+.wall-bar[data-dir="h"] .wall-art { left: 0; width: 100%; aspect-ratio: 2 / 1; bottom: 50%; transform: translateY(12.5%); }
+/* Vertical art is 1:3 and centred on the line. */
+.wall-bar[data-dir="v"] .wall-art { top: 0; height: 100%; aspect-ratio: 1 / 3; left: 50%; transform: translateX(-50%); }
+
+/* ---------- the gnome ---------- */
+/* Sprite box is 130% of a tile, square, anchored so his feet land 82% down the tile. */
+.play-board .robot { overflow: visible; }
+.play-board .robot .gnome-sprite {
+  position: absolute; left: -15%; bottom: 9.6%; width: 130%; height: 130%;
+  transform-origin: 50% 93.6%; /* his feet: anchor (70, 131) on the 140 canvas */
+}
+.play-board .robot .gnome-sprite svg { display: block; width: 100%; height: 100%; }
+
+/* Teleport, part 1: hop onto the stump rim, squash, sink into the hollow (560ms).
+   The robot box is clipped at the hollow's centre line (41% down the tile) once he is on the rim. */
+.play-board .robot.dive .gnome-sprite { animation: gsg-dive var(--dive-ms, 560ms) ease-in both; }
+.play-board .robot.dive { animation: gsg-clip-dive var(--dive-ms, 560ms) linear both; }
+@keyframes gsg-dive {
+  0%   { transform: translateY(0); }
+  35%  { transform: translateY(-43.8%); }
+  50%  { transform: translateY(-31.8%) scale(1.08, .9); }
+  100% { transform: translateY(59.3%) scale(.8, 1); }
+}
+@keyframes gsg-clip-dive {
+  0%, 49%   { clip-path: inset(-100% -60% -60% -60%); }
+  50%, 100% { clip-path: inset(-100% -60% 59.4% -60%); }
+}
+
+/* Teleport, part 2: pop up out of the twin stump, land on the rim, hop down (520ms). */
+.play-board .robot.pop .gnome-sprite { animation: gsg-pop var(--pop-ms, 520ms) ease-out both; }
+.play-board .robot.pop { animation: gsg-clip-pop var(--pop-ms, 520ms) linear both; }
+@keyframes gsg-pop {
+  0%   { transform: translateY(59.3%) scale(.8, 1); }
+  45%  { transform: translateY(-38%) scale(.95, 1.08); }
+  60%  { transform: translateY(-31.8%) scale(1.08, .9); }
+  72%  { transform: translateY(-31.8%) scale(1, 1); }
+  86%  { transform: translateY(-14%); }
+  100% { transform: translateY(0); }
+}
+@keyframes gsg-clip-pop {
+  0%, 43%   { clip-path: inset(-100% -60% 59.4% -60%); }
+  44%, 100% { clip-path: inset(-100% -60% -60% -60%); }
+}
+
+/* Reached the toadstool house: steps up to the door and shrinks inside (600ms). */
+.play-board .robot.home .gnome-sprite { animation: gsg-home 600ms ease-in both; }
+@keyframes gsg-home {
+  0%   { transform: translateY(0); opacity: 1; }
+  40%  { transform: translateY(-8%) scale(1.05); opacity: 1; }
+  100% { transform: translateY(-14%) scale(.35); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-board .robot.dive .gnome-sprite, .play-board .robot.pop .gnome-sprite, .play-board .robot.home .gnome-sprite,
+  .play-board .robot.dive, .play-board .robot.pop { animation: none; }
+  .play-board .robot .gsg-gnome *, .wall-bar .gsg-wall * { animation: none !important; }
+}

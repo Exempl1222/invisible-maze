@@ -1,6 +1,6 @@
-# Invisible Maze
+# Gnome Sweet Gnome
 
-A mobile-first puzzle game. The robot always takes the shortest route to the beacon; stop it with as few walls as you can. Rivers, bridges and teleporters get in the way. (Invisible Maze is a working title.)
+A mobile-first, fence-building puzzle. A garden gnome is heading home by the shortest path; build wooden fences on the lines between tiles so his walk is too long, using as few fences as you can. Rivers, bridges and hollow stumps (teleporters) get in the way. (The repo and the engine still say `invisible-maze`, robot and beacon.)
 
 **Status:** website live, rules locked, engine next. See [docs/ROADMAP.md](docs/ROADMAP.md).
 

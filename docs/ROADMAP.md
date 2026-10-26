@@ -15,6 +15,7 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 | 6a | **Lab v4 rules + hints** | Engine `rules` per level (`v3.1` default, `v4` lab) with the two-sides cap, 5-level Lab tab, hints on every level (inventory, earned from the daily, each hint costs a star), stored `answer` on every level | Builder (Sonnet) | Done 26 Oct 2026 |
 | 6b | **v4 rollout** | Rules v4 everywhere: 5x5 tutorial, bridges that span a river, new 30-level pack (par up to 7), 180-day daily with weekday par, home page and copy updated | Builder (Opus) | In review |
 | 6 | **Polish and launch** | Daily level, packs of 30, hints, final name, analytics, custom domain, then ads | Mixed | Not started |
+| 7 | **Gnome retheme** | sprites in game, menus rethemed | Builder (Sonnet), reviewed by Opus | In review |
 
 ## Why this order
 

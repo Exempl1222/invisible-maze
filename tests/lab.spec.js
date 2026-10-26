@@ -163,7 +163,7 @@ for (const kind of ['start', 'beacon']) {
     await placeAll(page, first);
     await expect(bars(page)).toHaveCount(2);
     if (hasTouch) await tapLine(page, third); else await press(page, third);
-    await expect(status(page)).toHaveText(kind === 'start' ? 'The robot can only be walled on two sides.' : 'The beacon can only be walled on two sides.');
+    await expect(status(page)).toHaveText(kind === 'start' ? 'The gnome can only be walled on two sides.' : 'The house can only be walled on two sides.');
     await expect(status(page)).toHaveClass(/refused/);
     await expect(bars(page)).toHaveCount(2);
     await expect(page.locator('#walls-used')).toHaveText(`2 / ${labLevels[i].wallBudget}`);
@@ -324,7 +324,7 @@ test('hint: refused, not spent, when the player\'s walls leave no legal answer w
   await placeAll(page, own);
   await expect(bars(page)).toHaveCount(own.length);
   await hintBtn(page).click();
-  await expect(status(page)).toContainText('cut off the robot');
+  await expect(status(page)).toContainText('cut off the gnome');
   await expect(status(page)).toContainText('No hint used');
   await expect(hintBtn(page)).toHaveText('Hint (3)');
   await expect(hintBars(page)).toHaveCount(0);

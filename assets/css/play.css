@@ -18,7 +18,7 @@
 }
 .play-head h1 {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--step-2);
   line-height: 1.1;
   margin: 0;
@@ -31,10 +31,9 @@
   cursor: pointer;
   line-height: 1.2;
 }
-.play .btn:disabled { opacity: 0.4; cursor: default; }
-.play .btn:disabled:hover { background: var(--robot); color: var(--night); }
-.play .btn.quiet:disabled:hover { background: transparent; color: var(--chalk); border-color: var(--grid); }
-.play .btn.quiet:not(:disabled) { border-color: color-mix(in srgb, var(--muted) 55%, var(--grid)); }
+.play .btn:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.play .btn:disabled:hover { background: var(--robot); color: #fff; }
+.play .btn.quiet:disabled:hover { background: var(--panel); color: var(--chalk); }
 
 .loading { color: var(--muted); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -44,29 +43,31 @@
 #select-view { padding-inline: 0; }
 .mode-tabs {
   display: inline-flex;
-  gap: 4px;
-  padding: 4px;
+  gap: 8px;
   margin-bottom: 1rem;
-  background: var(--panel);
-  border: 1px solid var(--grid);
-  border-radius: 10px;
 }
+/* Small wooden sign boards. */
 .mode-tabs a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  min-width: 96px;
+  min-width: 80px;
   padding: 0 1rem;
-  border-radius: 7px;
-  color: var(--muted);
+  border: 2px solid var(--outline);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 9px, color-mix(in srgb, var(--outline) 14%, transparent) 9px 10px),
+    var(--sign);
+  box-shadow: 0 2px 0 var(--outline);
+  color: var(--panel);
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 800;
   text-decoration: none;
 }
-.mode-tabs a:hover { color: var(--chalk); }
-.mode-tabs a[aria-current="page"] { background: var(--grid); color: var(--chalk); }
-.daily-note { padding: 1rem; background: var(--panel); border: 1px solid var(--grid); border-radius: 10px; display: grid; gap: 0.75rem; justify-items: start; max-width: 44ch; }
+.mode-tabs a:hover { color: #fff; background-color: var(--sign-deep); }
+.mode-tabs a[aria-current="page"] { background-color: var(--sign-deep); color: #fff; box-shadow: inset 0 -5px 0 var(--gold), 0 2px 0 var(--outline); }
+.daily-note { padding: 1rem; background: var(--panel); border: 2px solid var(--outline); border-radius: 14px; display: grid; gap: 0.75rem; justify-items: start; max-width: 44ch; }
 .daily-note p { margin: 0; }
 .select-intro {
   display: flex;
@@ -79,38 +80,58 @@
 .select-summary { margin: 0; color: var(--muted); max-width: 36ch; }
 .group-title {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: var(--step-0);
-  color: var(--muted);
-  margin: 1.5rem 0 0.6rem;
+  font-weight: 800;
+  font-size: var(--step-1);
+  color: var(--chalk);
+  margin: 1.75rem 0 0.6rem;
 }
 .level-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 14px 10px;
   max-width: 520px;
 }
+.level-grid:has(.next) { padding-top: 26px; } /* room for the gnome peeking over the next level */
+/* Cream stepping stones. */
 .level-btn {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   min-height: 64px;
   padding: 6px 2px;
   background: var(--panel);
   color: var(--chalk);
-  border: 2px solid var(--grid);
-  border-radius: 8px;
+  border: 2px solid var(--outline);
+  border-radius: 18px 20px 18px 20px / 20px 18px 20px 18px;
+  box-shadow: 0 3px 0 var(--outline);
   font: inherit;
   cursor: pointer;
+  transition: transform 80ms ease, box-shadow 80ms ease;
 }
-.level-btn .num { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); line-height: 1; }
-.level-btn:hover { border-color: var(--muted); }
-.level-btn.next { border-color: var(--robot); }
-.level-stars { display: flex; gap: 1px; height: 14px; align-items: center; }
-.star { width: 14px; height: 14px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linejoin: round; }
-.star.on { fill: var(--chalk); stroke: var(--chalk); }
+.level-btn .num { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); line-height: 1; }
+.level-btn:hover { background: #fff; }
+.level-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--outline); }
+.level-btn.next { box-shadow: 0 0 0 3px var(--page), 0 0 0 6px var(--robot), 0 3px 0 6px var(--robot); }
+.level-btn.next:active { transform: none; }
+/* A third of the stone's height of gnome looks over its top edge. */
+.level-btn .peek {
+  position: absolute;
+  left: 50%;
+  top: -27px;
+  width: 40px;
+  height: 31px;
+  transform: translateX(-50%);
+  overflow: hidden;
+  pointer-events: none;
+}
+.level-btn .peek .gnome-sprite { display: block; width: 40px; height: 40px; }
+.level-btn .peek .gnome-sprite svg { display: block; width: 100%; height: 100%; }
+.level-stars { display: flex; gap: 1px; height: 16px; align-items: center; }
+.star { width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linejoin: round; }
+.star.on { fill: var(--gold); stroke: var(--outline); stroke-width: 1.8; }
 
 /* ---------- game layout ---------- */
 
@@ -134,7 +155,8 @@
     gap: 12px 36px;
     padding-top: 0.25rem;
   }
-  .play-head { max-width: calc(var(--board-size, 560px) + 336px); margin-inline: auto; }
+  /* Only the game screen centres its heading over the board; the level select keeps it flush with the tabs. */
+  .play:has(#game-view:not([hidden])) .play-head { max-width: calc(var(--board-size, 560px) + 336px); margin-inline: auto; }
 }
 /* Short laptop windows: trim the page chrome so the board gets the height. */
 @media (min-width: 880px) and (max-height: 760px) {
@@ -158,21 +180,21 @@
   gap: 2px;
   padding: 6px 8px;
   background: var(--panel);
-  border: 1px solid var(--grid);
-  border-radius: 8px;
+  border: 2px solid var(--outline);
+  border-radius: 10px;
   line-height: 1.2;
   min-width: 0;
 }
 @media (min-width: 880px) { .stat { flex-direction: row; justify-content: space-between; align-items: baseline; padding: 6px 12px; } }
-.stat-label { font-size: 0.8125rem; color: var(--muted); white-space: nowrap; }
-.stat strong { font-family: var(--font-display); font-size: var(--step-1); font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.stat strong { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); font-variant-numeric: tabular-nums; }
 .stat.refused { animation: refuse 320ms ease; border-color: var(--refuse); }
 @keyframes refuse { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 /* ---------- board ---------- */
 
 .play-board {
-  --refuse: #ff8f7a; /* only for "you can't do that" */
+  --refuse: #d6402a; /* only for "you can't do that" */
   gap: var(--gap, 3px);
   width: var(--board-size);
   height: var(--board-size);
@@ -190,26 +212,25 @@
   place-items: center;
   padding: 0;
   min-width: 0;
-  color: var(--teleporter);
+  color: var(--teleporter-ink);
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 800;
   font-size: clamp(0.75rem, 3.4vw, 1.1rem);
   cursor: inherit;
   touch-action: none;
 }
 .play-board.locked { cursor: default; }
 .play-board .cell:focus-visible {
-  outline: 3px solid var(--robot);
+  outline: 3px solid var(--outline);
   outline-offset: -3px;
-  border-radius: 4px;
   z-index: 2;
 }
 .play-board .cell.teleporter.linked {
-  box-shadow: 0 0 0 2px var(--teleporter), 0 0 16px var(--teleporter);
+  box-shadow: 0 0 0 3px var(--teleporter), 0 0 0 5px var(--outline), 0 0 16px var(--teleporter);
   z-index: 1;
 }
 
-/* The line under your finger. Cyan outline: a wall can go here. Red: it can't. */
+/* The line under your finger. Timber with an outline: a wall can go here. Red: it can't. */
 .line-hint {
   position: absolute;
   z-index: 3;
@@ -218,13 +239,13 @@
   box-sizing: border-box;
 }
 .line-hint[hidden] { display: none; }
-.line-hint.ok { background: color-mix(in srgb, var(--wall) 25%, transparent); border: 2px solid var(--wall); box-shadow: 0 0 12px color-mix(in srgb, var(--wall) 60%, transparent); }
-.line-hint.no { background: color-mix(in srgb, var(--refuse) 55%, transparent); border: 2px solid var(--refuse); box-shadow: 0 0 14px var(--refuse); }
+.line-hint.ok { background: color-mix(in srgb, var(--wall) 55%, transparent); border: 2px solid var(--outline); }
+.line-hint.no { background: color-mix(in srgb, var(--refuse) 55%, transparent); border: 2px solid var(--outline); box-shadow: 0 0 0 2px var(--refuse); }
 .line-hint.hover { opacity: 0.55; box-shadow: none; }
 .line-hint.pulse { animation: hint-pulse 380ms ease 2; }
 @keyframes hint-pulse { 50% { transform: scale(1.25, 1.25); } }
 
-/* Pink line joining a teleporter pair (held on press, flashed in the replay). */
+/* Teal line joining a teleporter pair (held on press, flashed in the replay). */
 .tele-link {
   position: absolute;
   z-index: 1;
@@ -232,15 +253,13 @@
   transform-origin: 0 50%;
   border-radius: 2px;
   background: repeating-linear-gradient(90deg, var(--teleporter) 0 8px, transparent 8px 14px);
-  box-shadow: 0 0 10px var(--teleporter);
+  box-shadow: 0 0 0 1.5px var(--outline), 0 0 10px var(--teleporter);
   pointer-events: none;
 }
 .tele-link.jump { animation: link-in 220ms ease-out; height: 5px; background: var(--teleporter); }
 @keyframes link-in { from { opacity: 0; } }
 
 .play-board .robot { z-index: 2; transition: transform 240ms cubic-bezier(.4,.1,.3,1), opacity 110ms ease; }
-.play-board .robot.vanish { opacity: 0; }
-.play-board .robot.jolt svg { animation: jolt 500ms ease 2; }
 
 /* ---------- side panel ---------- */
 
@@ -255,16 +274,16 @@
   border-left: 3px solid transparent;
   padding-left: 8px;
 }
-.hint.refused { color: var(--chalk); border-left-color: var(--refuse, #ff8f7a); background: color-mix(in srgb, #ff8f7a 16%, transparent); animation: hint-flash 900ms ease; }
-@keyframes hint-flash { 0% { background: color-mix(in srgb, #ff8f7a 34%, transparent); } }
+.hint.refused { color: var(--chalk); border-left-color: var(--refuse); background: color-mix(in srgb, var(--refuse) 14%, transparent); animation: hint-flash 900ms ease; }
+@keyframes hint-flash { 0% { background: color-mix(in srgb, var(--refuse) 32%, transparent); } }
 .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .controls #go { grid-column: 1 / -1; }
 .hint-cost { grid-column: 1 / -1; margin: -4px 0 0; font-size: 0.8125rem; color: var(--muted); line-height: 1.3; }
 .hint-panel {
   background: var(--panel);
-  border: 1px solid var(--grid);
-  border-left: 3px solid var(--wall);
-  border-radius: 10px;
+  border: 2px solid var(--outline);
+  border-left: 6px solid var(--gold);
+  border-radius: 12px;
   padding: 12px 14px;
   display: grid;
   gap: 10px;
@@ -278,20 +297,26 @@
 
 .result {
   background: var(--panel);
-  border: 1px solid var(--grid);
-  border-radius: 10px;
+  border: 2px solid var(--outline);
+  border-radius: 14px;
   padding: 16px;
   display: grid;
   gap: 10px;
 }
-.result h2 { font-family: var(--font-display); font-size: var(--step-1); font-weight: 700; margin: 0; line-height: 1.15; }
+.result h2 { font-family: var(--font-display); font-size: var(--step-2); font-weight: 800; margin: 0; line-height: 1.15; }
 .result p { margin: 0; }
 .result .result-text { color: var(--chalk); }
 .result .par { color: var(--muted); font-size: var(--step--1); }
 .result .par strong { color: var(--chalk); font-family: var(--font-display); font-size: var(--step-0); margin-right: 0.35rem; }
-.result[data-result="win"] { border-color: var(--muted); }
+.result .result-head { display: flex; align-items: center; gap: 12px; }
+.result .result-head .picture { flex: none; width: 72px; height: 72px; position: relative; }
+.result .result-head .picture .gnome-sprite { display: block; width: 72px; height: 72px; }
+.result .result-head .picture .gnome-sprite svg { display: block; width: 100%; height: 100%; }
+.result .result-head .picture.house { border: 2px solid var(--outline); border-radius: 12px; background: center / 100% 100% no-repeat url(../sprites/tile-house.svg); }
+.result .result-head .titles { display: grid; gap: 6px; min-width: 0; }
 .result-stars { display: flex; gap: 4px; }
 .result-stars .star { width: 32px; height: 32px; }
+.result-stars .star:not(.on) { stroke: var(--muted); }
 .result-stars .star.on { animation: pop 380ms cubic-bezier(.3,1.5,.5,1) backwards; }
 .result-stars .star.on:nth-child(2) { animation-delay: 120ms; }
 .result-stars .star.on:nth-child(3) { animation-delay: 240ms; }
@@ -303,6 +328,7 @@
 @media (prefers-reduced-motion: reduce) {
   .play-board .robot { transition: none; }
   .stat.refused, .hint.refused, .line-hint.pulse, .tele-link.jump, .result-stars .star.on { animation: none; }
+  .level-btn { transition: none; }
 }
 
 /* ---------- lab ---------- */
@@ -313,19 +339,11 @@
   max-width: 52ch;
   color: var(--chalk);
   background: var(--panel);
-  border: 1px solid var(--grid);
-  border-left: 3px solid var(--wall);
-  border-radius: 8px;
+  border: 2px solid var(--outline);
+  border-left: 6px solid var(--wall);
+  border-radius: 10px;
   font-size: var(--step--1);
   line-height: 1.45;
 }
 .lab-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .mode-tabs a { min-width: 80px; }
-
-/* ---------- hint walls: cyan like a player wall, but striped with a dotted outline ---------- */
-
-.wall-bar.hinted {
-  background: repeating-linear-gradient(45deg, var(--wall) 0 3px, color-mix(in srgb, var(--wall) 30%, var(--night)) 3px 6px);
-  outline: 2px dotted var(--wall);
-  outline-offset: 2px;
-}
