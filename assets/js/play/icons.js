@@ -17,5 +17,3 @@ export function starsMarkup(n, total = 3) {
   }
   return out;
 }
-
-export const LOCK_SVG = `<svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none"/></svg>`;

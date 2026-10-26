@@ -11,7 +11,8 @@ Check the build the way a player meets it: on a phone first. The goal is evidenc
 
 1. **Serve the site.** `npm run serve` (port 4173), in the background.
 2. **Run the automated gate.** `npm run test:e2e`. If it fails, stop and report the failing test and its error. Don't patch tests to make them pass.
-3. **Look at it.** With Playwright, open each page at 390x844 (phone, touch on) and 1366x900 (desktop). Take full-page screenshots and actually view them. Check for:
+3. **Look at it.** With Playwright, open each page at 390x844 (phone, touch on), 1366x625 and 1280x585 (Windows laptop browser windows; the short height is the point). Screenshot the level select, the daily screen (`?daily&date=2026-10-27`), a 7x7 level mid-placement with a line highlighted (hold the press), a 9x9 level, a win panel and a lose panel, and actually view them. Check for:
+   - **the whole board visible without scrolling** on load: every tile fully inside the window at all three sizes (check bottom row and right column; the page must not need a scroll to see the last row)
    - horizontal scroll or clipped text
    - tap targets under 44px
    - text that is hard to read against the background

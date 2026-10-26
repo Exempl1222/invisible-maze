@@ -144,6 +144,7 @@ a:hover { color: var(--chalk); }
   position: relative;
 }
 .cell {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--grid);
   border-radius: 4px;
@@ -165,13 +166,35 @@ a:hover { color: var(--chalk); }
   background: radial-gradient(circle, var(--beacon) 0 30%, color-mix(in srgb, var(--beacon) 20%, var(--panel)) 31%);
 }
 .cell.beacon.reached { box-shadow: 0 0 0 3px var(--beacon), 0 0 20px var(--beacon); }
-.cell.trail { background: color-mix(in srgb, var(--robot) 14%, var(--panel)); }
-.cell.wall {
-  background: color-mix(in srgb, var(--wall) 30%, var(--panel));
-  border: 2px solid var(--wall);
+.cell.trail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--robot) 16%, transparent);
+  pointer-events: none;
 }
-.cell.wall.drop { animation: drop 240ms cubic-bezier(.3,1.4,.5,1); }
-@keyframes drop { from { transform: scale(1.5); opacity: 0; } }
+/* The dock the robot starts from. It stays marked after the robot leaves. */
+.cell.start::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+  border: 2px dashed color-mix(in srgb, var(--robot) 80%, transparent);
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+/* Walls sit on the lines between tiles. Position and size are set from the tile boxes. */
+.wall-bar {
+  position: absolute;
+  z-index: 1;
+  border-radius: 3px;
+  background: var(--wall);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--wall) 55%, transparent);
+  pointer-events: none;
+}
+.wall-bar.drop { animation: bar-drop 260ms cubic-bezier(.3,1.4,.5,1); }
+@keyframes bar-drop { from { opacity: 0; transform: scale(2.2); } }
 
 .robot {
   position: absolute;
@@ -266,5 +289,5 @@ h2 {
 
 @media (prefers-reduced-motion: reduce) {
   .robot, .cell { transition: none; }
-  .robot.jolt svg, .robot.blink, .cell.wall.drop { animation: none; }
+  .robot.jolt svg, .robot.blink, .wall-bar.drop { animation: none; }
 }

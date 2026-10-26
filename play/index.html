@@ -34,15 +34,22 @@
     <noscript><p class="loading">The game needs JavaScript to run.</p></noscript>
 
     <div id="select-view" hidden></div>
+    <div id="daily-break" class="daily-note" hidden>
+      <p><strong>The daily is taking a break.</strong></p>
+      <p>There is no daily level for this date yet. Check back soon, or play the levels in the meantime.</p>
+      <a class="btn" href="./">Back to levels</a>
+    </div>
 
     <div id="game-view" class="game" hidden>
       <div class="stats" aria-label="Level limits">
         <p class="stat"><span class="stat-label">Walls</span><strong id="walls-used">0 / 0</strong></p>
+        <p class="stat"><span class="stat-label">Par</span><strong id="par">0</strong></p>
         <p class="stat"><span class="stat-label">Move limit</span><strong id="move-limit">0</strong></p>
         <p class="stat"><span class="stat-label">Moves left</span><strong id="moves-left">0</strong></p>
       </div>
 
       <div class="board play-board" id="board"></div>
+      <p class="sr-only" id="board-help">Arrow keys move between tiles. Shift plus an arrow key places or removes a wall on that side of the tile.</p>
 
       <div class="side">
         <p class="hint" id="status" role="status"></p>
