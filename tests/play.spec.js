@@ -591,6 +591,31 @@ test('a wall that would cut every route is refused with a message, and the count
   await expect(page.locator(`#board .wall-bar[data-line="${last.join(',')}"]`)).toBeVisible();
 });
 
+// Real touch taps (phone project only). A tap is followed by a browser click; that click must
+// not be mistaken for screen-reader activation and overwrite the status line.
+test('touch: a tapped wall and a refused cut keep their own status message', async ({ page, hasTouch }) => {
+  test.skip(!hasTouch, 'touch only');
+  const i = levels.findIndex((l) => { const c = findCut(l, l.wallBudget); return c !== null && c.length >= 2; });
+  const lv = levels[i];
+  const cut = findCut(lv, lv.wallBudget);
+  const before = cut.slice(0, -1);
+  const last = cut[cut.length - 1];
+  await open(page, num(i));
+  for (const [x, y, dir] of before) {
+    const [px, py] = await pointFor(page, x, y, dir);
+    await page.touchscreen.tap(px, py);
+  }
+  await expect(bars(page)).toHaveCount(before.length);
+  await expect(status(page)).not.toContainText('Shift');
+  const [px, py] = await pointFor(page, last[0], last[1], last[2]);
+  await page.touchscreen.tap(px, py);
+  await expect(status(page)).toHaveText('The robot needs at least one way through.');
+  // Give a late follow-up click time to arrive, then check the message survived it.
+  await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
+  await expect(status(page)).toHaveText('The robot needs at least one way through.');
+  await expect(page.locator('#walls-used')).toHaveText(`${before.length} / ${lv.wallBudget}`);
+});
+
 test('Replay clears the walls for a fresh attempt', async ({ page }) => {
   await open(page, 1);
   await placeAll(page, solve(levels[0]).answer);

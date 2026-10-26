@@ -248,8 +248,11 @@ export function createBoard(root, level, { onLine, onHelp }) {
     showHint(d, d.ok ? 'ok' : 'no', 'hover');
   });
 
+  let lastPointerEnd = -Infinity; // the click a browser fires after a tap must not count as screen-reader activation
+
   function endPress(e, commit) {
     if (!press || e.pointerId !== press.id) return;
+    lastPointerEnd = performance.now();
     const p = press;
     press = null;
     try { root.releasePointerCapture(e.pointerId); } catch { /* already released */ }
@@ -271,6 +274,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
 
   // Screen readers and switch controls activate a tile with a click that has no position.
   root.addEventListener('click', (e) => {
+    if (performance.now() - lastPointerEnd < 800) return; // follow-up click from a tap we already handled
     if (e.detail === 0 && e.target.closest('.cell') && onHelp) onHelp();
   });
 

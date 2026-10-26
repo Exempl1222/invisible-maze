@@ -106,12 +106,12 @@ Unchanged from v2: walls aren't part of the level, only of the answer.
 {
   "id": "p01-06",
   "size": 7,
-  "tiles": ["...a...", ".....#.", "B.~~.~=", "~~=~=~.", "#......", "......R", "#....a."],
-  "moveLimit": 9,
+  "tiles": ["..=..B.", "..~....", "R.=~...", "..~~a#.", "..~...b", "ab=..##", "..~~..."],
+  "moveLimit": 8,
   "wallBudget": 3,
   "par": 2,
   "parAnswers": 1
 }
 ```
 
-Teleporter pairs use matching lowercase letters. Coordinates are `[x, y]` from the top left. This is level 6 of pack 1 exactly as shipped. (The v3 draft showed a made-up board here with the wrong par; the engine and an independent brute force both caught it.)
+Teleporter pairs use matching lowercase letters. Coordinates are `[x, y]` from the top left. This is level 6 of pack 1 exactly as shipped under v3.1.
