@@ -64,21 +64,17 @@ test('pointTarget: every point on the board resolves to one tile and one side', 
 test('explainLine: buildable lines are ok; the others say why', () => {
   // A fixed board with a river, bridge, rock, teleporters, robot and beacon (not a pack level, so it
   // doesn't change when the pack is rebuilt).
-  const lv = parseLevel({ size: 7, tiles: ['...a...', '.....#.', 'B.~~.~=', '~~=~=~.', '#......', '......R', '#....a.'], moveLimit: 9, wallBudget: 4 });
+  const lv = parseLevel({ size: 7, tiles: ['...a...', '.....#.', 'B.~~.~=', '~~=~=~.', '#......', '......R', '#....a.'], moveLimit: 9, wallBudget: 4, rules: 'v4' });
   const why = (x, y, side) => explainLine(lv, lineFor(x, y, side, lv.size), { x, y, side }).why;
   // top-left corner area: ".." grass pair
   assert.equal(explainLine(lv, [1, 0, 'D'], { x: 1, y: 0, side: 'D' }).ok, lv.lineBuildable(1, 0, 'D'));
   assert.match(why(0, 0, 'U'), /edge of the board/);
-  // beacon at (0,2): line between (0,2) and (1,2)
-  assert.match(why(0, 2, 'R'), /beacon/);
-  // robot at (6,5)
-  assert.match(why(6, 5, 'L'), /robot/);
+  // rules v4: lines beside the beacon (0,2), the robot (6,5), a bridge and a teleporter are fine
+  for (const [x, y, side] of [[0, 2, 'R'], [6, 5, 'L'], [6, 2, 'U'], [3, 0, 'R']]) {
+    assert.equal(explainLine(lv, lineFor(x, y, side, lv.size), { x, y, side }).ok, true, `${x},${y},${side}`);
+  }
   // river at (2,2)
   assert.match(why(1, 2, 'R'), /river/);
-  // bridge at (6,2)? row "B.~~.~=" has the bridge at x=6
-  assert.match(why(6, 2, 'U'), /bridge/);
-  // teleporter at (3,0)
-  assert.match(why(3, 0, 'R'), /teleporter/);
   // rock at (5,1)
   assert.match(why(5, 1, 'L'), /rock/);
 });
