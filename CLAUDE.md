@@ -15,7 +15,7 @@ assets/css/site.css   site styles; colour tokens on :root
 assets/css/play.css   game page styles (uses the site tokens)
 assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
-assets/levels/        level packs (pack-01.json) and the daily batch (daily.json)
+assets/levels/        level packs (pack-01.json), the daily batch (daily.json) and the lab pack (lab.json, rules v4)
 assets/js/teaser.js   hero replay (canned, not game logic)
 assets/js/teaser-data.js  the replay's level, route and par walls; tools/teaser.test.js checks them against the engine
 src/game/             puzzle engine, pure JS, no DOM (Phase 3)

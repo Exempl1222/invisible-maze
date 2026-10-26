@@ -115,3 +115,27 @@ Unchanged from v2: walls aren't part of the level, only of the answer.
 ```
 
 Teleporter pairs use matching lowercase letters. Coordinates are `[x, y]` from the top left. This is level 6 of pack 1 exactly as shipped under v3.1.
+
+## Lab rules v4 (experimental, Lab tab only)
+
+Eric's proposal from the v3.1 playtest, tested on 5 levels before any rewrite. Applies only to levels with `"rules": "v4"`; the pack and daily stay on v3.1.
+
+| Rule | v3.1 (live) | v4 (lab) |
+|---|---|---|
+| Lines touching a bridge or teleporter | Can't be walled | **Can be walled** (if the other side is walkable) |
+| Lines touching the robot start or beacon | Can't be walled | **Can be walled, at most 2 sides each** |
+| Lines touching river, rock or the border | Can't be walled | Can't be walled (nothing to block) |
+| Cutting every route | Not allowed | Not allowed |
+| Wall budget | par + 1 | **par + 2** |
+| One par answer only | Required | Not required (count shown in data) |
+
+Prototype (9x9, same maps): relaxing the line rules alone lowers par (mean 3.2 to 2.5); a bigger move-limit slack is what lifts par (slack about 7: mean par 4.0, 32% of levels at par 5+, 8% at par 6 to 7 under v4).
+
+**Lab pack:** `assets/levels/lab.json`, 5 levels: 2 at 7x7 (par 3 to 4), 3 at 9x9 (par 5, 6 and 7 targeted). Each level stores one par answer in `"answer"` (used by hints).
+
+## Hints (all levels)
+
+- A hint places one wall from a par answer that isn't already on the board, drawn in a distinct hint style. It counts toward walls used. If the board already has every answer wall, the hint says so and isn't spent.
+- **Inventory:** start with 3. Finishing a daily level (any stars) earns 1, once per date. Stored up to 10. A "Get more hints" button is reserved for ads; until Phase 6 it says ads are coming soon.
+- **Hints cost stars (Eric, 26 Oct):** each hint used on an attempt lowers that win's stars by 1, minimum 1 star. Best stars per level keep the highest ever earned, so a level can be replayed for 3 stars without hints.
+- Levels carry their par answer as `"answer"` for hints (pack, daily and lab). This lets a curious player read answers from the files; accepted for now.

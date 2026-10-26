@@ -258,7 +258,22 @@
 .hint.refused { color: var(--chalk); border-left-color: var(--refuse, #ff8f7a); background: color-mix(in srgb, #ff8f7a 16%, transparent); animation: hint-flash 900ms ease; }
 @keyframes hint-flash { 0% { background: color-mix(in srgb, #ff8f7a 34%, transparent); } }
 .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.controls[hidden], .result[hidden] { display: none; }
+.controls #go { grid-column: 1 / -1; }
+.hint-cost { grid-column: 1 / -1; margin: -4px 0 0; font-size: 0.8125rem; color: var(--muted); line-height: 1.3; }
+.hint-panel {
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-left: 3px solid var(--wall);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+}
+.hint-panel p { margin: 0; font-size: var(--step--1); line-height: 1.45; }
+.hint-panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hint-panel-actions .btn { width: 100%; }
+.result .hint-used { color: var(--chalk); font-size: var(--step--1); }
+.controls[hidden], .result[hidden], .hint-panel[hidden] { display: none; }
 .controls .btn { width: 100%; }
 
 .result {
@@ -288,4 +303,29 @@
 @media (prefers-reduced-motion: reduce) {
   .play-board .robot { transition: none; }
   .stat.refused, .hint.refused, .line-hint.pulse, .tele-link.jump, .result-stars .star.on { animation: none; }
+}
+
+/* ---------- lab ---------- */
+
+.lab-note {
+  margin: 0 0 0.75rem;
+  padding: 10px 12px;
+  max-width: 52ch;
+  color: var(--chalk);
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-left: 3px solid var(--wall);
+  border-radius: 8px;
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+.lab-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mode-tabs a { min-width: 80px; }
+
+/* ---------- hint walls: cyan like a player wall, but striped with a dotted outline ---------- */
+
+.wall-bar.hinted {
+  background: repeating-linear-gradient(45deg, var(--wall) 0 3px, color-mix(in srgb, var(--wall) 30%, var(--night)) 3px 6px);
+  outline: 2px dotted var(--wall);
+  outline-offset: 2px;
 }

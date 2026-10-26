@@ -43,6 +43,10 @@ test('daily: every level is consistent with the engine (all of them are checked)
     const won = simulate(lv, s.answer);
     assert.equal(won.result, 'win', `${raw.id} par answer stops the robot`);
     assert.equal(won.reason, 'too-far', `${raw.id} every win is out of moves`);
+    assert.ok(Array.isArray(raw.answer), `${raw.id} has an answer`);
+    assert.equal(raw.answer.length, raw.par, `${raw.id} stored answer length is par`);
+    assert.equal(cutsAllRoutes(lv, raw.answer), false, `${raw.id} stored answer leaves a route`);
+    assert.equal(simulate(lv, raw.answer).result, 'win', `${raw.id} stored answer is legal and wins`);
     assert.equal(isRingAnswer(lv, s.answer), false, `${raw.id} ring`);
     assert.ok(findPath(lv, []).positions.length - 1 >= raw.size, `${raw.id} route length`);
   }

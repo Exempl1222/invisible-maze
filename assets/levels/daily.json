@@ -19,7 +19,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     1,
+     "D"
+    ],
+    [
+     7,
+     1,
+     "D"
+    ],
+    [
+     8,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-10-28",
@@ -38,7 +55,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     3,
+     "D"
+    ],
+    [
+     7,
+     3,
+     "D"
+    ],
+    [
+     5,
+     4,
+     "R"
+    ],
+    [
+     6,
+     5,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-10-29",
@@ -57,7 +96,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     0,
+     "D"
+    ],
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "D"
+    ],
+    [
+     7,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-10-30",
@@ -76,7 +137,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     6,
+     "D"
+    ],
+    [
+     5,
+     7,
+     "D"
+    ],
+    [
+     5,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-10-31",
@@ -95,7 +173,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "D"
+    ],
+    [
+     1,
+     3,
+     "D"
+    ],
+    [
+     3,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-01",
@@ -114,7 +209,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     1,
+     "R"
+    ],
+    [
+     5,
+     2,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "D"
+    ],
+    [
+     8,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-02",
@@ -133,7 +250,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     2,
+     "D"
+    ],
+    [
+     8,
+     2,
+     "D"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-03",
@@ -152,7 +286,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     5,
+     "R"
+    ],
+    [
+     6,
+     6,
+     "R"
+    ],
+    [
+     7,
+     6,
+     "R"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-04",
@@ -171,7 +327,29 @@
    "moveLimit": 21,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     1,
+     "R"
+    ],
+    [
+     5,
+     2,
+     "R"
+    ],
+    [
+     5,
+     3,
+     "R"
+    ],
+    [
+     5,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-05",
@@ -190,7 +368,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     4,
+     1,
+     "D"
+    ],
+    [
+     5,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-06",
@@ -209,7 +404,39 @@
    "moveLimit": 16,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     1,
+     "D"
+    ],
+    [
+     2,
+     2,
+     "R"
+    ],
+    [
+     3,
+     2,
+     "D"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ],
+    [
+     6,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-07",
@@ -228,7 +455,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     6,
+     "D"
+    ],
+    [
+     4,
+     6,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ],
+    [
+     4,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-08",
@@ -247,7 +496,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "D"
+    ],
+    [
+     2,
+     1,
+     "D"
+    ],
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     3,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-09",
@@ -266,7 +537,24 @@
    "moveLimit": 9,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     6,
+     "D"
+    ],
+    [
+     3,
+     7,
+     "R"
+    ],
+    [
+     3,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-10",
@@ -285,7 +573,34 @@
    "moveLimit": 14,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     6,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ],
+    [
+     5,
+     7,
+     "D"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ],
+    [
+     5,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-11",
@@ -304,7 +619,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     0,
+     "R"
+    ],
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-12",
@@ -323,7 +655,24 @@
    "moveLimit": 19,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "R"
+    ],
+    [
+     5,
+     1,
+     "R"
+    ],
+    [
+     7,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-13",
@@ -342,7 +691,34 @@
    "moveLimit": 13,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     5,
+     "D"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ],
+    [
+     5,
+     7,
+     "R"
+    ],
+    [
+     5,
+     7,
+     "D"
+    ],
+    [
+     4,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-14",
@@ -361,7 +737,29 @@
    "moveLimit": 22,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     4,
+     2,
+     "R"
+    ],
+    [
+     4,
+     3,
+     "R"
+    ],
+    [
+     4,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-15",
@@ -380,7 +778,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     2,
+     "D"
+    ],
+    [
+     5,
+     2,
+     "D"
+    ],
+    [
+     5,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-16",
@@ -399,7 +814,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     3,
+     "D"
+    ],
+    [
+     6,
+     4,
+     "R"
+    ],
+    [
+     8,
+     4,
+     "D"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-17",
@@ -418,7 +855,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     3,
+     "D"
+    ],
+    [
+     8,
+     3,
+     "D"
+    ],
+    [
+     6,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-18",
@@ -437,7 +891,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "D"
+    ],
+    [
+     1,
+     3,
+     "R"
+    ],
+    [
+     1,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-19",
@@ -456,7 +927,29 @@
    "moveLimit": 17,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "D"
+    ],
+    [
+     1,
+     3,
+     "D"
+    ],
+    [
+     2,
+     3,
+     "R"
+    ],
+    [
+     2,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-20",
@@ -475,7 +968,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     3,
+     "R"
+    ],
+    [
+     2,
+     4,
+     "R"
+    ],
+    [
+     3,
+     4,
+     "D"
+    ],
+    [
+     4,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-21",
@@ -494,7 +1009,29 @@
    "moveLimit": 11,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     2,
+     "R"
+    ],
+    [
+     3,
+     2,
+     "D"
+    ],
+    [
+     6,
+     3,
+     "D"
+    ],
+    [
+     7,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-22",
@@ -513,7 +1050,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     8,
+     3,
+     "D"
+    ],
+    [
+     4,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-23",
@@ -532,7 +1091,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-24",
@@ -551,7 +1127,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     1,
+     "R"
+    ],
+    [
+     1,
+     5,
+     "R"
+    ],
+    [
+     1,
+     6,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-25",
@@ -570,7 +1168,34 @@
    "moveLimit": 15,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     0,
+     "R"
+    ],
+    [
+     0,
+     6,
+     "D"
+    ],
+    [
+     1,
+     6,
+     "D"
+    ],
+    [
+     2,
+     6,
+     "D"
+    ],
+    [
+     3,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-26",
@@ -589,7 +1214,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     8,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-27",
@@ -608,7 +1250,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     5,
+     "D"
+    ],
+    [
+     3,
+     5,
+     "D"
+    ],
+    [
+     4,
+     5,
+     "R"
+    ],
+    [
+     4,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-28",
@@ -627,7 +1291,34 @@
    "moveLimit": 15,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     0,
+     "D"
+    ],
+    [
+     6,
+     0,
+     "R"
+    ],
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-29",
@@ -646,7 +1337,34 @@
    "moveLimit": 17,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     5,
+     "D"
+    ],
+    [
+     3,
+     6,
+     "R"
+    ],
+    [
+     4,
+     6,
+     "D"
+    ],
+    [
+     5,
+     6,
+     "D"
+    ],
+    [
+     6,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-11-30",
@@ -665,7 +1383,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     0,
+     "R"
+    ],
+    [
+     6,
+     5,
+     "R"
+    ],
+    [
+     6,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-01",
@@ -684,7 +1419,39 @@
    "moveLimit": 17,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "R"
+    ],
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     4,
+     1,
+     "D"
+    ],
+    [
+     5,
+     1,
+     "R"
+    ],
+    [
+     3,
+     2,
+     "R"
+    ],
+    [
+     5,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-02",
@@ -703,7 +1470,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     6,
+     6,
+     "D"
+    ],
+    [
+     7,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-03",
@@ -722,7 +1506,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     5,
+     "D"
+    ],
+    [
+     6,
+     6,
+     "R"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-04",
@@ -741,7 +1542,34 @@
    "moveLimit": 15,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     3,
+     "R"
+    ],
+    [
+     4,
+     4,
+     "R"
+    ],
+    [
+     4,
+     5,
+     "R"
+    ],
+    [
+     4,
+     6,
+     "R"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-05",
@@ -760,7 +1588,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     6,
+     "D"
+    ],
+    [
+     1,
+     6,
+     "D"
+    ],
+    [
+     2,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-06",
@@ -779,7 +1624,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     5,
+     "R"
+    ],
+    [
+     0,
+     6,
+     "R"
+    ],
+    [
+     0,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-07",
@@ -798,7 +1660,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     3,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-08",
@@ -817,7 +1701,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     2,
+     "D"
+    ],
+    [
+     4,
+     3,
+     "R"
+    ],
+    [
+     5,
+     3,
+     "D"
+    ],
+    [
+     6,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-09",
@@ -836,7 +1742,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     5,
+     "D"
+    ],
+    [
+     1,
+     6,
+     "D"
+    ],
+    [
+     0,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-10",
@@ -855,7 +1778,34 @@
    "moveLimit": 15,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     1,
+     "R"
+    ],
+    [
+     1,
+     6,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "R"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-11",
@@ -874,7 +1824,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     3,
+     "D"
+    ],
+    [
+     3,
+     3,
+     "D"
+    ],
+    [
+     4,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-12",
@@ -893,7 +1860,34 @@
    "moveLimit": 13,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     0,
+     "D"
+    ],
+    [
+     1,
+     3,
+     "D"
+    ],
+    [
+     0,
+     4,
+     "D"
+    ],
+    [
+     1,
+     4,
+     "R"
+    ],
+    [
+     1,
+     5,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-13",
@@ -912,7 +1906,29 @@
    "moveLimit": 18,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     1,
+     "R"
+    ],
+    [
+     2,
+     2,
+     "R"
+    ],
+    [
+     4,
+     2,
+     "R"
+    ],
+    [
+     2,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-14",
@@ -931,7 +1947,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     7,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "D"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-15",
@@ -950,7 +1983,29 @@
    "moveLimit": 11,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     2,
+     "D"
+    ],
+    [
+     2,
+     3,
+     "D"
+    ],
+    [
+     3,
+     3,
+     "R"
+    ],
+    [
+     4,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-16",
@@ -969,7 +2024,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "R"
+    ],
+    [
+     1,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-17",
@@ -988,7 +2065,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     6,
+     "D"
+    ],
+    [
+     1,
+     7,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "D"
+    ],
+    [
+     0,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-18",
@@ -1007,7 +2106,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     3,
+     "R"
+    ],
+    [
+     1,
+     4,
+     "R"
+    ],
+    [
+     1,
+     5,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-19",
@@ -1026,7 +2142,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     1,
+     "D"
+    ],
+    [
+     7,
+     1,
+     "D"
+    ],
+    [
+     7,
+     2,
+     "D"
+    ],
+    [
+     8,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-20",
@@ -1045,7 +2183,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     6,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ],
+    [
+     5,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-21",
@@ -1064,7 +2219,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     3,
+     2,
+     "R"
+    ],
+    [
+     1,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-22",
@@ -1083,7 +2255,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     6,
+     "D"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "D"
+    ],
+    [
+     3,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-23",
@@ -1102,7 +2296,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "R"
+    ],
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     4,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-24",
@@ -1121,7 +2332,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     2,
+     "R"
+    ],
+    [
+     8,
+     2,
+     "D"
+    ],
+    [
+     3,
+     6,
+     "R"
+    ],
+    [
+     3,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-25",
@@ -1140,7 +2373,34 @@
    "moveLimit": 18,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     0,
+     "R"
+    ],
+    [
+     7,
+     0,
+     "D"
+    ],
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-26",
@@ -1159,7 +2419,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     4,
+     "D"
+    ],
+    [
+     2,
+     4,
+     "D"
+    ],
+    [
+     3,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-27",
@@ -1178,7 +2455,24 @@
    "moveLimit": 17,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     3,
+     "D"
+    ],
+    [
+     6,
+     3,
+     "D"
+    ],
+    [
+     8,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-28",
@@ -1197,7 +2491,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     2,
+     "D"
+    ],
+    [
+     7,
+     2,
+     "D"
+    ],
+    [
+     4,
+     3,
+     "R"
+    ],
+    [
+     5,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-29",
@@ -1216,7 +2532,29 @@
    "moveLimit": 18,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "D"
+    ],
+    [
+     2,
+     1,
+     "D"
+    ],
+    [
+     0,
+     2,
+     "R"
+    ],
+    [
+     0,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-30",
@@ -1235,7 +2573,24 @@
    "moveLimit": 18,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     1,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     7,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2026-12-31",
@@ -1254,7 +2609,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     4,
+     "R"
+    ],
+    [
+     5,
+     5,
+     "R"
+    ],
+    [
+     5,
+     6,
+     "R"
+    ],
+    [
+     5,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-01",
@@ -1273,7 +2650,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     0,
+     "R"
+    ],
+    [
+     6,
+     5,
+     "R"
+    ],
+    [
+     6,
+     6,
+     "R"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-02",
@@ -1292,7 +2691,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     5,
+     "D"
+    ],
+    [
+     2,
+     6,
+     "R"
+    ],
+    [
+     2,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-03",
@@ -1311,7 +2727,39 @@
    "moveLimit": 17,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     4,
+     "D"
+    ],
+    [
+     1,
+     4,
+     "D"
+    ],
+    [
+     2,
+     4,
+     "D"
+    ],
+    [
+     3,
+     4,
+     "D"
+    ],
+    [
+     5,
+     5,
+     "D"
+    ],
+    [
+     4,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-04",
@@ -1330,7 +2778,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "D"
+    ],
+    [
+     3,
+     4,
+     "R"
+    ],
+    [
+     4,
+     6,
+     "R"
+    ],
+    [
+     4,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-05",
@@ -1349,7 +2819,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     0,
+     "D"
+    ],
+    [
+     7,
+     0,
+     "D"
+    ],
+    [
+     7,
+     1,
+     "D"
+    ],
+    [
+     8,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-06",
@@ -1368,7 +2860,34 @@
    "moveLimit": 12,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     0,
+     "R"
+    ],
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "R"
+    ],
+    [
+     1,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-07",
@@ -1387,7 +2906,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     0,
+     "R"
+    ],
+    [
+     2,
+     1,
+     "R"
+    ],
+    [
+     4,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-08",
@@ -1406,7 +2942,29 @@
    "moveLimit": 11,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     1,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     2,
+     2,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-09",
@@ -1425,7 +2983,34 @@
    "moveLimit": 18,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     0,
+     "R"
+    ],
+    [
+     4,
+     0,
+     "D"
+    ],
+    [
+     6,
+     1,
+     "D"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-10",
@@ -1444,7 +3029,39 @@
    "moveLimit": 17,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     0,
+     "R"
+    ],
+    [
+     5,
+     0,
+     "D"
+    ],
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "D"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-11",
@@ -1463,7 +3080,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     2,
+     "R"
+    ],
+    [
+     7,
+     3,
+     "R"
+    ],
+    [
+     7,
+     3,
+     "D"
+    ],
+    [
+     6,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-12",
@@ -1482,7 +3121,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     3,
+     "R"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ],
+    [
+     8,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-13",
@@ -1501,7 +3162,24 @@
    "moveLimit": 16,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     2,
+     "D"
+    ],
+    [
+     2,
+     3,
+     "R"
+    ],
+    [
+     2,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-14",
@@ -1520,7 +3198,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     0,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-15",
@@ -1539,7 +3234,34 @@
    "moveLimit": 18,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "D"
+    ],
+    [
+     1,
+     4,
+     "R"
+    ],
+    [
+     2,
+     4,
+     "D"
+    ],
+    [
+     1,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-16",
@@ -1558,7 +3280,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     1,
+     "R"
+    ],
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     3,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-17",
@@ -1577,7 +3316,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     3,
+     "D"
+    ],
+    [
+     3,
+     3,
+     "D"
+    ],
+    [
+     3,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-18",
@@ -1596,7 +3352,29 @@
    "moveLimit": 18,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     3,
+     2,
+     "D"
+    ],
+    [
+     4,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-19",
@@ -1615,7 +3393,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "D"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     1,
+     5,
+     "D"
+    ],
+    [
+     0,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-20",
@@ -1634,7 +3434,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     0,
+     "D"
+    ],
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     7,
+     1,
+     "D"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-21",
@@ -1653,7 +3475,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     6,
+     "D"
+    ],
+    [
+     0,
+     7,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "R"
+    ],
+    [
+     1,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-22",
@@ -1672,7 +3516,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     0,
+     "R"
+    ],
+    [
+     2,
+     1,
+     "R"
+    ],
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     2,
+     2,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-23",
@@ -1691,7 +3557,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     0,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "R"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-24",
@@ -1710,7 +3593,34 @@
    "moveLimit": 13,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     6,
+     "D"
+    ],
+    [
+     1,
+     7,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "D"
+    ],
+    [
+     0,
+     8,
+     "R"
+    ],
+    [
+     4,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-25",
@@ -1729,7 +3639,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     6,
+     "D"
+    ],
+    [
+     7,
+     6,
+     "D"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-26",
@@ -1748,7 +3675,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     2,
+     "R"
+    ],
+    [
+     2,
+     3,
+     "R"
+    ],
+    [
+     2,
+     4,
+     "R"
+    ],
+    [
+     3,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-27",
@@ -1767,7 +3716,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     5,
+     "D"
+    ],
+    [
+     4,
+     6,
+     "D"
+    ],
+    [
+     3,
+     7,
+     "R"
+    ],
+    [
+     7,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-28",
@@ -1786,7 +3757,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     2,
+     "R"
+    ],
+    [
+     3,
+     3,
+     "R"
+    ],
+    [
+     3,
+     4,
+     "R"
+    ],
+    [
+     3,
+     5,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-29",
@@ -1805,7 +3798,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     6,
+     "D"
+    ],
+    [
+     2,
+     6,
+     "D"
+    ],
+    [
+     3,
+     6,
+     "D"
+    ],
+    [
+     4,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-30",
@@ -1824,7 +3839,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     6,
+     "R"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ],
+    [
+     5,
+     7,
+     "R"
+    ],
+    [
+     5,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-01-31",
@@ -1843,7 +3880,24 @@
    "moveLimit": 16,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     2,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-01",
@@ -1862,7 +3916,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     2,
+     "D"
+    ],
+    [
+     1,
+     2,
+     "D"
+    ],
+    [
+     4,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-02",
@@ -1881,7 +3952,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ],
+    [
+     6,
+     4,
+     "R"
+    ],
+    [
+     0,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-03",
@@ -1900,7 +3993,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     2,
+     "R"
+    ],
+    [
+     5,
+     7,
+     "R"
+    ],
+    [
+     5,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-04",
@@ -1919,7 +4029,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "R"
+    ],
+    [
+     2,
+     3,
+     "D"
+    ],
+    [
+     2,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-05",
@@ -1938,7 +4070,39 @@
    "moveLimit": 16,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     3,
+     "D"
+    ],
+    [
+     7,
+     4,
+     "R"
+    ],
+    [
+     8,
+     4,
+     "D"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ],
+    [
+     7,
+     7,
+     "D"
+    ],
+    [
+     5,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-06",
@@ -1957,7 +4121,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     5,
+     "R"
+    ],
+    [
+     3,
+     5,
+     "D"
+    ],
+    [
+     5,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-07",
@@ -1976,7 +4157,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     6,
+     "R"
+    ],
+    [
+     5,
+     6,
+     "R"
+    ],
+    [
+     5,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-08",
@@ -1995,7 +4193,34 @@
    "moveLimit": 12,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "D"
+    ],
+    [
+     1,
+     5,
+     "R"
+    ],
+    [
+     1,
+     6,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-09",
@@ -2014,7 +4239,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     4,
+     2,
+     "R"
+    ],
+    [
+     4,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-10",
@@ -2033,7 +4275,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     4,
+     "R"
+    ],
+    [
+     3,
+     5,
+     "R"
+    ],
+    [
+     3,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-11",
@@ -2052,7 +4311,34 @@
    "moveLimit": 11,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     5,
+     "D"
+    ],
+    [
+     2,
+     5,
+     "D"
+    ],
+    [
+     0,
+     6,
+     "D"
+    ],
+    [
+     1,
+     6,
+     "D"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-12",
@@ -2071,7 +4357,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     3,
+     "D"
+    ],
+    [
+     2,
+     4,
+     "R"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-13",
@@ -2090,7 +4393,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     3,
+     "R"
+    ],
+    [
+     3,
+     4,
+     "D"
+    ],
+    [
+     2,
+     5,
+     "R"
+    ],
+    [
+     2,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-14",
@@ -2109,7 +4434,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     4,
+     "D"
+    ],
+    [
+     4,
+     4,
+     "R"
+    ],
+    [
+     5,
+     4,
+     "D"
+    ],
+    [
+     5,
+     5,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-15",
@@ -2128,7 +4475,24 @@
    "moveLimit": 16,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     4,
+     "D"
+    ],
+    [
+     2,
+     4,
+     "D"
+    ],
+    [
+     3,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-16",
@@ -2147,7 +4511,24 @@
    "moveLimit": 10,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     5,
+     "R"
+    ],
+    [
+     2,
+     5,
+     "D"
+    ],
+    [
+     3,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-17",
@@ -2166,7 +4547,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     4,
+     "R"
+    ],
+    [
+     2,
+     5,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-18",
@@ -2185,7 +4588,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "D"
+    ],
+    [
+     5,
+     0,
+     "R"
+    ],
+    [
+     5,
+     1,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-19",
@@ -2204,7 +4624,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     6,
+     "D"
+    ],
+    [
+     5,
+     7,
+     "R"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ],
+    [
+     6,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-20",
@@ -2223,7 +4665,39 @@
    "moveLimit": 14,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     6,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "R"
+    ],
+    [
+     3,
+     7,
+     "R"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ],
+    [
+     1,
+     8,
+     "R"
+    ],
+    [
+     3,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-21",
@@ -2242,7 +4716,29 @@
    "moveLimit": 11,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     0,
+     "R"
+    ],
+    [
+     5,
+     1,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "D"
+    ],
+    [
+     7,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-22",
@@ -2261,7 +4757,34 @@
    "moveLimit": 11,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     4,
+     "D"
+    ],
+    [
+     2,
+     4,
+     "D"
+    ],
+    [
+     5,
+     5,
+     "D"
+    ],
+    [
+     6,
+     5,
+     "D"
+    ],
+    [
+     8,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-23",
@@ -2280,7 +4803,34 @@
    "moveLimit": 14,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "D"
+    ],
+    [
+     0,
+     1,
+     "R"
+    ],
+    [
+     1,
+     1,
+     "D"
+    ],
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     3,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-24",
@@ -2299,7 +4849,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "D"
+    ],
+    [
+     4,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-25",
@@ -2318,7 +4885,34 @@
    "moveLimit": 17,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "D"
+    ],
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     4,
+     2,
+     "R"
+    ],
+    [
+     3,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-26",
@@ -2337,7 +4931,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     5,
+     "R"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ],
+    [
+     7,
+     6,
+     "R"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-27",
@@ -2356,7 +4972,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     2,
+     "D"
+    ],
+    [
+     1,
+     2,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ],
+    [
+     4,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-02-28",
@@ -2375,7 +5013,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     4,
+     "R"
+    ],
+    [
+     1,
+     5,
+     "R"
+    ],
+    [
+     1,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-01",
@@ -2394,7 +5049,29 @@
    "moveLimit": 19,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     3,
+     "R"
+    ],
+    [
+     6,
+     4,
+     "R"
+    ],
+    [
+     7,
+     4,
+     "D"
+    ],
+    [
+     7,
+     5,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-02",
@@ -2413,7 +5090,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     5,
+     "D"
+    ],
+    [
+     3,
+     5,
+     "R"
+    ],
+    [
+     3,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-03",
@@ -2432,7 +5126,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     2,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "D"
+    ],
+    [
+     7,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-04",
@@ -2451,7 +5162,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     6,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "R"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ],
+    [
+     5,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-05",
@@ -2470,7 +5203,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     7,
+     3,
+     "D"
+    ],
+    [
+     8,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-06",
@@ -2489,7 +5239,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     3,
+     "R"
+    ],
+    [
+     3,
+     4,
+     "R"
+    ],
+    [
+     3,
+     5,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-07",
@@ -2508,7 +5275,34 @@
    "moveLimit": 18,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     3,
+     "D"
+    ],
+    [
+     0,
+     4,
+     "R"
+    ],
+    [
+     0,
+     5,
+     "D"
+    ],
+    [
+     1,
+     5,
+     "R"
+    ],
+    [
+     1,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-08",
@@ -2527,7 +5321,24 @@
    "moveLimit": 16,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     4,
+     1,
+     "D"
+    ],
+    [
+     0,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-09",
@@ -2546,7 +5357,24 @@
    "moveLimit": 16,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     6,
+     "D"
+    ],
+    [
+     1,
+     6,
+     "D"
+    ],
+    [
+     2,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-10",
@@ -2565,7 +5393,34 @@
    "moveLimit": 24,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     0,
+     "D"
+    ],
+    [
+     0,
+     1,
+     "D"
+    ],
+    [
+     1,
+     2,
+     "D"
+    ],
+    [
+     0,
+     3,
+     "D"
+    ],
+    [
+     1,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-11",
@@ -2584,7 +5439,29 @@
    "moveLimit": 24,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     2,
+     "D"
+    ],
+    [
+     5,
+     3,
+     "D"
+    ],
+    [
+     6,
+     3,
+     "D"
+    ],
+    [
+     0,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-12",
@@ -2603,7 +5480,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     3,
+     2,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-13",
@@ -2622,7 +5516,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     5,
+     "D"
+    ],
+    [
+     1,
+     5,
+     "D"
+    ],
+    [
+     2,
+     5,
+     "D"
+    ],
+    [
+     3,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-14",
@@ -2641,7 +5557,34 @@
    "moveLimit": 24,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "R"
+    ],
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     4,
+     2,
+     "R"
+    ],
+    [
+     4,
+     3,
+     "R"
+    ],
+    [
+     4,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-15",
@@ -2660,7 +5603,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     6,
+     "R"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ],
+    [
+     7,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-16",
@@ -2679,7 +5644,39 @@
    "moveLimit": 13,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     0,
+     "D"
+    ],
+    [
+     1,
+     1,
+     "R"
+    ],
+    [
+     2,
+     1,
+     "D"
+    ],
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     0,
+     2,
+     "R"
+    ],
+    [
+     1,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-17",
@@ -2698,7 +5695,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     3,
+     "D"
+    ],
+    [
+     5,
+     3,
+     "D"
+    ],
+    [
+     6,
+     3,
+     "D"
+    ],
+    [
+     3,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-18",
@@ -2717,7 +5736,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "D"
+    ],
+    [
+     5,
+     3,
+     "R"
+    ],
+    [
+     4,
+     4,
+     "R"
+    ],
+    [
+     5,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-19",
@@ -2736,7 +5777,34 @@
    "moveLimit": 15,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     4,
+     "D"
+    ],
+    [
+     1,
+     5,
+     "D"
+    ],
+    [
+     0,
+     6,
+     "D"
+    ],
+    [
+     0,
+     7,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-20",
@@ -2755,7 +5823,29 @@
    "moveLimit": 17,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     6,
+     "D"
+    ],
+    [
+     1,
+     6,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-21",
@@ -2774,7 +5864,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     3,
+     "R"
+    ],
+    [
+     6,
+     4,
+     "R"
+    ],
+    [
+     5,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-22",
@@ -2793,7 +5900,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     4,
+     "R"
+    ],
+    [
+     7,
+     4,
+     "D"
+    ],
+    [
+     6,
+     5,
+     "R"
+    ],
+    [
+     6,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-23",
@@ -2812,7 +5941,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     2,
+     "D"
+    ],
+    [
+     1,
+     2,
+     "D"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-24",
@@ -2831,7 +5977,34 @@
    "moveLimit": 13,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "D"
+    ],
+    [
+     0,
+     4,
+     "R"
+    ],
+    [
+     1,
+     6,
+     "R"
+    ],
+    [
+     1,
+     7,
+     "R"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-25",
@@ -2850,7 +6023,34 @@
    "moveLimit": 12,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     3,
+     "R"
+    ],
+    [
+     4,
+     3,
+     "D"
+    ],
+    [
+     3,
+     4,
+     "R"
+    ],
+    [
+     6,
+     6,
+     "R"
+    ],
+    [
+     6,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-26",
@@ -2869,7 +6069,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     2,
+     "D"
+    ],
+    [
+     6,
+     3,
+     "D"
+    ],
+    [
+     7,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-27",
@@ -2888,7 +6105,24 @@
    "moveLimit": 13,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     3,
+     3,
+     "R"
+    ],
+    [
+     3,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-28",
@@ -2907,7 +6141,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     4,
+     "R"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ],
+    [
+     3,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-29",
@@ -2926,7 +6182,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     5,
+     "R"
+    ],
+    [
+     3,
+     5,
+     "D"
+    ],
+    [
+     4,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-30",
@@ -2945,7 +6218,24 @@
    "moveLimit": 14,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-03-31",
@@ -2964,7 +6254,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     0,
+     "R"
+    ],
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-01",
@@ -2983,7 +6295,29 @@
    "moveLimit": 12,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     1,
+     "D"
+    ],
+    [
+     2,
+     1,
+     "D"
+    ],
+    [
+     3,
+     1,
+     "D"
+    ],
+    [
+     7,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-02",
@@ -3002,7 +6336,24 @@
    "moveLimit": 15,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     5,
+     "R"
+    ],
+    [
+     0,
+     6,
+     "R"
+    ],
+    [
+     0,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-03",
@@ -3021,7 +6372,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     8,
+     6,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "D"
+    ],
+    [
+     5,
+     7,
+     "D"
+    ],
+    [
+     6,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-04",
@@ -3040,7 +6413,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     5,
+     "D"
+    ],
+    [
+     2,
+     5,
+     "D"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-05",
@@ -3059,7 +6449,24 @@
    "moveLimit": 17,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     6,
+     "R"
+    ],
+    [
+     2,
+     7,
+     "D"
+    ],
+    [
+     3,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-06",
@@ -3078,7 +6485,29 @@
    "moveLimit": 15,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     1,
+     "R"
+    ],
+    [
+     6,
+     2,
+     "R"
+    ],
+    [
+     6,
+     3,
+     "R"
+    ],
+    [
+     6,
+     4,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-07",
@@ -3097,7 +6526,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     6,
+     "D"
+    ],
+    [
+     5,
+     6,
+     "D"
+    ],
+    [
+     6,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-08",
@@ -3116,7 +6562,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     4,
+     "R"
+    ],
+    [
+     3,
+     5,
+     "R"
+    ],
+    [
+     3,
+     6,
+     "R"
+    ],
+    [
+     4,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-09",
@@ -3135,7 +6603,34 @@
    "moveLimit": 13,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     5,
+     3,
+     "D"
+    ],
+    [
+     4,
+     4,
+     "R"
+    ],
+    [
+     5,
+     5,
+     "R"
+    ],
+    [
+     6,
+     5,
+     "D"
+    ],
+    [
+     4,
+     6,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-10",
@@ -3154,7 +6649,24 @@
    "moveLimit": 12,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     0,
+     "D"
+    ],
+    [
+     0,
+     1,
+     "R"
+    ],
+    [
+     1,
+     1,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-11",
@@ -3173,7 +6685,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     4,
+     "R"
+    ],
+    [
+     7,
+     5,
+     "R"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ],
+    [
+     4,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-12",
@@ -3192,7 +6726,34 @@
    "moveLimit": 15,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     3,
+     1,
+     "R"
+    ],
+    [
+     4,
+     1,
+     "D"
+    ],
+    [
+     5,
+     1,
+     "D"
+    ],
+    [
+     3,
+     2,
+     "R"
+    ],
+    [
+     5,
+     2,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-13",
@@ -3211,7 +6772,24 @@
    "moveLimit": 11,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     4,
+     "R"
+    ],
+    [
+     2,
+     4,
+     "D"
+    ],
+    [
+     4,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-14",
@@ -3230,7 +6808,24 @@
    "moveLimit": 17,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     7,
+     7,
+     "R"
+    ],
+    [
+     3,
+     8,
+     "R"
+    ],
+    [
+     6,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-15",
@@ -3249,7 +6844,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     5,
+     "D"
+    ],
+    [
+     7,
+     5,
+     "D"
+    ],
+    [
+     8,
+     5,
+     "D"
+    ],
+    [
+     7,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-16",
@@ -3268,7 +6885,34 @@
    "moveLimit": 14,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     3,
+     "R"
+    ],
+    [
+     1,
+     3,
+     "D"
+    ],
+    [
+     1,
+     4,
+     "R"
+    ],
+    [
+     7,
+     6,
+     "D"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-17",
@@ -3287,7 +6931,24 @@
    "moveLimit": 16,
    "wallBudget": 4,
    "par": 3,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     1,
+     "R"
+    ],
+    [
+     4,
+     4,
+     "D"
+    ],
+    [
+     5,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-18",
@@ -3306,7 +6967,34 @@
    "moveLimit": 19,
    "wallBudget": 6,
    "par": 5,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     0,
+     "R"
+    ],
+    [
+     7,
+     2,
+     "D"
+    ],
+    [
+     7,
+     3,
+     "R"
+    ],
+    [
+     8,
+     3,
+     "D"
+    ],
+    [
+     1,
+     4,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-19",
@@ -3325,7 +7013,29 @@
    "moveLimit": 13,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     2,
+     "D"
+    ],
+    [
+     1,
+     3,
+     "R"
+    ],
+    [
+     2,
+     6,
+     "D"
+    ],
+    [
+     3,
+     7,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-20",
@@ -3344,7 +7054,29 @@
    "moveLimit": 16,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     2,
+     "D"
+    ],
+    [
+     1,
+     2,
+     "D"
+    ],
+    [
+     1,
+     3,
+     "D"
+    ],
+    [
+     2,
+     3,
+     "D"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-21",
@@ -3363,7 +7095,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     4,
+     4,
+     "D"
+    ],
+    [
+     2,
+     7,
+     "R"
+    ],
+    [
+     4,
+     7,
+     "D"
+    ],
+    [
+     2,
+     8,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-22",
@@ -3382,7 +7136,29 @@
    "moveLimit": 14,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     6,
+     5,
+     "D"
+    ],
+    [
+     5,
+     6,
+     "R"
+    ],
+    [
+     8,
+     6,
+     "D"
+    ],
+    [
+     5,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-23",
@@ -3401,7 +7177,29 @@
    "moveLimit": 20,
    "wallBudget": 5,
    "par": 4,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     1,
+     "D"
+    ],
+    [
+     1,
+     1,
+     "D"
+    ],
+    [
+     2,
+     1,
+     "D"
+    ],
+    [
+     6,
+     7,
+     "R"
+    ]
+   ]
   },
   {
    "id": "d-2027-04-24",
@@ -3420,7 +7218,39 @@
    "moveLimit": 12,
    "wallBudget": 7,
    "par": 6,
-   "parAnswers": 1
+   "parAnswers": 1,
+   "answer": [
+    [
+     1,
+     0,
+     "R"
+    ],
+    [
+     1,
+     1,
+     "D"
+    ],
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     2,
+     2,
+     "D"
+    ],
+    [
+     2,
+     3,
+     "R"
+    ],
+    [
+     2,
+     3,
+     "D"
+    ]
+   ]
   }
  ]
 }

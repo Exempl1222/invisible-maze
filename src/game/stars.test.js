@@ -14,3 +14,20 @@ test('rejects non-integer input', () => {
   assert.throws(() => stars(2, '3', 4));
   assert.throws(() => stars(2, -1, 4));
 });
+
+test('hints: each hint used costs one star, never below 1 for a win', () => {
+  assert.equal(stars(3, 3, 5, 0), 3);
+  assert.equal(stars(3, 3, 5, 1), 2);
+  assert.equal(stars(3, 3, 5, 2), 1);
+  assert.equal(stars(3, 3, 5, 3), 1);
+  assert.equal(stars(3, 4, 5, 1), 1);
+  assert.equal(stars(3, 5, 6, 2), 1);
+});
+test('hints: the 3-argument call is unchanged, and over budget stays 0', () => {
+  assert.equal(stars(3, 3, 5), stars(3, 3, 5, 0));
+  assert.equal(stars(2, 4, 3, 1), 0);
+});
+test('hints: rejects a bad hint count', () => {
+  assert.throws(() => stars(2, 2, 4, -1));
+  assert.throws(() => stars(2, 2, 4, 1.5));
+});

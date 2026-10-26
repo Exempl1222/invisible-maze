@@ -12,6 +12,7 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 | 5a | **Rules v3: engine and levels** | Line walls with the guard rule in the engine, generator and a new 30-level pack (7x7 tutorial, no 5x5), 120-day daily batch. Every level brute-force verified | Builder (Sonnet), verified by Opus | Done 26 Oct 2026 |
 | 5b | **Rules v3: game screen** | Tap-to-line walls, par shown upfront, readable teleporters, trapped animation, start marker, all levels open, Daily mode, home-page replay redrawn | Builder (Sonnet) + frontend-design | Done 26 Oct 2026 |
 | 5c | **Rules v3.1: no cutting every route** | Engine refuses walls that leave no route; solver, generator, pack and daily rebuilt (every win is out of moves); UI refusal message and copy. Independently re-verified | Builder (Sonnet), verified by Opus | Done 26 Oct 2026 |
+| 6a | **Lab v4 rules + hints** | Engine `rules` per level (`v3.1` default, `v4` lab) with the two-sides cap, 5-level Lab tab, hints on every level (inventory, earned from the daily, each hint costs a star), stored `answer` on every level | Builder (Sonnet) | In review |
 | 6 | **Polish and launch** | Daily level, packs of 30, hints, final name, analytics, custom domain, then ads | Mixed | Not started |
 
 ## Why this order
