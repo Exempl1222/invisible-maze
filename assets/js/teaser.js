@@ -3,9 +3,9 @@
 // the engine by tools/teaser.test.js. This file only draws them. It is not game logic.
 //
 // Act 1: no fences. The gnome takes his shortest route, through a stump, to his house.
-// Act 2: three fences go up on the lines between tiles. He still has a way through, but a long
-// one: he walks until he runs out of moves and stops short of home. Art comes from sprites.js and
-// sprites.css, the same files the game uses.
+// Act 2: the par answer goes up as fences on the lines between tiles. He still has a way through, but a
+// long one: he walks until he runs out of moves and stops short of home. Art comes from sprites.js and
+// sprites.css, the same files the game uses. Level data lives in teaser-data.js (rules v4).
 import { TEASER as T } from './teaser-data.js';
 import { placeBar } from './bars.js';
 import { decorateTile, portalLetters } from './tiles.js';

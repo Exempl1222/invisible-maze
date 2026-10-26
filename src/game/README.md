@@ -13,7 +13,7 @@ Import everything from `src/game/index.js` (relative paths only; the site is ser
 
 **Wall format (rules v3).** Walls sit on the lines between tiles: `[x, y, "R"]` is the line right of tile `[x, y]` (between `[x, y]` and `[x + 1, y]`), `[x, y, "D"]` is the line below it (between `[x, y]` and `[x, y + 1]`). Every line has exactly one canonical form, so there is no `"L"` or `"U"`. A wall blocks movement across the line in both directions. The outer border is already a wall and can't be drawn on. **Guard rule:** a line can be walled only if both tiles beside it are plain grass, so never a line touching the robot start, the beacon, a bridge, a teleporter, a river or a rock.
 
-**Rules per level (v3.1 and v4).** A level may carry `"rules": "v3.1"` (the default when the field is absent) or `"v4"`; anything else is rejected by `parseLevel`. The pack and the daily are v3.1. Rules v4 are experimental and used only by the Lab pack (`assets/levels/lab.json`):
+**Rules per level (v3.1 and v4).** A level may carry `"rules": "v3.1"` (the default when the field is absent) or `"v4"`; anything else is rejected by `parseLevel`. The pack, the daily and the Lab are all v4 now (26 Oct); `"v3.1"` stays supported in the engine for old data. Rules v4:
 
 - A line can be walled when both tiles beside it are **walkable**: grass, bridge, teleporter, the robot start and the beacon all count. River, rock and the outer border still can't be walled.
 - **Side cap:** a wall set may wall at most `SIDE_CAP` (2) sides of the robot start and at most 2 sides of the beacon (a line between the start and the beacon counts for both). This is part of wall-set validity: `simulate` throws on a set over the cap, and `solve` / `countAnswers` treat a set over the cap as illegal and prune it (no superset can fix it).
@@ -68,18 +68,24 @@ Report reasons: a candidate counts under the first filter it fails, in the order
 
 ## Level packs
 
-`tools/build-pack.js` builds `assets/levels/pack-01.json` (shipped), `{ "id": "pack-01", "levels": [...] }`: five hand-authored 7x7 tutorial levels (one idea each: lines lengthen a route, rocks, river and bridge, a teleporter pair, several routes), every win out of moves, fifteen generated 7x7 (par 2 to 4) and ten generated 9x9 (par 3 to 5), ids `p01-01` to `p01-30`, `wallBudget = par + 1`, `par` and `parAnswers` from the engine. Generated levels come from a pool of 300 per size, taking a quota of each par and balancing teleporter use. Within each band levels run easiest first (par, then route length). Rebuilding takes under a minute. `tools/pack.test.js` checks the file against the engine.
+`tools/build-pack.js` builds `assets/levels/pack-01.json` (shipped), `{ "id": "pack-01", "levels": [...] }`, all rules v4, `wallBudget = par + 2`, `par`, `parAnswers` (counted up to 50, a single par answer is not required) and one par answer in `answer`:
+
+- 1 to 5: hand-authored **5x5** tutorial (par 1 to 3), one idea each, answers picked by hand and checked against the engine: walls lengthen a route; rocks; a bridge (wall its ends); a teleporter (wall right beside it); walls next to the robot or beacon (at most 2 sides).
+- 6 to 15: generated 7x7, par 3 to 4. 16 to 25: generated 9x9, par 4 to 5. 26 to 30: generated 9x9, par 6 (four) and par 7 (one).
+- Every bridge links two pieces of land (`isValidBridge` in `tools/generate.js`; the generator only places valid bridges and tests check every shipped level). Generated levels are ring-free. Within each band levels run easiest first (par, then route length), with a balanced mix of teleporter use.
+
+Build time is about 6 minutes (par 6 about 11 to 50 s a level, par 7 a minute or more); run it in the foreground. `tools/pack.test.js` checks the file against the engine.
 
 ## Daily levels
 
-`tools/build-daily.js` builds `assets/levels/daily.json` (shipped), `{ "id": "daily", "start": "2026-10-27", "levels": [...] }`. `levels[i]` is the level for `start + i` days, id `d-YYYY-MM-DD`, always 9x9, par 3 or more, exactly one par answer, no ring answer, `wallBudget = par + 1`.
+`tools/build-daily.js` builds `assets/levels/daily.json` (shipped), `{ "id": "daily", "start": "2026-10-27", "levels": [...] }`. `levels[i]` is the level for `start + i` days, id `d-YYYY-MM-DD`, always 9x9, rules v4, `wallBudget = par + 2`, a stored par answer, no ring answer, bridges that span a river. Par follows the weekday, taken from the date string in UTC: Monday to Wednesday 4, Thursday to Saturday 5, Sunday 6.
 
 ```
-node tools/build-daily.js [--days 180] [--start 2026-10-27] [--seed 20261027] [--out <file>]
+node tools/build-daily.js [--days 180] [--start 2026-10-27] [--seed 20261027] [--out <file>] [--jobs 2] [--from 0 --to 180]
 ```
 
-Every day is generated on its own sub-seed (par 3+ most days, 4+ every third day, 5+ every 15th), so the batch is a pure function of the seed, start date and day index, and adding days never changes earlier ones. `tools/daily.test.js` checks every level against the engine.
+Every day is generated on its own sub-seed (`buildDay(i)`), so the batch is a pure function of the seed, start date and day index, and adding days never changes earlier ones. The full build takes about 9 minutes on 2 threads; `--from`/`--to` builds a range and merges it into `--out`, for runs under a time limit. `tools/daily.test.js` checks every level against the engine and proves par exactly on the first 14 days and every 5th day after.
 
 ## Lab pack
 
-`tools/build-lab.js` builds `assets/levels/lab.json` (shipped), `{ "id": "lab", "rules": "v4", "levels": [...] }`: five levels `lab-01` to `lab-05` (two 7x7 at par 3 and 4, then three 9x9 at par 5, 6 and 7, or the best found), each with `"rules": "v4"`, `wallBudget = par + 2`, the exact `par`, `parAnswers` (counted up to 50, uniqueness not required) and one par answer in `"answer"`. Move limits carry more slack over the free route than the pack's. The builder prefers candidates whose answer uses a newly allowed line, and uses a deterministic work budget (`maxNodes`) rather than a clock, so the output is a pure function of the script. `generateLevels` takes `rules`, `budgetExtra` and `maxNodes` for this; the default call is unchanged apart from the new `answer` field on each level. `tools/lab.test.js` checks the file against the engine.
+`tools/build-lab.js` builds `assets/levels/lab.json` (shipped), `{ "id": "lab", "rules": "v4", "levels": [...] }`, kept as the archive of the five levels that introduced v4 (their bridges predate the bridge fix): five levels `lab-01` to `lab-05` (two 7x7 at par 3 and 4, then three 9x9 at par 5, 6 and 7, or the best found), each with `"rules": "v4"`, `wallBudget = par + 2`, the exact `par`, `parAnswers` (counted up to 50, uniqueness not required) and one par answer in `"answer"`. Move limits carry more slack over the free route than the pack's. The builder prefers candidates whose answer uses a newly allowed line, and uses a deterministic work budget (`maxNodes`) rather than a clock, so the output is a pure function of the script. `generateLevels` takes `rules`, `budgetExtra` and `maxNodes` for this; the default call is unchanged apart from the new `answer` field on each level. `tools/lab.test.js` checks the file against the engine.

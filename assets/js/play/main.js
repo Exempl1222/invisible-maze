@@ -184,9 +184,7 @@ function startGame({ kind, index, level, title }) {
   controlsEl.hidden = false;
   goBtn.disabled = false;
   hintPanel.hidden = true;
-  setStatus(kind === 'lab'
-    ? 'Lab rules: you can wall next to bridges and stumps, and up to two sides of the gnome and house. Leave the gnome a way through.'
-    : "Tap a line between two tiles to place a wall. Make the gnome's route longer than his move limit. You must leave him a way through.");
+  setStatus("Tap a line between two tiles to place a fence. Make the gnome's route longer than his move limit. You must leave him a way through.");
   updateCounters();
 }
 
@@ -232,11 +230,11 @@ function onLine(target) {
     wallsUsedEl.parentElement.classList.add('refused');
     refused(`All ${plural(level.wallBudget, 'wall')} placed. Tap a wall to take it back.`);
   } else if (wouldBreakCap(level, board.wallList(), line)) {
-    // Lab rules v4: at most two sides of the gnome, and of the house, in one wall set.
+    // Rules v4: at most two sides of the gnome, and of his house, in one wall set.
     board.refuse(target);
     refused(capMessage(wouldBreakCap(level, board.wallList(), line)));
   } else if (cutsAllRoutes(level, [...board.wallList(), line])) {
-    // The robot must always keep a way to the beacon (rules v3.1): refuse the wall, counters unchanged.
+    // The robot must always keep a way to the beacon (a rule of every level): refuse the wall, counters unchanged.
     board.refuse(target);
     refused('The gnome needs at least one way through.');
   } else {
@@ -405,7 +403,7 @@ clearBtn.addEventListener('click', () => {
 
 /**
  * Why `line` can't be placed right now on top of the board's walls, or null if it can. The
- * order matches a tap: budget, the lab side cap, then the no-cut rule.
+ * order matches a tap: budget, the side cap, then the no-cut rule.
  */
 function whyNot(line) {
   const { board, level } = game;

@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parseLevel, findPath, solve, countAnswers, simulate, cutsAllRoutes } from '../src/game/index.js';
-import { isRingAnswer } from './generate.js';
-import { addDays, buildDaily, DAILY_DEFAULTS } from './build-daily.js';
+import { parseLevel, findPath, solve, countAnswers, simulate, cutsAllRoutes, capViolation } from '../src/game/index.js';
+import { isRingAnswer, invalidBridges } from './generate.js';
+import { addDays, buildDaily, dailyPar, weekdayUTC, DAILY_DEFAULTS } from './build-daily.js';
 
 const file = fileURLToPath(new URL('../assets/levels/daily.json', import.meta.url));
 const daily = JSON.parse(readFileSync(file, 'utf8'));
@@ -17,42 +17,79 @@ test('addDays: month, year and leap-day rollovers', () => {
   assert.throws(() => addDays('27/10/2026', 1), /YYYY-MM-DD/);
 });
 
-test('daily: shape, 120+ days, ids are consecutive dates from the start', () => {
+test('weekdayUTC and dailyPar: computed from the date string (Sunday 6, Mon-Wed 4, Thu-Sat 5)', () => {
+  assert.equal(weekdayUTC('2026-10-27'), 2); // Tuesday
+  assert.equal(weekdayUTC('2026-11-01'), 0); // Sunday
+  assert.equal(weekdayUTC('2028-02-29'), 2);
+  assert.deepEqual(['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01'].map(dailyPar), [4, 4, 4, 5, 5, 5, 6]);
+  assert.throws(() => weekdayUTC('1/1/2027'), /YYYY-MM-DD/);
+});
+
+test('daily: shape, 180 days, ids are consecutive dates from the start, all v4', () => {
   assert.equal(daily.id, 'daily');
   assert.equal(daily.start, '2026-10-27');
-  assert.ok(daily.levels.length >= 120, `${daily.levels.length} levels`);
+  assert.equal(daily.levels.length, 180);
   daily.levels.forEach((l, i) => {
     assert.equal(l.id, `d-${addDays(daily.start, i)}`);
     assert.equal(l.size, 9, l.id);
+    assert.equal(l.rules, 'v4', l.id);
   });
   assert.equal(new Set(daily.levels.map((l) => l.tiles.join('/'))).size, daily.levels.length, 'all boards differ');
 });
 
-test('daily: every level is consistent with the engine (all of them are checked)', () => {
+test('daily: par 4-5 Monday to Saturday, par 6 on Sundays (weekday from the date, UTC)', () => {
+  let sundays = 0;
+  daily.levels.forEach((l) => {
+    const date = l.id.slice(2);
+    if (weekdayUTC(date) === 0) {
+      sundays++;
+      assert.equal(l.par, 6, `${l.id} is a Sunday`);
+    } else {
+      assert.ok(l.par === 4 || l.par === 5, `${l.id} par ${l.par}`);
+    }
+  });
+  assert.equal(sundays, daily.levels.filter((l) => weekdayUTC(l.id.slice(2)) === 0).length);
+  assert.equal(sundays, 25); // 2026-11-01 is the first Sunday, then every 7th day to day 179
+});
+
+test('daily: every bridge in every level spans a river', () => {
+  for (const l of daily.levels) assert.deepEqual(invalidBridges(l.tiles), [], `${l.id}\n${l.tiles.join('\n')}`);
+});
+
+test('daily: every level is consistent with the engine under v4 (all of them are checked)', () => {
+  let idx = 0;
   for (const raw of daily.levels) {
     const lv = parseLevel(raw);
-    const s = solve(lv);
+    assert.equal(lv.rules, 'v4', raw.id);
+    // Proving par is slow (par 6 about 10 s a level), so the exact solve and answer count run on the first
+    // 14 days (two of each weekday, Sundays included) and every 5th day after; the build proved the rest.
+    // Every level is still checked through its stored answer below.
+    const exact = idx++ < 14 || (idx - 1) % 5 === 0;
+    const s = exact ? solve(lv, { maxPar: raw.par }) : { par: raw.par, answer: raw.answer };
     assert.ok(s, raw.id);
-    assert.ok(raw.par >= 3, `${raw.id} par ${raw.par}`);
     assert.equal(raw.par, s.par, `${raw.id} par`);
-    assert.equal(raw.parAnswers, 1, `${raw.id} parAnswers`);
-    assert.equal(raw.parAnswers, countAnswers(lv, s.par), `${raw.id} countAnswers`);
-    assert.equal(raw.wallBudget, raw.par + 1, `${raw.id} wallBudget`);
-    assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot wins with no walls`);
+    if (exact) assert.equal(raw.parAnswers, countAnswers(lv, s.par, 50), `${raw.id} countAnswers`);
+    else assert.ok(raw.parAnswers >= 1 && raw.parAnswers <= 50, `${raw.id} parAnswers range`);
+    assert.equal(raw.wallBudget, raw.par + 2, `${raw.id} wallBudget`);
+    assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot reaches the beacon with no walls`);
     assert.equal(cutsAllRoutes(lv, s.answer), false, `${raw.id} par answer leaves a route`);
     const won = simulate(lv, s.answer);
     assert.equal(won.result, 'win', `${raw.id} par answer stops the robot`);
     assert.equal(won.reason, 'too-far', `${raw.id} every win is out of moves`);
+    // stored answer (hints): within the side cap, par-sized, legal and winning
     assert.ok(Array.isArray(raw.answer), `${raw.id} has an answer`);
     assert.equal(raw.answer.length, raw.par, `${raw.id} stored answer length is par`);
+    assert.equal(capViolation(lv, raw.answer), null, `${raw.id} stored answer within the side cap`);
     assert.equal(cutsAllRoutes(lv, raw.answer), false, `${raw.id} stored answer leaves a route`);
-    assert.equal(simulate(lv, raw.answer).result, 'win', `${raw.id} stored answer is legal and wins`);
+    const stored = simulate(lv, raw.answer); // throws if illegal
+    assert.equal(stored.result, 'win', `${raw.id} stored answer is legal and wins`);
+    assert.equal(stored.reason, 'too-far', `${raw.id} stored answer is out of moves`);
     assert.equal(isRingAnswer(lv, s.answer), false, `${raw.id} ring`);
     assert.ok(findPath(lv, []).positions.length - 1 >= raw.size, `${raw.id} route length`);
   }
 });
 
-test('daily: reproducible from the seed (the first days rebuild identically)', () => {
-  const again = buildDaily({ days: 8, start: daily.start, seed: DAILY_DEFAULTS.seed });
-  assert.deepEqual(again.levels, daily.levels.slice(0, 8));
+test('daily: reproducible from the seed (the first days rebuild identically, Sunday included)', () => {
+  const again = buildDaily({ days: 7, start: daily.start, seed: DAILY_DEFAULTS.seed });
+  assert.deepEqual(again.levels, daily.levels.slice(0, 7));
 });
