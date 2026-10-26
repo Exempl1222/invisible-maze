@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "generatedBy": "tools/build-sprites.mjs",
+  "gnome": {
+    "gnome-down-idle": {
+      "file": "assets/sprites/gnome-down-idle.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 4.8
+    },
+    "gnome-down-walk": {
+      "file": "assets/sprites/gnome-down-walk.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 0.6
+    },
+    "gnome-down-shrug": {
+      "file": "assets/sprites/gnome-down-shrug.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 2.2
+    },
+    "gnome-up-idle": {
+      "file": "assets/sprites/gnome-up-idle.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 4.8
+    },
+    "gnome-up-walk": {
+      "file": "assets/sprites/gnome-up-walk.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 0.6
+    },
+    "gnome-up-shrug": {
+      "file": "assets/sprites/gnome-up-shrug.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 2.2
+    },
+    "gnome-left-idle": {
+      "file": "assets/sprites/gnome-left-idle.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 4.8
+    },
+    "gnome-left-walk": {
+      "file": "assets/sprites/gnome-left-walk.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 0.6
+    },
+    "gnome-left-shrug": {
+      "file": "assets/sprites/gnome-left-shrug.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 2.2
+    },
+    "gnome-right-idle": {
+      "file": "assets/sprites/gnome-right-idle.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 4.8
+    },
+    "gnome-right-walk": {
+      "file": "assets/sprites/gnome-right-walk.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 0.6
+    },
+    "gnome-right-shrug": {
+      "file": "assets/sprites/gnome-right-shrug.svg",
+      "size": [
+        140,
+        140
+      ],
+      "anchor": [
+        70,
+        131
+      ],
+      "loop": true,
+      "cycleSeconds": 2.2
+    }
+  },
+  "tiles": {
+    "tile-grass-1": {
+      "file": "assets/sprites/tile-grass-1.svg",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "tile-grass-2": {
+      "file": "assets/sprites/tile-grass-2.svg",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "tile-grass-3": {
+      "file": "assets/sprites/tile-grass-3.svg",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "tile-rock": {
+      "file": "assets/sprites/tile-rock.svg",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "tile-bush": {
+      "file": "assets/sprites/tile-bush.svg",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "tile-river": {
+      "file": "assets/sprites/tile-river.svg",
+      "size": [
+        64,
+        64
+      ],
+      "seamless": true
+    },
+    "tile-bridge-h": {
+      "file": "assets/sprites/tile-bridge-h.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "river runs up and down"
+    },
+    "tile-bridge-v": {
+      "file": "assets/sprites/tile-bridge-v.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "river runs left and right"
+    },
+    "tile-house": {
+      "file": "assets/sprites/tile-house.svg",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "tile-start": {
+      "file": "assets/sprites/tile-start.svg",
+      "size": [
+        64,
+        64
+      ]
+    }
+  },
+  "teleporter": {
+    "stump-a": {
+      "file": "assets/sprites/stump-a.svg",
+      "size": [
+        64,
+        64
+      ],
+      "glow": "#5ff0d8",
+      "holeCentre": [
+        32,
+        26
+      ],
+      "loop": true
+    },
+    "stump-b": {
+      "file": "assets/sprites/stump-b.svg",
+      "size": [
+        64,
+        64
+      ],
+      "glow": "#c79bff",
+      "holeCentre": [
+        32,
+        26
+      ],
+      "loop": true
+    },
+    "stump-c": {
+      "file": "assets/sprites/stump-c.svg",
+      "size": [
+        64,
+        64
+      ],
+      "glow": "#ffcf5a",
+      "holeCentre": [
+        32,
+        26
+      ],
+      "loop": true
+    }
+  },
+  "wall": {
+    "wall-h": {
+      "file": "assets/sprites/wall-h.svg",
+      "size": [
+        64,
+        32
+      ],
+      "groundLine": 28,
+      "once": true,
+      "buildSeconds": 0.9
+    },
+    "wall-v": {
+      "file": "assets/sprites/wall-v.svg",
+      "size": [
+        24,
+        72
+      ],
+      "centreLine": 12,
+      "once": true,
+      "buildSeconds": 0.8
+    },
+    "wall-h-hint": {
+      "file": "assets/sprites/wall-h-hint.svg",
+      "size": [
+        64,
+        32
+      ],
+      "groundLine": 28,
+      "once": true,
+      "buildSeconds": 1.15
+    },
+    "wall-v-hint": {
+      "file": "assets/sprites/wall-v-hint.svg",
+      "size": [
+        24,
+        72
+      ],
+      "centreLine": 12,
+      "once": true,
+      "buildSeconds": 1.15
+    }
+  },
+  "palette": {
+    "glow": {
+      "a": "#5ff0d8",
+      "b": "#c79bff",
+      "c": "#ffcf5a"
+    },
+    "wood": "#c48a52",
+    "hat": "#c94a32",
+    "water": "#5aa9d6",
+    "grass": "#8cbf5a",
+    "outline": "#3b2618"
+  }
+}

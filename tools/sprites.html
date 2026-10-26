@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite Sheet</title>
+<style>
+  /* Dev-only gallery of every file in assets/sprites. Open via `npm run serve` then /tools/sprites.html */
+  :root { --bg: #e3ecd2; --card: #f8fbf1; --ink: #2f4220; --muted: #5d6e4c; --line: #c9d7b2; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; padding: 20px max(16px, env(safe-area-inset-left)); }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  h2 { margin: 24px 0 8px; font-size: 18px; }
+  p { margin: 0 0 8px; color: var(--muted); max-width: 64ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+  figure .box { width: 100%; aspect-ratio: 1; display: grid; place-items: center; background: #8cbf5a; border-radius: 6px; overflow: hidden; }
+  figure .box > span, figure .box > img { width: 92%; height: 92%; display: grid; place-items: center; }
+  figure .box svg { max-width: 100%; max-height: 100%; }
+  figcaption { font: 12px ui-monospace, monospace; color: var(--muted); text-align: center; word-break: break-all; }
+  button { font: 600 14px system-ui; padding: 8px 14px; border-radius: 999px; border: 2px solid #3b2618; background: #2f4220; color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Gnome Sweet Gnome sprites</h1>
+<p>Every file in assets/sprites, loaded the way the game loads it. Gnome and walls are inline (own animation clock); tiles and stumps are images.</p>
+<h2>Gnome</h2><div class="grid" id="gnome"></div>
+<h2>Walls</h2><p><button type="button" id="rebuild">Build walls again</button></p><div class="grid" id="walls"></div>
+<h2>Teleporters</h2><div class="grid" id="tele"></div>
+<h2>Tiles</h2><div class="grid" id="tiles"></div>
+<script type="module">
+  import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../assets/js/sprites.js';
+  const m = await (await fetch('../assets/sprites/manifest.json')).json();
+  await preloadSprites();
+  const fig = (name, inner) => `<figure><div class="box">${inner}</div><figcaption>${name}</figcaption></figure>`;
+  const gnome = document.getElementById('gnome');
+  for (const n of GNOME_SPRITES) { gnome.insertAdjacentHTML('beforeend', fig(n, '')); gnome.lastElementChild.querySelector('.box').appendChild(sprite(n)); }
+  const walls = document.getElementById('walls');
+  const drawWalls = () => { walls.innerHTML = ''; for (const n of WALL_SPRITES) { walls.insertAdjacentHTML('beforeend', fig(n, '')); walls.lastElementChild.querySelector('.box').appendChild(sprite(n)); } };
+  drawWalls();
+  document.getElementById('rebuild').addEventListener('click', drawWalls);
+  document.getElementById('tele').innerHTML = Object.entries(m.teleporter).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
+  document.getElementById('tiles').innerHTML = Object.entries(m.tiles).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
+</script>
+</body>
+</html>
