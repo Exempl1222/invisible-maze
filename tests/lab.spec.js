@@ -75,7 +75,7 @@ test('lab: the tab lists 5 levels with the experimental-rules note', async ({ pa
   await expect(page.locator('h1')).toHaveText('Lab');
   await expect(tabs.getByRole('link', { name: 'Lab' })).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('#select-view .level-btn')).toHaveCount(5);
-  await expect(page.locator('#lab-note')).toHaveText('Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the gnome and house.');
+  await expect(page.locator('#lab-note')).toHaveText('Experimental rules: walls can go next to bridges, stumps, and up to two sides of the gnome and house.');
   await expect(page.getByRole('button', { name: 'Lab 1, not played' })).toBeVisible();
   // the other tabs still work from here
   await tabs.getByRole('link', { name: 'Levels' }).click();

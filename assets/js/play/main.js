@@ -185,7 +185,7 @@ function startGame({ kind, index, level, title }) {
   goBtn.disabled = false;
   hintPanel.hidden = true;
   setStatus(kind === 'lab'
-    ? 'Lab rules: you can wall next to bridges and teleporters, and up to two sides of the gnome and house. Leave the gnome a way through.'
+    ? 'Lab rules: you can wall next to bridges and stumps, and up to two sides of the gnome and house. Leave the gnome a way through.'
     : "Tap a line between two tiles to place a wall. Make the gnome's route longer than his move limit. You must leave him a way through.");
   updateCounters();
 }

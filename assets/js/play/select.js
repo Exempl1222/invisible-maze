@@ -91,7 +91,7 @@ export function renderSelect(root, levels, { onPick, onMode }) {
   });
 }
 
-export const LAB_NOTE = 'Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the gnome and house.';
+export const LAB_NOTE = 'Experimental rules: walls can go next to bridges, stumps, and up to two sides of the gnome and house.';
 
 /** The Lab tab: its note and a button per lab level with best stars. */
 export function renderLab(root, levels, { onPick, onMode, failed = false }) {

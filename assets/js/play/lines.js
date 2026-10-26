@@ -59,7 +59,7 @@ export function explainLine(level, line, target) {
   if (pair.includes('R')) return { ok: false, why: "Lines next to the gnome can't be walled." };
   if (pair.includes('B')) return { ok: false, why: "Lines next to the house can't be walled." };
   if (pair.includes('=')) return { ok: false, why: "Lines next to a bridge can't be walled." };
-  if (pair.some(isPortal)) return { ok: false, why: "Lines next to a teleporter can't be walled." };
+  if (pair.some(isPortal)) return { ok: false, why: "Lines next to a stump can't be walled." };
   return { ok: false, why: "That line can't be walled." };
 }
 

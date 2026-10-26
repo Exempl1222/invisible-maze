@@ -11,6 +11,7 @@
 const BASE = new URL('../sprites/', import.meta.url);
 const text = new Map();
 const pending = new Map();
+let copies = 0;
 
 export const DIRS = ['up', 'right', 'down', 'left'];
 export const STATES = ['idle', 'walk', 'shrug'];
@@ -43,7 +44,11 @@ export function sprite(name, className = '') {
   wrap.className = `sprite ${className}`.trim();
   wrap.dataset.sprite = name;
   wrap.setAttribute('aria-hidden', 'true');
-  wrap.innerHTML = t;
+  // Ids inside an SVG are global to the page. Two copies of the same sprite would share clip ids,
+  // and if the first copy sits in a hidden view its clips stop working for both, so the shading
+  // shows as plain rectangles. Give every copy its own ids.
+  const n = ++copies;
+  wrap.innerHTML = t.replace(/(id="|url\(#)(gsg-[\w-]+)/g, `$1$2-i${n}`);
   return wrap;
 }
 

@@ -128,7 +128,7 @@ const GUARD_CASES = [
   ['robot', (p) => p.includes('R') && !p.includes('~') && !p.includes('#'), /next to the gnome can't be walled/],
   ['beacon', (p) => p.includes('B') && !p.includes('~') && !p.includes('#'), /next to the house can't be walled/],
   ['bridge', (p) => p.includes('=') && !p.some((c) => '~#RB'.includes(c)), /next to a bridge can't be walled/],
-  ['teleporter', (p) => p.some((c) => c >= 'a' && c <= 'z') && !p.some((c) => '~#RB='.includes(c)), /next to a teleporter can't be walled/],
+  ['teleporter', (p) => p.some((c) => c >= 'a' && c <= 'z') && !p.some((c) => '~#RB='.includes(c)), /next to a stump can't be walled/],
 ];
 for (const [name, pred, message] of GUARD_CASES) {
   test(`guard rule: a line next to ${name} is refused with a reason`, async ({ page }) => {

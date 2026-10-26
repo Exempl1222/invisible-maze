@@ -155,7 +155,8 @@
     gap: 12px 36px;
     padding-top: 0.25rem;
   }
-  .play-head { max-width: calc(var(--board-size, 560px) + 336px); margin-inline: auto; }
+  /* Only the game screen centres its heading over the board; the level select keeps it flush with the tabs. */
+  .play:has(#game-view:not([hidden])) .play-head { max-width: calc(var(--board-size, 560px) + 336px); margin-inline: auto; }
 }
 /* Short laptop windows: trim the page chrome so the board gets the height. */
 @media (min-width: 880px) and (max-height: 760px) {

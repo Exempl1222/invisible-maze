@@ -78,7 +78,7 @@ test('explainLine: buildable lines are ok; the others say why', () => {
   // bridge at (6,2)? row "B.~~.~=" has the bridge at x=6
   assert.match(why(6, 2, 'U'), /bridge/);
   // teleporter at (3,0)
-  assert.match(why(3, 0, 'R'), /teleporter/);
+  assert.match(why(3, 0, 'R'), /stump/);
   // rock at (5,1)
   assert.match(why(5, 1, 'L'), /rock/);
 });
