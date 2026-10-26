@@ -3,7 +3,7 @@
 // the engine by tools/teaser.test.js. This file only draws them. It is not game logic.
 //
 // Act 1: no walls. The robot takes its shortest route, through a teleporter, to the beacon.
-// Act 2: three walls go down on the lines between tiles. The robot still has a way through, but a
+// Act 2: the par answer goes down on the lines between tiles. The robot still has a way through, but a
 // long one: it walks until it runs out of moves and stops short of the beacon.
 import { TEASER as T } from './teaser-data.js';
 import { placeBar } from './bars.js';

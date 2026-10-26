@@ -2,7 +2,7 @@
 // computed in Node by the engine and pressed into the real page; nothing waits a fixed time.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { parseLevel, solve, cutsAllRoutes, buildableLines, wouldBreakCap } from '../src/game/index.js';
+import { parseLevel, solve, cutsAllRoutes, buildableLines, wouldBreakCap, capViolation } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const pack = readJson('../assets/levels/pack-01.json');
@@ -66,7 +66,7 @@ const stored = (page, key) => page.evaluate((k) => JSON.parse(localStorage.getIt
 
 /* ---------- lab ---------- */
 
-test('lab: the tab lists 5 levels with the experimental-rules note', async ({ page }) => {
+test('lab: the tab lists 5 levels with the experiments note', async ({ page }) => {
   await page.goto('/play/');
   const tabs = page.getByRole('navigation', { name: 'Mode' });
   await expect(tabs.getByRole('link')).toHaveText(['Levels', 'Daily', 'Lab']);
@@ -75,7 +75,7 @@ test('lab: the tab lists 5 levels with the experimental-rules note', async ({ pa
   await expect(page.locator('h1')).toHaveText('Lab');
   await expect(tabs.getByRole('link', { name: 'Lab' })).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('#select-view .level-btn')).toHaveCount(5);
-  await expect(page.locator('#lab-note')).toHaveText('Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the robot and beacon.');
+  await expect(page.locator('#lab-note')).toHaveText('Experiments: new rules are tried here before they reach the main game. These five levels introduced the current rules (their bridges predate the bridge fix).');
   await expect(page.getByRole('button', { name: 'Lab 1, not played' })).toBeVisible();
   // the other tabs still work from here
   await tabs.getByRole('link', { name: 'Levels' }).click();
@@ -118,7 +118,7 @@ function bridgeLine(lv) {
   });
 }
 
-test('a line next to a bridge is accepted in the lab but refused in the pack', async ({ page }) => {
+test('a line next to a bridge is accepted in the lab and in the pack (rules v4 everywhere)', async ({ page }) => {
   const li = labLevels.findIndex((l) => bridgeLine(l));
   expect(li, 'a lab level with a wallable bridge line').toBeGreaterThanOrEqual(0);
   const line = bridgeLine(labLevels[li]);
@@ -129,23 +129,13 @@ test('a line next to a bridge is accepted in the lab but refused in the pack', a
   await expect(page.locator('#walls-used')).toHaveText(`1 / ${labLevels[li].wallBudget}`);
 
   // the same kind of line in the pack
-  const pi = levels.findIndex((l) => {
-    for (let y = 0; y < l.size; y++) for (let x = 0; x < l.size; x++) {
-      if (l.tile(x, y) === '=' && ((x + 1 < l.size && l.walkable(x + 1, y)) || (y + 1 < l.size && l.walkable(x, y + 1)))) return true;
-    }
-    return false;
-  });
-  const lv = levels[pi];
-  let packLine = null;
-  for (let y = 0; y < lv.size && !packLine; y++) for (let x = 0; x < lv.size && !packLine; x++) {
-    if (lv.tile(x, y) !== '=') continue;
-    if (x + 1 < lv.size && lv.walkable(x + 1, y)) packLine = [x, y, 'R'];
-    else if (y + 1 < lv.size && lv.walkable(x, y + 1)) packLine = [x, y, 'D'];
-  }
+  const pi = levels.findIndex((l) => bridgeLine(l));
+  expect(pi, 'a pack level with a wallable bridge line').toBeGreaterThanOrEqual(0);
+  const packLine = bridgeLine(levels[pi]);
   await openPack(page, pi + 1);
   await press(page, packLine);
-  await expect(bars(page)).toHaveCount(0);
-  await expect(status(page)).toContainText("next to a bridge can't be walled");
+  await expect(bars(page)).toHaveCount(1);
+  await expect(page.locator(`#board .wall-bar[data-line="${packLine.join(',')}"]`)).toBeVisible();
 });
 
 /** In some lab level: two lines touching `kind` ('start' or 'beacon') that fit together, and a third that breaks the cap. */
@@ -306,15 +296,33 @@ test('hint: says so when the whole answer is already on the board, and is not sp
   await expect(hintBars(page)).toHaveCount(0);
 });
 
+/**
+ * Found by search on the shipped pack (no level numbers hardcoded): a level and one or two legal walls of the
+ * player's such that every remaining answer wall is refused because it would cut every route, while taking
+ * the first of them back lets some answer wall go down. There is room in the budget, so the budget isn't the reason.
+ */
+function hintCutCase() {
+  const same = (a, b) => a.join() === b.join();
+  const refusedForCut = (lv, own, a) => !own.some((o) => same(o, a)) && !wouldBreakCap(lv, own, a) && cutsAllRoutes(lv, [...own, a]);
+  const legal = (lv, own, a) => !own.some((o) => same(o, a)) && !wouldBreakCap(lv, own, a) && !cutsAllRoutes(lv, [...own, a]);
+  for (let i = 0; i < levels.length; i++) {
+    const lv = levels[i];
+    const lines = buildableLines(lv).filter((w) => !lv.answer.some((a) => same(a, w)));
+    const ok = (own) => own.length < lv.wallBudget && !capViolation(lv, own) && !cutsAllRoutes(lv, own)
+      && lv.answer.every((a) => refusedForCut(lv, own, a)) && lv.answer.some((a) => legal(lv, own.slice(1), a));
+    for (const w of lines) if (ok([w])) return { i, own: [w] };
+    if (lv.wallBudget >= 3) for (const w of lines) for (const v of lines) if (!same(w, v) && ok([w, v])) return { i, own: [w, v] };
+  }
+  return null;
+}
+
 test('hint: refused, not spent, when the player\'s walls leave no legal answer wall (it would cut every route)', async ({ page }) => {
-  // Found by search: on p01-02 these two walls make both answer walls cut off the robot.
-  const lv = levels[1];
-  const own = [[4, 1, 'D'], [5, 2, 'D']];
-  expect(lv.answer.every((a) => cutsAllRoutes(lv, [...own, a]))).toBe(true);
-  expect(lv.wallBudget).toBe(3);
-  await openPack(page, 2);
+  const found = hintCutCase();
+  expect(found, 'a pack level where own walls make every answer wall cut the robot off').not.toBeNull();
+  const { i, own } = found;
+  await openPack(page, i + 1);
   await placeAll(page, own);
-  await expect(bars(page)).toHaveCount(2);
+  await expect(bars(page)).toHaveCount(own.length);
   await hintBtn(page).click();
   await expect(status(page)).toContainText('cut off the robot');
   await expect(status(page)).toContainText('No hint used');

@@ -82,7 +82,7 @@ export function renderSelect(root, levels, { onPick, onMode }) {
   });
 }
 
-export const LAB_NOTE = 'Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the robot and beacon.';
+export const LAB_NOTE = 'Experiments: new rules are tried here before they reach the main game. These five levels introduced the current rules (their bridges predate the bridge fix).';
 
 /** The Lab tab: its note and a button per lab level with best stars. */
 export function renderLab(root, levels, { onPick, onMode, failed = false }) {

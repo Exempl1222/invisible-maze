@@ -1,4 +1,4 @@
-// Playthrough tests for /play/ (rules v3: walls on lines). Answers are computed in Node by the
+// Playthrough tests for /play/ (rules v4: walls on lines). Answers are computed in Node by the
 // engine, then pressed into the real page at the right triangle of the right tile. Nothing
 // waits a fixed time: it waits for elements, so animation speed can change without breaking the suite.
 import { test, expect } from '@playwright/test';
@@ -121,17 +121,14 @@ test('the wall budget is enforced and a placed wall can be taken back', async ({
   await expect(status(page)).toContainText('Wall removed');
 });
 
-// Level 6 has a river, rock, bridge, teleporters, the robot and the beacon.
+// Under rules v4 only river, rock and the border refuse a line (lines beside bridges, teleporters, the
+// robot and the beacon are fine, up to two sides of each).
 const GUARD_CASES = [
   ['river', (p) => p.includes('~'), /nothing to block next to a river/],
   ['rock', (p) => p.includes('#') && !p.includes('~'), /nothing to block next to a rock/],
-  ['robot', (p) => p.includes('R') && !p.includes('~') && !p.includes('#'), /next to the robot can't be walled/],
-  ['beacon', (p) => p.includes('B') && !p.includes('~') && !p.includes('#'), /next to the beacon can't be walled/],
-  ['bridge', (p) => p.includes('=') && !p.some((c) => '~#RB'.includes(c)), /next to a bridge can't be walled/],
-  ['teleporter', (p) => p.some((c) => c >= 'a' && c <= 'z') && !p.some((c) => '~#RB='.includes(c)), /next to a teleporter can't be walled/],
 ];
 for (const [name, pred, message] of GUARD_CASES) {
-  test(`guard rule: a line next to ${name} is refused with a reason`, async ({ page }) => {
+  test(`refusal: a line next to ${name} is refused with a reason`, async ({ page }) => {
     const i = firstIndex((l) => allLines(l).some((w) => pred(pairOf(l, w))));
     expect(i, `a level with a ${name} line`).toBeGreaterThanOrEqual(0);
     const lv = levels[i];
@@ -151,11 +148,12 @@ for (const [name, pred, message] of GUARD_CASES) {
   });
 }
 
-test('guard rule: the edge of the board says so', async ({ page }) => {
+test('refusal: the edge of the board says so', async ({ page }) => {
   await open(page, 1);
+  const n = levels[0].size;
   await pressSide(page, 0, 0, 'U');
   await expect(status(page)).toContainText("That's the edge of the board");
-  await pressSide(page, 6, 3, 'R');
+  await pressSide(page, n - 1, 3, 'R');
   await expect(status(page)).toContainText("That's the edge of the board");
   await expect(bars(page)).toHaveCount(0);
 });
@@ -203,7 +201,7 @@ test('every point of a tile maps to one of its four sides', async ({ page }) => 
     await page.mouse.move(2, 2);
     await page.mouse.up();
   }
-  expect(lv.size).toBe(7);
+  expect(lv.size).toBeGreaterThan(4);
 });
 
 test('teleporter: focusing one lights its partner, and a free run ends on the beacon through the jump', async ({ page }) => {
@@ -267,7 +265,7 @@ test('tile labels say what and where, and which sides have walls', async ({ page
   const lv = levels[0];
   const lines = buildableLines(lv);
   // Pick a grass tile whose right and bottom lines are both buildable.
-  const [x, y] = lines.find(([lx, ly, d]) => d === 'R' && lines.some(([a, b, e]) => a === lx && b === ly && e === 'D'));
+  const [x, y] = lines.find(([lx, ly, d]) => d === 'R' && lv.tile(lx, ly) === '.' && lines.some(([a, b, e]) => a === lx && b === ly && e === 'D'));
   const where = `row ${y + 1} column ${x + 1}`;
   await expect(page.getByRole('button', { name: `Grass, ${where}`, exact: true })).toBeVisible();
   await press(page, [x, y, 'R']);

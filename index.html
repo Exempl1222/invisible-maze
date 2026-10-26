@@ -38,10 +38,10 @@
       </div>
 
       <div class="board-frame">
-        <div class="board" id="teaser" role="img" aria-label="A nine by nine map with a river, bridges, a rock and two pairs of teleporters. First the robot reaches the beacon through a teleporter. Then three walls are placed on the lines between tiles. The robot's route is now longer than its move limit, so it runs out of moves."></div>
+        <div class="board" id="teaser" role="img" aria-label="A nine by nine map with a river, bridges, rocks and a pair of teleporters. First the robot reaches the beacon through a teleporter. Then four walls are placed on the lines between tiles. The robot's route is now longer than its move limit, so it runs out of moves."></div>
         <div class="status" aria-live="off">
           <span id="teaser-caption">No walls. The robot takes the shortest route.</span>
-          <span class="moves">Moves left <strong id="teaser-moves">11</strong></span>
+          <span class="moves">Moves left <strong id="teaser-moves">13</strong></span>
         </div>
       </div>
     </div>
@@ -60,7 +60,7 @@
           </li>
           <li>
             <h3><span class="swatch" style="background:var(--river)"></span>The terrain</h3>
-            <p>Rivers and rocks block the robot. Bridges and teleporters let it through. A guard rule keeps you honest: you can't wall a line next to the robot, the beacon, a bridge or a teleporter.</p>
+            <p>Rivers and rocks block the robot. Bridges and teleporters let it through. You can wall the lines beside a bridge or a teleporter, and up to two sides of the robot and of the beacon, but never a river, a rock or the edge of the board.</p>
           </li>
         </ul>
       </div>
@@ -74,7 +74,7 @@
           <li class="done"><strong>Rules locked</strong><span>Shortest-path robot, terrain, par scoring.</span></li>
           <li class="done"><strong>Puzzle engine</strong><span>Exact par solver and a level generator that keeps only the good ones.</span></li>
           <li class="done"><strong>Playable build</strong><span>Thirty levels on the Play page, tuned for phones.</span></li>
-          <li class="now"><strong>Rules v3</strong><span>Walls on the lines between tiles, a guard rule, par shown upfront and a daily level.</span></li>
+          <li class="now"><strong>Rules v4</strong><span>Walls on the lines between tiles, up to seven walls on the hardest levels, hints, and a new daily level every day.</span></li>
           <li><strong>Polish and launch</strong><span>Level packs, hints, a proper name and domain.</span></li>
         </ol>
       </div>
