@@ -1,5 +1,6 @@
 // Plays one turn: validate the walls, find the robot's route, decide win or lose. Pure.
 import { findPath } from './path.js';
+import { capViolation, SIDE_CAP } from './level.js';
 
 export function validateWalls(level, walls) {
   if (!Array.isArray(walls)) throw new Error('walls must be an array of [x, y, "R" or "D"]');
@@ -17,7 +18,9 @@ export function validateWalls(level, walls) {
       throw new Error(`wall [${x}, ${y}, "${dir}"] is on the outer border, which is already a wall`);
     }
     if (!level.lineBuildable(x, y, dir)) {
-      throw new Error(`wall [${x}, ${y}, "${dir}"] is not buildable: both tiles beside a wall must be plain grass (not the robot, beacon, bridge, teleporter, river or rock)`);
+      throw new Error(level.rules === 'v4'
+        ? `wall [${x}, ${y}, "${dir}"] is not buildable: both tiles beside a wall must be walkable (not river or rock)`
+        : `wall [${x}, ${y}, "${dir}"] is not buildable: both tiles beside a wall must be plain grass (not the robot, beacon, bridge, teleporter, river or rock)`);
     }
     const key = `${x},${y},${dir}`;
     if (seen.has(key)) throw new Error(`duplicate wall at [${x}, ${y}, "${dir}"]`);
@@ -25,6 +28,10 @@ export function validateWalls(level, walls) {
   }
   if (walls.length > level.wallBudget) {
     throw new Error(`${walls.length} walls is over the budget of ${level.wallBudget}`);
+  }
+  const over = capViolation(level, walls);
+  if (over) {
+    throw new Error(`walls touch more than ${SIDE_CAP} sides of the ${over === 'start' ? 'robot' : 'beacon'}: rules v4 allow at most ${SIDE_CAP}`);
   }
 }
 

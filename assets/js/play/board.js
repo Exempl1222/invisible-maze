@@ -343,14 +343,20 @@ export function createBoard(root, level, { onLine, onHelp }) {
     robot,
     hasWall,
     wallList: () => [...walls.values()].map((w) => w.line),
-    setWall(line, on) {
+    /** True if the wall on this line was placed by a hint (it can't be taken back). */
+    isHintWall: (line) => walls.get(lineKey(line))?.hint === true,
+    hintLines: () => [...walls.values()].filter((w) => w.hint).map((w) => w.line),
+    /** Place or remove a wall. `hint: true` draws it in the hint style; hint walls are only removed with force. */
+    setWall(line, on, { hint = false, force = false } = {}) {
       const k = lineKey(line);
+      if (!on && walls.get(k)?.hint && !force) return;
       if (on && !walls.has(k)) {
-        const bar = el('wall-bar drop');
+        const bar = el(hint ? 'wall-bar hinted drop' : 'wall-bar drop');
         bar.dataset.line = k;
+        if (hint) bar.dataset.hint = '1';
         bar.setAttribute('aria-hidden', 'true');
         root.insertBefore(bar, hint);
-        const w = { line, bar };
+        const w = { line, bar, hint };
         walls.set(k, w);
         placeWallBar(w);
       } else if (!on && walls.has(k)) {
@@ -361,8 +367,9 @@ export function createBoard(root, level, { onLine, onHelp }) {
       relabel(t.x, t.y);
       relabel(line[2] === 'R' ? line[0] + 1 : line[0], line[2] === 'D' ? line[1] + 1 : line[1]);
     },
-    clearWalls() {
-      for (const w of [...walls.values()]) api.setWall(w.line, false);
+    /** Removes the player's walls. Hint walls stay for the attempt (pass `all` to wipe them too). */
+    clearWalls({ all = false } = {}) {
+      for (const w of [...walls.values()]) api.setWall(w.line, false, { force: all });
     },
     /** A refused press: the line goes red and pulses so it can't be missed. */
     refuse(target) {

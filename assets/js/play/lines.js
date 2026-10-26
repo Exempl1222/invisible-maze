@@ -63,6 +63,11 @@ export function explainLine(level, line, target) {
   return { ok: false, why: "That line can't be walled." };
 }
 
+/** Why a wall would break the lab's side cap ("start" or "beacon", from the engine's wouldBreakCap). */
+export function capMessage(kind) {
+  return kind === 'beacon' ? 'The beacon can only be walled on two sides.' : 'The robot can only be walled on two sides.';
+}
+
 const SIDE_WORD = { U: 'top', R: 'right', D: 'bottom', L: 'left' };
 
 /** "walls on right and bottom" for a tile's label, or '' when it has none. `has(line)` says if walled. */

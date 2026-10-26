@@ -105,6 +105,11 @@ export function isRingAnswer(level, answer) {
   return false;
 }
 
+/** True if an answer wall sits next to a bridge, a teleporter, the start or the beacon (lines only rules v4 allows). */
+export function usesV4Line(level, answer) {
+  return answer.some(([x, y, d]) => [level.tile(x, y), level.tile(d === 'R' ? x + 1 : x, d === 'D' ? y + 1 : y)].some((c) => c !== '.'));
+}
+
 /**
  * @returns {{levels:object[], meta:object[], tried:number, solveMs:number[], stats:object}}
  * `meta[i]` describes `levels[i]`: { usesTeleporter, routeLength }. (Every win is "too-far" in
@@ -122,6 +127,10 @@ export function generateLevels({
   minSlack = 2,
   maxSlack = 6,
   maxTries = 50000,
+  rules = 'v3.1', // 'v4' for the lab: unique is not required, budget = par + budgetExtra
+  budgetExtra = 1,
+  answerCap = 50,
+  maxNodes = Infinity, // solve work budget per candidate (deterministic); a candidate over it counts as par out of range
 } = {}) {
   if (!Number.isInteger(size) || size < 7) throw new Error(`size must be 7 or more (5x5 boards are gone in rules v3), got ${size}`);
   const levels = [];
@@ -142,26 +151,27 @@ export function generateLevels({
     if (!tiles) { stats.rejected.terrain++; continue; }
     const board = tiles.join('/');
     if (seenBoards.has(board)) { stats.rejected.duplicate++; continue; }
-    const probe = parseLevel({ size, tiles, moveLimit: 1, wallBudget: 0 });
+    const probe = parseLevel({ size, tiles, moveLimit: 1, wallBudget: 0, rules });
     const open = findPath(probe, []);
     if (!open) { stats.rejected.terrain++; continue; }
     const routeLength = open.positions.length - 1;
     if (routeLength < minRoute) { stats.rejected.tooShort++; continue; }
     const moveLimit = routeLength + rng.int(minSlack, maxSlack);
-    const lv = parseLevel({ size, tiles, moveLimit, wallBudget: size * size * 2 });
+    const lv = parseLevel({ size, tiles, moveLimit, wallBudget: size * size * 2, rules });
     const t0 = performance.now();
-    const s = solve(lv, { maxPar });
+    const s = solve(lv, { maxPar, maxNodes });
     solveMs.push(performance.now() - t0);
     if (!s) {
       // null means either no legal wall set wins at all, or par is above maxPar
-      stats.rejected[solve(lv) ? 'parOutOfRange' : 'unsolvable']++;
+      // (rules v4 skips the unbounded re-solve: it can take minutes on a 9x9 and only sharpens a statistic)
+      stats.rejected[rules !== 'v3.1' || solve(lv) ? 'parOutOfRange' : 'unsolvable']++;
       continue;
     }
     if (s.par < minPar) { stats.rejected.parOutOfRange++; continue; }
     if (ringFilter && isRingAnswer(lv, s.answer)) { stats.rejected.ring++; continue; }
-    const answers = countAnswers(lv, s.par, unique ? 2 : 50);
+    const answers = countAnswers(lv, s.par, unique ? 2 : answerCap);
     if (unique && answers !== 1) { stats.rejected.notUnique++; continue; }
-    const final = parseLevel({ size, tiles, moveLimit, wallBudget: s.par + 1 });
+    const final = parseLevel({ size, tiles, moveLimit, wallBudget: s.par + budgetExtra, rules });
     if (simulate(final, s.answer).reason !== 'too-far') throw new Error('every win must be too-far under rules v3.1');
     const usesTeleporter = open.teleports.length > 0;
     if (usesTeleporter) stats.usesTeleporter++;
@@ -170,12 +180,14 @@ export function generateLevels({
       id: `size${size}-seed${seed}-${String(levels.length + 1).padStart(2, '0')}`,
       size,
       tiles,
+      ...(rules === 'v3.1' ? {} : { rules }),
       moveLimit,
-      wallBudget: s.par + 1,
+      wallBudget: s.par + budgetExtra,
       par: s.par,
       parAnswers: answers,
+      answer: s.answer, // one par answer, for hints
     });
-    meta.push({ usesTeleporter, routeLength });
+    meta.push({ usesTeleporter, routeLength, usesNewLine: usesV4Line(lv, s.answer) });
   }
   stats.tried = tried;
   stats.kept = levels.length;

@@ -244,3 +244,116 @@ for (const size of [5, 6]) {
     assert.ok(ruleMatters >= 10, `levels where cutting would have helped ${ruleMatters}`);
   });
 }
+
+// ---------- rules v4 property test ----------
+// Independent of level.js / solve.js again: its own v4 line rule (both tiles walkable, inside
+// the border), its own cap check (at most 2 walls touching R, at most 2 touching B) and the same
+// brute-force search as above.
+
+function randomLevelV4(rng, size) {
+  const n = size * size;
+  const cells = Array.from({ length: n }, () => {
+    const r = rng.next();
+    const rock = size === 5 ? 0.3 : 0.4;
+    return r < rock ? '#' : r < rock + 0.08 ? '~' : r < rock + 0.13 ? '=' : '.';
+  });
+  const order = rng.shuffle([...Array(n).keys()]);
+  cells[order[0]] = 'R';
+  cells[order[1]] = 'B';
+  if (rng.chance(0.5)) { cells[order[2]] = 'a'; cells[order[3]] = 'a'; }
+  const tiles = [];
+  for (let y = 0; y < size; y++) tiles.push(cells.slice(y * size, y * size + size).join(''));
+  return makeLevel(tiles, { moveLimit: rng.int(2, size + 4), wallBudget: 40, rules: 'v4' });
+}
+
+function bruteLinesV4(level) {
+  const { size, tiles } = level;
+  const ok = (c) => c !== '#' && c !== '~';
+  const out = [];
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    if (!ok(tiles[y][x])) continue;
+    if (x + 1 < size && ok(tiles[y][x + 1])) out.push(`${x},${y},R`);
+    if (y + 1 < size && ok(tiles[y + 1][x])) out.push(`${x},${y},D`);
+  }
+  return out;
+}
+
+function withinCap(level, set) {
+  let start = 0, beacon = 0;
+  for (const key of set) {
+    const [x, y, d] = key.split(',');
+    const a = [Number(x), Number(y)];
+    const b = d === 'R' ? [a[0] + 1, a[1]] : [a[0], a[1] + 1];
+    for (const [tx, ty] of [a, b]) {
+      if (level.tiles[ty][tx] === 'R') start++;
+      if (level.tiles[ty][tx] === 'B') beacon++;
+    }
+  }
+  return start <= 2 && beacon <= 2;
+}
+
+function bruteForceV4(level, useCap) {
+  const lines = bruteLinesV4(level);
+  const wins = (set) => {
+    if (useCap && !withinCap(level, set)) return false;
+    const d = bruteDist(level, set);
+    return d !== null && d > level.moveLimit;
+  };
+  for (let k = 0; k <= Math.min(MAX_K, lines.length); k++) {
+    let count = 0;
+    for (const ws of combos(lines, k)) if (wins(new Set(ws))) count++;
+    if (count > 0) return { par: k, count };
+  }
+  return { none: true };
+}
+
+for (const size of [5, 6]) {
+  test(`property (v4): solve and countAnswers match brute force, cap included, on 150 seeded ${size}x${size} levels`, () => {
+    const rng = createRng(4040 + size);
+    let solvable = 0, positivePar = 0, skipped = 0, capMatters = 0, noCutMatters = 0, newLineUsed = 0;
+    for (let i = 0; i < 150; i++) {
+      const raw = randomLevelV4(rng, size);
+      if (bruteLinesV4(raw).length > 22) { skipped++; continue; }
+      const lv = parseLevel(raw);
+      const expected = bruteForceV4(raw, true);
+      const uncapped = bruteForceV4(raw, false);
+      const got = solve(lv, { maxPar: MAX_K });
+      const ctx = `v4 level ${i} (limit ${raw.moveLimit})\n${raw.tiles.join('\n')}`;
+      if (uncapped.none !== expected.none || uncapped.par !== expected.par || uncapped.count !== expected.count) capMatters++;
+      if (expected.none) { assert.equal(got, null, `should be unsolvable, ${ctx}`); continue; }
+      solvable++;
+      if (expected.par > 0) positivePar++;
+      assert.ok(got, ctx);
+      assert.equal(got.par, expected.par, `par, ${ctx}`);
+      assert.equal(simulate(lv, got.answer).result, 'win', `answer wins, ${ctx}`);
+      assert.equal(countAnswers(lv, got.par, 100000), expected.count, `count, ${ctx}`);
+      // counts one above par too (supersets, cap-pruned)
+      if (expected.par + 1 <= MAX_K) {
+        let brute = 0;
+        for (const ws of combos(bruteLinesV4(raw), expected.par + 1)) {
+          const set = new Set(ws);
+          const d = withinCap(raw, set) ? bruteDist(raw, set) : null;
+          if (d !== null && d > raw.moveLimit) brute++;
+        }
+        assert.equal(countAnswers(lv, expected.par + 1, 100000), brute, `count at par + 1, ${ctx}`);
+      }
+      if (got.answer.some(([x, y, d]) => [raw.tiles[y][x], d === 'R' ? raw.tiles[y][x + 1] : raw.tiles[y + 1][x]].some((c) => c !== '.'))) newLineUsed++;
+    }
+    if (process.env.PROP_DEBUG) console.log({ size, solvable, positivePar, skipped, capMatters, newLineUsed });
+    assert.ok(skipped <= 90, `skipped ${skipped}`);
+    assert.ok(solvable >= 15, `solvable ${solvable}`);
+    assert.ok(positivePar >= 8, `par>0 ${positivePar}`);
+    assert.ok(newLineUsed >= 4, `answers using a v4-only line ${newLineUsed}`);
+    if (size === 5) assert.ok(capMatters >= 1, `levels where the cap changes the answer ${capMatters}`);
+  });
+}
+
+test('v4: the cap prunes the search (three sides of the start is never an answer)', () => {
+  // Start in the middle of open grass, beacon far; limit tight enough that boxing the start would be the cheap way.
+  const lv = parseLevel(makeLevel(['.....', '.....', '..R..', '.....', '....B'], { rules: 'v4', moveLimit: 6 }));
+  const s = solve(lv);
+  if (s) {
+    const near = s.answer.filter(([x, y, d]) => [[x, y], d === 'R' ? [x + 1, y] : [x, y + 1]].some(([a, b]) => a === 2 && b === 2));
+    assert.ok(near.length <= 2);
+  }
+});

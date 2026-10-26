@@ -115,3 +115,21 @@ test('generateLevels: the ring filter and route filter can be switched off', () 
   assert.ok(on.stats.rejected.ring + on.stats.rejected.tooShort > 0);
   assert.equal(off.stats.rejected.ring + off.stats.rejected.tooShort, 0);
 });
+
+test('generateLevels (v4): rules and answer fields, budget par + 2, answer wins', () => {
+  const { levels } = generateLevels({ size: 7, count: 3, seed: 'v4t', minPar: 2, maxPar: 4, minSlack: 3, maxSlack: 6, rules: 'v4', unique: false, budgetExtra: 2, maxTries: 3000 });
+  assert.equal(levels.length, 3);
+  for (const l of levels) {
+    assert.equal(l.rules, 'v4');
+    assert.equal(l.wallBudget, l.par + 2);
+    assert.equal(l.answer.length, l.par);
+    const lv = parseLevel(l);
+    assert.equal(simulate(lv, l.answer).result, 'win');
+  }
+});
+
+test('generateLevels: v3.1 levels carry an answer and no rules field', () => {
+  const { levels } = generateLevels({ size: 7, count: 1, seed: 4, minPar: 2, maxPar: 4, maxTries: 3000 });
+  assert.equal(levels[0].rules, undefined);
+  assert.equal(levels[0].answer.length, levels[0].par);
+});

@@ -129,6 +129,7 @@ export function buildPack(log = () => {}) {
       wallBudget: s.par + 1,
       par: s.par,
       parAnswers: countAnswers(lv, s.par),
+      answer: s.answer, // one par answer, for hints
     });
   }
   for (const p of POOLS) {

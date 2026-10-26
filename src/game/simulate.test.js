@@ -149,3 +149,36 @@ test('simulate results are only win/too-far and lose/reached', () => {
   }
   for (const k of seen) assert.ok(k === 'win/too-far' || k === 'lose/reached', k);
 });
+
+// ---------- rules v4 ----------
+
+test('v4: simulate accepts walls next to a bridge and a teleporter, v3.1 refuses them', () => {
+  const tiles = ['R.=..', '.....', '.....', '.....', '....B'];
+  const wall = [2, 0, 'D']; // under the bridge
+  assert.throws(() => simulate(P(tiles), [wall]), /not buildable/);
+  assert.doesNotThrow(() => simulate(P(tiles, { rules: 'v4' }), [wall]));
+  const tele = ['Ra...', '.....', '.....', '.....', 'a...B'];
+  assert.throws(() => simulate(P(tele), [[1, 0, 'D']]), /not buildable/);
+});
+
+test('v4: still refuses river, rock and the border', () => {
+  const lv = P(['R~#..', '.....', '.....', '.....', '....B'], { rules: 'v4' });
+  assert.throws(() => simulate(lv, [[0, 0, 'R']]), /not buildable/);
+  assert.throws(() => simulate(lv, [[1, 0, 'R']]), /not buildable/);
+  assert.throws(() => simulate(lv, [[4, 0, 'R']]), /outer border/);
+});
+
+test('v4: simulate throws when a wall set walls three sides of the start or of the beacon', () => {
+  const lv = P(['.....', '.R...', '.....', '...B.', '.....'], { rules: 'v4', wallBudget: 10, moveLimit: 3 });
+  assert.doesNotThrow(() => simulate(lv, [[1, 1, 'R'], [1, 1, 'D']]));
+  assert.throws(() => simulate(lv, [[1, 1, 'R'], [1, 1, 'D'], [0, 1, 'R']]), /robot/);
+  assert.throws(() => simulate(lv, [[3, 3, 'R'], [2, 3, 'R'], [3, 2, 'D']]), /beacon/);
+  assert.doesNotThrow(() => simulate(lv, [[3, 3, 'R'], [2, 3, 'R'], [1, 1, 'D']]));
+});
+
+test('v4: the no-cut rule still applies', () => {
+  // Corridor R.B walled on its single line: cuts the only route.
+  const lv = P(['R.B', '###', '###'], { rules: 'v4' });
+  assert.throws(() => simulate(lv, [[0, 0, 'R']]), /cut every route/);
+  assert.equal(cutsAllRoutes(lv, [[0, 0, 'R']]), true);
+});

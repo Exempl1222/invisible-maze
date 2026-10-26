@@ -40,6 +40,14 @@ test('pack-01: every level is consistent with the engine', () => {
     assert.equal(won.result, 'win', `${raw.id} par answer stops the robot`);
     assert.equal(won.reason, 'too-far', `${raw.id} every win is out of moves`);
 
+    // stored answer (used by hints): legal, par-sized, and wins
+    assert.ok(Array.isArray(raw.answer), `${raw.id} has an answer`);
+    assert.equal(raw.answer.length, raw.par, `${raw.id} answer length is par`);
+    assert.equal(cutsAllRoutes(lv, raw.answer), false, `${raw.id} stored answer leaves a route`);
+    const stored = simulate(lv, raw.answer); // throws if illegal
+    assert.equal(stored.result, 'win', `${raw.id} stored answer wins`);
+    assert.equal(stored.reason, 'too-far', `${raw.id} stored answer is out of moves`);
+
     if (n >= 6) {
       assert.equal(isRingAnswer(lv, s.answer), false, `${raw.id} ring answer`);
       if (raw.size === 7) assert.ok(raw.par >= 2 && raw.par <= 4, `${raw.id} par`);

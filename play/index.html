@@ -55,7 +55,16 @@
         <p class="hint" id="status" role="status"></p>
         <div class="controls" id="controls">
           <button type="button" class="btn quiet" id="clear">Clear walls</button>
+          <button type="button" class="btn quiet" id="hint-btn" aria-describedby="hint-cost">Hint (3)</button>
+          <p class="hint-cost" id="hint-cost">Uses 1 hint and costs 1 star on this level.</p>
           <button type="button" class="btn" id="go">Go</button>
+        </div>
+        <div class="hint-panel" id="hint-panel" role="region" aria-label="Out of hints" hidden>
+          <p><strong>Out of hints.</strong> Finish today's daily for 1 more. More hints from ads are coming soon.</p>
+          <div class="hint-panel-actions">
+            <button type="button" class="btn quiet" id="watch-ad" disabled>Watch an ad</button>
+            <button type="button" class="btn quiet" id="hint-panel-close">Close</button>
+          </div>
         </div>
         <div class="result" id="result" role="status" hidden></div>
       </div>

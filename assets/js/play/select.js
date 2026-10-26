@@ -10,12 +10,12 @@ function groupFor(level, i) {
   return i < TUTORIAL_COUNT ? 'Tutorial, 7x7' : 'Main, 7x7';
 }
 
-/** Tabs shared by the select screen. `current` is "levels" or "daily". */
+/** Tabs shared by the select screens. `current` is "levels", "daily" or "lab". */
 export function modeTabs(current, onPick) {
   const nav = document.createElement('nav');
   nav.className = 'mode-tabs';
   nav.setAttribute('aria-label', 'Mode');
-  for (const [id, label, href] of [['levels', 'Levels', './'], ['daily', 'Daily', './?daily']]) {
+  for (const [id, label, href] of [['levels', 'Levels', './'], ['daily', 'Daily', './?daily'], ['lab', 'Lab', './?lab']]) {
     const a = document.createElement('a');
     a.href = href;
     a.textContent = label;
@@ -80,4 +80,40 @@ export function renderSelect(root, levels, { onPick, onMode }) {
     b.addEventListener('click', () => onPick(i));
     grid.appendChild(b);
   });
+}
+
+export const LAB_NOTE = 'Experimental rules: walls can go next to bridges, teleporters, and up to two sides of the robot and beacon.';
+
+/** The Lab tab: its note and a button per lab level with best stars. */
+export function renderLab(root, levels, { onPick, onMode, failed = false }) {
+  root.innerHTML = '';
+  root.appendChild(modeTabs('lab', onMode));
+  const note = document.createElement('p');
+  note.className = 'lab-note';
+  note.id = 'lab-note';
+  note.textContent = LAB_NOTE;
+  root.appendChild(note);
+  if (failed || levels.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'select-summary';
+    p.textContent = 'The lab levels did not load. Check your connection and try again.';
+    root.appendChild(p);
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'level-grid lab-grid';
+  levels.forEach((level, i) => {
+    const stars = bestStars(level.id);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'level-btn';
+    b.dataset.level = String(i + 1);
+    b.dataset.lab = String(i + 1);
+    const label = stars === 0 ? 'not played' : `${stars} star${stars === 1 ? '' : 's'}`;
+    b.setAttribute('aria-label', `Lab ${i + 1}, ${label}`);
+    b.innerHTML = `<span class="num">${i + 1}</span><span class="level-stars">${starsMarkup(stars)}</span>`;
+    b.addEventListener('click', () => onPick(i));
+    grid.appendChild(b);
+  });
+  root.appendChild(grid);
 }

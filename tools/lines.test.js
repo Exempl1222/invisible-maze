@@ -105,3 +105,9 @@ test('wallSidesText: reads walls around a tile', () => {
   const many = new Set(['2,3,R', '2,3,D', '1,3,R', '2,2,D']);
   assert.equal(wallSidesText(2, 3, 7, (w) => many.has(lineKey(w))), 'walls on top, right, bottom and left');
 });
+
+test('capMessage: the two lab refusal messages', async () => {
+  const { capMessage } = await import('../assets/js/play/lines.js');
+  assert.equal(capMessage('start'), 'The robot can only be walled on two sides.');
+  assert.equal(capMessage('beacon'), 'The beacon can only be walled on two sides.');
+});

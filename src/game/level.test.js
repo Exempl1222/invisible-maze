@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLevel, buildableLines } from './level.js';
+import { parseLevel, buildableLines, sideCounts, capViolation, wouldBreakCap } from './level.js';
 import { SPEC_LEVEL, makeLevel } from './fixtures.test.js';
 
 test('parses the spec example', () => {
@@ -123,4 +123,66 @@ test('rejects bad levels with clear errors', () => {
 test('teleporter letters appearing twice are paired, three times are rejected', () => {
   assert.doesNotThrow(() => parseLevel(makeLevel(['Ra.', '...', 'a.B'])));
   assert.throws(() => parseLevel(makeLevel(['Raa', 'a..', '..B'])), /teleporter.*a/i);
+});
+
+// ---------- rules v4 (lab) ----------
+
+test('rules: absent means v3.1, "v4" is accepted, anything else is rejected', () => {
+  assert.equal(parseLevel(makeLevel(['R.', '.B'])).rules, 'v3.1');
+  assert.equal(parseLevel(makeLevel(['R.', '.B'], { rules: 'v3.1' })).rules, 'v3.1');
+  assert.equal(parseLevel(makeLevel(['R.', '.B'], { rules: 'v4' })).rules, 'v4');
+  assert.throws(() => parseLevel(makeLevel(['R.', '.B'], { rules: 'v5' })), /rules/);
+  assert.throws(() => parseLevel(makeLevel(['R.', '.B'], { rules: 4 })), /rules/);
+});
+
+test('answer field is carried through for hints', () => {
+  const lv = parseLevel(makeLevel(['R.', '.B'], { answer: [[0, 0, 'R']] }));
+  assert.deepEqual(lv.answer, [[0, 0, 'R']]);
+  assert.equal(parseLevel(makeLevel(['R.', '.B'])).answer, undefined);
+});
+
+test('v4: lines between two walkable tiles are buildable (bridge, teleporter, start, beacon too)', () => {
+  const tiles = ['R=a..', '.....', '.~~~.', '.#...', 'a...B'];
+  const v3 = parseLevel(makeLevel(tiles));
+  const v4 = parseLevel(makeLevel(tiles, { rules: 'v4' }));
+  // start | bridge, bridge | teleporter, start down, beacon left
+  for (const [x, y, d] of [[0, 0, 'R'], [1, 0, 'R'], [0, 0, 'D'], [3, 4, 'R'], [4, 3, 'D']]) {
+    assert.equal(v3.lineBuildable(x, y, d), false, `v3.1 ${x},${y},${d}`);
+    assert.equal(v4.lineBuildable(x, y, d), true, `v4 ${x},${y},${d}`);
+  }
+  // still never river, rock or the border
+  for (const [x, y, d] of [[1, 2, 'R'], [1, 1, 'D'], [0, 3, 'R'], [1, 3, 'D'], [4, 4, 'R'], [4, 0, 'R'], [0, 4, 'D'], [-1, 0, 'R']]) {
+    assert.equal(v4.lineBuildable(x, y, d), false, `v4 ${x},${y},${d}`);
+  }
+  assert.equal(v4.lineBuildable(0, 0, 'L'), false);
+  assert.ok(buildableLines(v4).length > buildableLines(v3).length);
+});
+
+test('v4 on open grass: every interior line is buildable', () => {
+  const lv = parseLevel(makeLevel(['R...', '....', '....', '...B'], { rules: 'v4' }));
+  assert.equal(buildableLines(lv).length, 24);
+});
+
+test('v4 cap: sideCounts, capViolation and wouldBreakCap', () => {
+  const lv = parseLevel(makeLevel(['R...', '....', '....', '...B'], { rules: 'v4' }));
+  // start (0,0) has two lines: [0,0,R] and [0,0,D]. Beacon (3,3) has [2,3,R] and [3,2,D].
+  assert.deepEqual(sideCounts(lv, [[0, 0, 'R'], [0, 0, 'D'], [2, 3, 'R']]), { start: 2, beacon: 1 });
+  assert.equal(capViolation(lv, [[0, 0, 'R'], [0, 0, 'D'], [2, 3, 'R'], [3, 2, 'D']]), null);
+  // a corner has only two sides, so use a middle start to exceed the cap
+  const mid = parseLevel(makeLevel(['....', '.R..', '....', '...B'], { rules: 'v4' }));
+  const three = [[1, 1, 'R'], [1, 1, 'D'], [0, 1, 'R']];
+  assert.equal(capViolation(mid, three), 'start');
+  assert.equal(capViolation(mid, three.slice(0, 2)), null);
+  assert.equal(wouldBreakCap(mid, three.slice(0, 2), three[2]), 'start');
+  assert.equal(wouldBreakCap(mid, three.slice(0, 2), [2, 2, 'R']), null);
+  const mid2 = parseLevel(makeLevel(['....', '....', '..B.', 'R...'], { rules: 'v4' }));
+  assert.equal(wouldBreakCap(mid2, [[2, 2, 'R'], [1, 2, 'R']], [2, 1, 'D']), 'beacon');
+  // a line between the start and the beacon counts for both
+  const next = parseLevel(makeLevel(['RB..', '....', '....', '....'], { rules: 'v4' }));
+  assert.deepEqual(sideCounts(next, [[0, 0, 'R']]), { start: 1, beacon: 1 });
+});
+
+test('the cap never applies to v3.1 levels', () => {
+  const lv = parseLevel(makeLevel(['....', '.R..', '....', '...B']));
+  assert.equal(capViolation(lv, [[1, 1, 'R'], [1, 1, 'D'], [0, 1, 'R']]), null);
 });
