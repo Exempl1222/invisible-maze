@@ -69,6 +69,9 @@ const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k))
 /** Press Go expecting a win; on failure, say what the page says (for CI-only failures). */
 async function winNow(page) {
   await go(page).click();
+  // Playwright 1.56 (CI) can stall the page's faked timers after setSystemTime plus a new page load,
+  // so the walk's last step never fires. Advancing the fake clock flushes them; harmless elsewhere.
+  await page.clock.runFor(1000);
   await expect(page.locator('#board[aria-busy="false"], #result:not([hidden])').first()).toBeAttached();
   const info = await page.evaluate(() => ({
     status: document.getElementById('status')?.textContent,
