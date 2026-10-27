@@ -3,7 +3,9 @@
 import { sprite } from '../sprites.js';
 import { markSeenHowTo, allDays } from './store.js';
 import { computeStats } from './streak.js';
-import { starsMarkup } from '../play/icons.js';
+import { BANDS } from './score.js';
+import { MODES, MODE_LABEL } from './config.js';
+import { resultText } from './archive.js';
 import { formatDaily } from '../play/daily.js';
 
 const $ = (id) => document.getElementById(id);
@@ -35,11 +37,9 @@ export function setupHowTo() {
   return { show: (opener) => open(dlg, opener) };
 }
 
-const ROWS = [['3', '3 stars'], ['2', '2 stars'], ['1', '1 star'], ['lost', 'Lost']];
-
-/** Fill the stats dialog for `today` and open it. */
-function renderStats(today) {
-  const s = computeStats(allDays(), today);
+/** Fill the stats dialog for `mode` as seen on `today`. `focusTab` puts focus back on the chosen tab. */
+function renderStats(today, mode, rerender, focusTab = false) {
+  const s = computeStats(allDays()[mode], today);
   const body = $('stats-body');
   body.replaceChildren();
   const h = document.createElement('h2');
@@ -47,9 +47,26 @@ function renderStats(today) {
   h.textContent = 'Stats';
   body.appendChild(h);
 
+  const tabs = document.createElement('div');
+  tabs.className = 'seg';
+  tabs.setAttribute('role', 'tablist');
+  tabs.setAttribute('aria-label', 'Puzzle size');
+  for (const m of MODES) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = `stats-tab-${m}`;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(m === mode));
+    b.textContent = MODE_LABEL[m];
+    b.addEventListener('click', () => rerender(m, true));
+    tabs.appendChild(b);
+  }
+  body.appendChild(tabs);
+
   const grid = document.createElement('dl');
   grid.className = 'stats-grid';
-  for (const [label, value] of [['Played', s.played], ['Win %', s.winPct], ['Streak', s.current], ['Best', s.best]]) {
+  const cells = [['Played', s.played], ['Win %', s.winPct], ['Average', s.average], ['Best', s.bestScore], ['Streak', s.current], ['Best streak', s.bestStreak]];
+  for (const [label, value] of cells) {
     const cell = document.createElement('div');
     const dt = document.createElement('dt');
     dt.textContent = label;
@@ -68,20 +85,20 @@ function renderStats(today) {
   } else {
     const t = document.createElement('p');
     t.className = 'dist-title';
-    t.textContent = 'Results';
+    t.textContent = 'Scores';
     const list = document.createElement('ul');
     list.className = 'dist';
-    list.setAttribute('aria-label', 'Results by stars');
+    list.setAttribute('aria-label', 'Days by score');
     const max = Math.max(1, ...Object.values(s.dist));
-    for (const [key, label] of ROWS) {
+    for (const band of BANDS) {
       const li = document.createElement('li');
-      if (s.today === key) li.className = 'today';
+      if (s.today === band.key) li.className = 'today';
       const name = document.createElement('span');
-      name.textContent = label;
+      name.textContent = band.label;
       const bar = document.createElement('span');
       bar.className = 'bar';
-      bar.style.width = `${Math.max(12, Math.round((s.dist[key] / max) * 100))}%`;
-      bar.textContent = String(s.dist[key]);
+      bar.style.width = `${Math.max(12, Math.round((s.dist[band.key] / max) * 100))}%`;
+      bar.textContent = String(s.dist[band.key]);
       li.append(name, bar);
       list.appendChild(li);
     }
@@ -94,30 +111,34 @@ function renderStats(today) {
   close.textContent = 'Close';
   close.addEventListener('click', () => $('stats-dlg').close());
   body.appendChild(close);
+  if (focusTab) $(`stats-tab-${mode}`).focus();
 }
 
-export function setupStats(getToday) {
+/** The stats dialog. `getToday()` is the page's date, `getMode()` the mode on screen (the tab it opens on). */
+export function setupStats(getToday, getMode) {
   const dlg = $('stats-dlg');
   closeOnBackdrop(dlg);
+  const draw = (mode, focusTab) => renderStats(getToday(), mode, draw, focusTab);
   const show = (opener) => {
-    renderStats(getToday());
+    draw(getMode(), false);
     open(dlg, opener);
   };
   $('stats-btn').addEventListener('click', () => show($('stats-btn')));
   return { show };
 }
 
-/** What a row of the archive says about its day. */
-function resultCell(result) {
+/** What a row of the archive says about its day: both modes, like `Easy 88 · Hard -`. */
+function resultCell(results) {
   const el = document.createElement('span');
-  el.className = `arch-result ${result.kind}`;
-  if (result.kind === 'won') {
-    el.innerHTML = starsMarkup(result.stars);
-    el.setAttribute('role', 'img');
-    el.setAttribute('aria-label', result.stars === 1 ? '1 star' : `${result.stars} stars`);
-  } else {
-    el.textContent = { lost: 'Lost', progress: 'In progress', none: 'Not played' }[result.kind];
-  }
+  el.className = 'arch-result';
+  MODES.forEach((m, i) => {
+    if (i > 0) el.append(' · ');
+    const part = document.createElement('span');
+    part.className = `arch-part ${results[m].kind}`;
+    part.dataset.mode = m;
+    part.textContent = `${MODE_LABEL[m]} ${resultText(results[m])}`;
+    el.appendChild(part);
+  });
   return el;
 }
 
@@ -155,7 +176,7 @@ export function setupArchive({ getRows, onPick, currentDate }) {
         tag.textContent = 'Today';
         when.append(' ', tag);
       }
-      b.append(num, when, resultCell(row.result));
+      b.append(num, when, resultCell(row.results));
       b.addEventListener('click', () => onPick(row));
       li.appendChild(b);
       list.appendChild(li);

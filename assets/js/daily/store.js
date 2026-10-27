@@ -2,10 +2,10 @@
 // windows, blocked cookies), so every access is wrapped and memory is the fallback.
 // Two tabs can share the key, so every write first re-reads storage and merges (see mergeSaved)
 // and the `storage` event brings the other tab's changes in.
-import { STORAGE_KEY } from './config.js';
-import { parseSaved, serialize, cleanDay, mergeSaved } from './record.js';
+import { STORAGE_KEY, V1_KEY } from './config.js';
+import { emptySaved, parseSaved, serialize, cleanDay, mergeSaved, migrateV1 } from './record.js';
 
-let state = { seenHowTo: false, days: {} };
+let state = emptySaved();
 const listeners = [];
 
 /** What storage holds now, or null if it can't be read. */
@@ -37,18 +37,43 @@ function persist() {
   }
 }
 
-/** A copy of the saved day, or null if the date has no record. */
-export function getDay(date) {
-  return state.days[date] ? cleanDay(state.days[date]) : null;
+/** The v1 text still waiting to be carried over: only while there is no v2 save yet. Null otherwise. */
+export function pendingV1() {
+  try {
+    if (window.localStorage.getItem(STORAGE_KEY) !== null) return null;
+    return window.localStorage.getItem(V1_KEY);
+  } catch {
+    return null;
+  }
 }
 
-export function saveDay(date, day) {
-  state = mergeSaved(state, { seenHowTo: false, days: { [date]: cleanDay(day) } });
+/** Carry the v1 records into Hard (see migrateV1) and save. `parOf(date)` is the Hard level's par for a date. */
+export function adoptV1(raw, parOf) {
+  const migrated = migrateV1(raw, parOf);
+  if (migrated) state = mergeSaved(state, migrated);
   persist();
 }
 
-export const allDays = () => state.days;
+/** A copy of the saved day, or null if the date has no record. */
+export function getDay(mode, date) {
+  return state[mode][date] ? cleanDay(state[mode][date]) : null;
+}
+
+export function saveDay(mode, date, day) {
+  state = mergeSaved(state, { ...emptySaved(), lastMode: null, [mode]: { [date]: cleanDay(day) } });
+  persist();
+}
+
+/** Both modes' days: { easy: { date: record }, hard: { date: record } }. */
+export const allDays = () => ({ easy: state.easy, hard: state.hard });
 export const seenHowTo = () => state.seenHowTo;
+export const lastMode = () => state.lastMode;
+
+export function setLastMode(mode) {
+  if (state.lastMode === mode) return;
+  state.lastMode = mode;
+  persist();
+}
 
 export function markSeenHowTo() {
   if (state.seenHowTo) return;
