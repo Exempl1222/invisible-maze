@@ -33,6 +33,18 @@
 .play-board .cell.river.bank-d::after { border-bottom-width: 3px; }
 .play-board .cell.river.bank-l::after { border-left-width: 3px; }
 
+/* Water fills the grid gap towards neighbouring water (tiles.js sets join-u/r/d/l), so the river
+   and its bridges read as one stream instead of tiles with grass lines between them. */
+.play-board .cell.river, .play-board .cell.bridge {
+  --water: #5aa9d6; --g: var(--gap, 3px);
+  --ju: 0 0 0 transparent; --jr: 0 0 0 transparent; --jd: 0 0 0 transparent; --jl: 0 0 0 transparent;
+  box-shadow: var(--ju), var(--jr), var(--jd), var(--jl);
+}
+.play-board .cell.join-u { --ju: 0 calc(-1 * var(--g)) 0 var(--water); }
+.play-board .cell.join-r { --jr: var(--g) 0 0 var(--water); }
+.play-board .cell.join-d { --jd: 0 var(--g) 0 var(--water); }
+.play-board .cell.join-l { --jl: calc(-1 * var(--g)) 0 0 var(--water); }
+
 /* Pair number stays as a small badge so colour is never the only cue. */
 .play-board .cell.teleporter[data-pair] { place-items: end end; color: #fff; font-size: clamp(0.6rem, 2.6vw, 0.85rem); text-shadow: 0 1px 2px #000; padding: 0 4px 2px 0; }
 

@@ -28,13 +28,23 @@ export function decorateTile(el, tiles, n, x, y, letters) {
     const wv = walk(x, y - 1) + walk(x, y + 1);
     const wh = walk(x - 1, y) + walk(x + 1, y);
     if (wv > wh || (wv === wh && wet(x - 1, y) + wet(x + 1, y) > wet(x, y - 1) + wet(x, y + 1))) el.classList.add('across-v');
-  } else if (ch === '~') {
+  }
+  if (ch === '~' || ch === '=') {
+    // Water fills the grid gap towards any neighbouring water, so a river reads as one stream.
+    const wet = (cx, cy) => at(cx, cy) === '~' || at(cx, cy) === '=';
+    if (wet(x, y - 1)) el.classList.add('join-u');
+    if (wet(x + 1, y)) el.classList.add('join-r');
+    if (wet(x, y + 1)) el.classList.add('join-d');
+    if (wet(x - 1, y)) el.classList.add('join-l');
+  }
+  if (ch === '~') {
     const water = (cx, cy) => at(cx, cy) === '~' || at(cx, cy) === '=';
     if (y > 0 && !water(x, y - 1)) el.classList.add('bank-u');
     if (x < n - 1 && !water(x + 1, y)) el.classList.add('bank-r');
     if (y < n - 1 && !water(x, y + 1)) el.classList.add('bank-d');
     if (x > 0 && !water(x - 1, y)) el.classList.add('bank-l');
-  } else if (isPortal(ch)) {
+  }
+  if (isPortal(ch)) {
     el.dataset.pairN = String(letters.indexOf(ch) + 1);
   }
 }
