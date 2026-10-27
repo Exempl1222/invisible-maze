@@ -151,10 +151,10 @@
 
 /* ---------- v2: Easy | Hard tabs, the score, the try list ---------- */
 
-.mode-tabs, .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 3px; background: var(--page); border: 2px solid var(--outline); border-radius: 12px; }
-.mode-tabs { max-width: 360px; margin-bottom: 4px; }
-.mode-tabs[hidden] { display: none; }
-.mode-tabs a, .seg button {
+.size-tabs, .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 3px; background: var(--page); border: 2px solid var(--outline); border-radius: 12px; }
+.size-tabs { max-width: 360px; margin-bottom: 4px; }
+.size-tabs[hidden] { display: none; }
+.size-tabs a, .seg button {
   display: grid;
   place-items: center;
   min-height: 44px;
@@ -170,8 +170,8 @@
   border-radius: 9px;
   cursor: pointer;
 }
-.mode-tabs a:hover, .seg button:hover { background: var(--grid); }
-.mode-tabs a[aria-current="page"], .seg button[aria-selected="true"] { color: var(--panel); background: var(--chalk); }
+.size-tabs a:hover, .seg button:hover { background: var(--grid); }
+.size-tabs a[aria-current="page"], .seg button[aria-selected="true"] { color: var(--panel); background: var(--chalk); }
 
 .score-big { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 2.5rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .try-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
@@ -179,3 +179,5 @@
 .try-list li strong { font-variant-numeric: tabular-nums; }
 .try-list li.top { background: var(--grid); }
 .result-actions.choice { grid-template-columns: 1fr; }
+.arch-date { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.arch-today { margin-left: 0; }
