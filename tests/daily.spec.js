@@ -56,6 +56,9 @@ async function setToday(page, date) {
 }
 
 test.beforeEach(async ({ page }) => {
+  page.__errors = [];
+  page.on('pageerror', (e) => page.__errors.push(`pageerror: ${e.message} ${(e.stack || '').split('\n').slice(0, 3).join(' | ')}`));
+  page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') page.__errors.push(`console.${m.type()}: ${m.text()}`); });
   await seedStorage(page);
   await page.clock.install({ time: NOON('2026-10-27') });
 });
@@ -72,8 +75,16 @@ async function winNow(page) {
   // Playwright 1.56 (CI) can stall the page's faked timers after setSystemTime plus a new page load,
   // so the walk's last step never fires. Advancing the fake clock flushes them; harmless elsewhere.
   await page.clock.runFor(1000);
-  await expect(page.locator('#board[aria-busy="false"], #result:not([hidden])').first()).toBeAttached();
-  const info = await page.evaluate(() => ({
+  const settled = page.locator('#board[aria-busy="false"], #result:not([hidden])').first();
+  const info = async () => JSON.stringify({ errors: page.__errors, ...(await page.evaluate(() => ({
+    status: document.getElementById('status')?.textContent,
+    go: document.getElementById('go')?.textContent,
+    h1: document.querySelector('h1')?.textContent,
+    now: new Date().toString(),
+    busy: document.getElementById('board')?.getAttribute('aria-busy'),
+  }))) });
+  await expect(settled, await (async () => { try { await settled.waitFor({ state: 'attached', timeout: 5000 }); return 'ok'; } catch { return info(); } })()).toBeAttached({ timeout: 100 });
+  const info2 = await page.evaluate(() => ({
     status: document.getElementById('status')?.textContent,
     go: document.getElementById('go')?.textContent,
     h1: document.querySelector('h1')?.textContent,
@@ -81,7 +92,7 @@ async function winNow(page) {
     fences: [...document.querySelectorAll('#board .wall-bar')].map((b) => b.dataset.line).join(' '),
     newDay: !document.getElementById('new-day')?.hidden,
   }));
-  await expect(result(page), JSON.stringify(info)).toHaveAttribute('data-result', 'win');
+  await expect(result(page), JSON.stringify(info2)).toHaveAttribute('data-result', 'win');
 }
 
 /** Press Go with whatever is on the board and wait for the try to settle. */
