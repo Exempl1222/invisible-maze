@@ -49,7 +49,7 @@ jobs:
       - name: Collect the public site
         run: |
           mkdir _site
-          cp -r index.html play assets _site/
+          cp -r index.html play daily assets _site/
           if [ -d src/game ] && ls src/game/*.js >/dev/null 2>&1; then
             mkdir -p _site/src && cp -r src/game _site/src/
             find _site/src -name '*.test.js' -delete

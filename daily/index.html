@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daily · Gnome Sweet Gnome</title>
+  <meta name="description" content="Fence in the runaway gnome. One new puzzle a day.">
+  <meta name="theme-color" content="#e3ecd2">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Gnome Sweet Gnome: daily puzzle">
+  <meta property="og:description" content="Fence in the runaway gnome. One new puzzle a day.">
+  <meta property="og:url" content="https://exempl1222.github.io/invisible-maze/daily/">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/play.css">
+  <link rel="stylesheet" href="../assets/css/sprites.css">
+  <link rel="stylesheet" href="../assets/css/daily.css">
+</head>
+<body>
+  <header class="wrap site-header daily-header">
+    <div class="wordmark" id="wordmark">
+      <img src="../assets/sprites/icon-gnome.svg" alt="" width="36" height="36">
+      <span>Gnome Sweet Gnome</span>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn quiet icon-btn" id="help-btn" aria-label="How to play" aria-haspopup="dialog">?</button>
+      <button type="button" class="btn quiet icon-btn" id="archive-btn" aria-label="Archive" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M3.5 10h17M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" class="btn quiet icon-btn" id="stats-btn" aria-label="Stats" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="play daily" id="game-root">
+    <div class="play-head">
+      <div class="title-block">
+        <h1 id="title">Daily</h1>
+        <p class="date-line" id="date-line"></p>
+        <button type="button" class="btn quiet today-link" id="today-link" hidden>Today's gnome</button>
+      </div>
+      <div class="tries" id="tries" hidden>
+        <span class="tries-label">Tries left</span>
+        <span class="pips" id="pips" role="img" aria-label="3 tries left"><i></i><i></i><i></i></span>
+      </div>
+    </div>
+
+    <p id="loading" class="loading">Loading today's gnome...</p>
+    <noscript><p class="loading">The game needs JavaScript to run.</p></noscript>
+
+    <div id="daily-break" class="daily-note" hidden>
+      <p><strong id="break-text">The daily is taking a break.</strong></p>
+      <p id="break-more">There is no puzzle for this date yet. Check back soon.</p>
+      <button type="button" class="btn" id="break-today" hidden>Today's gnome</button>
+    </div>
+
+    <div id="game-view" class="game" hidden>
+      <div class="stats" aria-label="Level limits">
+        <p class="stat"><span class="stat-label" id="walls-label">Walls</span><strong id="walls-used">0 / 0</strong></p>
+        <p class="stat"><span class="stat-label">Par</span><strong id="par">0</strong></p>
+        <p class="stat"><span class="stat-label">Move limit</span><strong id="move-limit">0</strong></p>
+        <p class="stat"><span class="stat-label">Moves left</span><strong id="moves-left">0</strong></p>
+      </div>
+
+      <div class="board play-board" id="board"></div>
+      <p class="sr-only" id="board-help">Arrow keys move between tiles. Shift plus an arrow key places or removes a wall on that side of the tile.</p>
+
+      <div class="side">
+        <p class="hint" id="status" role="status"></p>
+        <p class="hint note" id="answer-note" hidden></p>
+        <div class="daily-note new-day" id="new-day" hidden>
+          <p><strong>A new gnome is here</strong></p>
+          <button type="button" class="btn" id="new-day-play">Play</button>
+        </div>
+        <div class="controls" id="controls">
+          <button type="button" class="btn quiet" id="clear">Clear walls</button>
+          <button type="button" class="btn quiet" id="hint-btn" aria-describedby="hint-cost">Hint (1)</button>
+          <p class="hint-cost" id="hint-cost">One free hint a day. It shows one fence and costs 1 star.</p>
+          <button type="button" class="btn" id="go">Go</button>
+        </div>
+        <div class="result" id="result" hidden></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer"><div class="wrap">
+    A new gnome every day.</div>
+  </footer>
+
+  <dialog class="dlg" id="howto-dlg" aria-labelledby="howto-title">
+    <div class="dlg-body">
+      <h2 id="howto-title">How to play</h2>
+      <ol class="howto">
+        <li><span class="howto-art" id="howto-art-1"></span><p>The gnome walks the shortest way home.</p></li>
+        <li><span class="howto-art" id="howto-art-2"></span><p>Tap the lines between tiles to build fences. You can't cut off every way through.</p></li>
+        <li><span class="howto-art howto-house" aria-hidden="true"></span><p>Make his walk longer than his move limit. Fewer fences, more stars. 3 tries a day.</p></li>
+      </ol>
+      <button type="button" class="btn" id="howto-close">Let's go</button>
+    </div>
+  </dialog>
+
+  <dialog class="dlg" id="archive-dlg" aria-labelledby="archive-title">
+    <div class="dlg-body" id="archive-body"></div>
+  </dialog>
+
+  <dialog class="dlg" id="stats-dlg" aria-labelledby="stats-title">
+    <div class="dlg-body" id="stats-body"></div>
+  </dialog>
+
+  <script type="module" src="../assets/js/daily/main.js"></script>
+</body>
+</html>

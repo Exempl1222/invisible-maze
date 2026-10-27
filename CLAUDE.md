@@ -11,8 +11,10 @@ Gnome Sweet Gnome (repo `invisible-maze`), a mobile-first fence-building puzzle.
 ```
 index.html            landing page (hero teaser is a canned replay, not game logic)
 play/index.html       the game: level select, board, robot replay, results
+daily/index.html      the standalone daily page (docs/DAILY_SPEC.md); shareable on its own
 assets/css/site.css   site styles; colour tokens on :root
 assets/css/play.css   game page styles (uses the site tokens)
+assets/css/daily.css  daily page extras (header buttons, tries, dialogs); loads after play.css
 assets/js/sprites.js   loads the sprites; inline gnome and walls, one-shot animations
 assets/js/tiles.js     which art variant each tile gets (shared by game and home replay)
 assets/css/sprites.css tile, wall and gnome art placement
@@ -21,6 +23,7 @@ tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mj
 tools/sprites.html     dev gallery of every sprite
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs
 assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
+assets/js/daily/      standalone daily: main, config (APP_LINK switch), pure record (with merge)/streak/share/countdown/archive, store, dialogs
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
 assets/levels/        level packs (pack-01.json), the daily batch (daily.json) and the lab pack (lab.json, rules v4)
 assets/js/teaser.js   hero replay (canned, not game logic)
