@@ -60,6 +60,9 @@ const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k))
 async function loseOnce(page, expectedLabel) {
   await expect(go(page)).toHaveText(expectedLabel);
   await go(page).click();
+  // The label changes as the walk starts, so also wait for the walk to end (the board unlocks,
+  // or the day finishes) before touching the board again. Slow CI machines need this.
+  await expect(page.locator('#board[aria-busy="true"]')).toHaveCount(0);
 }
 
 test('loads #1 for 2026-10-27 with the date line and the level limits', async ({ page }) => {
