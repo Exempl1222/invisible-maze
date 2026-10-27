@@ -496,7 +496,7 @@ function renderResult() {
     pic.setAttribute('aria-hidden', 'true');
     const sub = document.createElement('p');
     sub.className = 'result-text';
-    sub.textContent = 'Not today. A new gnome tomorrow.';
+    sub.textContent = isArchive ? 'Not this time. Try another day from the archive.' : 'Not today. A new gnome tomorrow.';
     titles.append(heading, sub);
     line.textContent = `Lost, all ${MAX_TRIES} tries used`;
   }
