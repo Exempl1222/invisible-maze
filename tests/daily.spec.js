@@ -66,6 +66,21 @@ async function openDay(page, url = URL1) {
 }
 const saved = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
 
+/** Press Go expecting a win; on failure, say what the page says (for CI-only failures). */
+async function winNow(page) {
+  await go(page).click();
+  await expect(page.locator('#board[aria-busy="false"], #result:not([hidden])').first()).toBeAttached();
+  const info = await page.evaluate(() => ({
+    status: document.getElementById('status')?.textContent,
+    go: document.getElementById('go')?.textContent,
+    h1: document.querySelector('h1')?.textContent,
+    now: new Date().toString(),
+    fences: [...document.querySelectorAll('#board .wall-bar')].map((b) => b.dataset.line).join(' '),
+    newDay: !document.getElementById('new-day')?.hidden,
+  }));
+  await expect(result(page), JSON.stringify(info)).toHaveAttribute('data-result', 'win');
+}
+
 /** Press Go with whatever is on the board and wait for the try to settle. */
 async function loseOnce(page, expectedLabel) {
   await expect(go(page)).toHaveText(expectedLabel);
@@ -587,8 +602,7 @@ test.describe('the archive', () => {
     await openDay(page, URL1_PLAIN);
     await expect(page.locator('h1')).toContainText('Daily #4');
     await placeAll(page, dailyData.levels[3].answer);
-    await go(page).click();
-    await expect(result(page)).toHaveAttribute('data-result', 'win');
+    await winNow(page);
     await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
     await expect(cell('Played')).toHaveText('2');
     await expect(cell('Streak')).toHaveText('1');
@@ -605,13 +619,11 @@ test.describe('the archive', () => {
     await openDay(page, '/daily/?date=2026-10-29');
     await expect(page.locator('h1')).toContainText('Daily #3');
     await placeAll(page, dailyData.levels[2].answer);
-    await go(page).click();
-    await expect(result(page)).toHaveAttribute('data-result', 'win');
+    await winNow(page);
     await openDay(page, URL1_PLAIN);
     await expect(page.locator('h1')).toContainText('Daily #4');
     await placeAll(page, dailyData.levels[3].answer);
-    await go(page).click();
-    await expect(result(page)).toHaveAttribute('data-result', 'win');
+    await winNow(page);
     await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
     const cell = (label) => page.locator('#stats-dlg .stats-grid div').filter({ hasText: label }).locator('dd');
     await expect(cell('Played')).toHaveText('3');
