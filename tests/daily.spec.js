@@ -25,13 +25,22 @@ const left = (page) => page.locator('#pips i.left'); // filled pips: tries left
 const won = (page) => page.locator('#pips i.won');
 
 async function press(page, [x, y, dir]) {
+  await tile(page, x, y).scrollIntoViewIfNeeded(); // mouse clicks miss a tile that is off screen
   const box = await tile(page, x, y).boundingBox();
   const f = { R: [0.88, 0.5], D: [0.5, 0.88], L: [0.12, 0.5], U: [0.5, 0.12] }[dir];
   await page.mouse.move(box.x + box.width * f[0], box.y + box.height * f[1]);
   await page.mouse.down();
   await page.mouse.up();
 }
-const placeAll = async (page, list) => { for (const w of list) await press(page, w); };
+/** Place each fence and wait for it to appear, so a click that missed fails here, not later. */
+async function placeAll(page, list) {
+  await page.evaluate(() => document.fonts.ready); // web fonts can shift the board after it first shows
+  for (const w of list) {
+    const before = await bars(page).count();
+    await press(page, w);
+    await expect(bars(page)).toHaveCount(before + 1);
+  }
+}
 
 /** Skip the first-visit card (unless the key is already there), so tests that are not about it start clean. */
 const seedStorage = (page) => page.addInitScript((key) => {
@@ -109,7 +118,7 @@ test('first visit shows how to play once, and the ? button reopens it', async ({
   await expect(dlg.locator('.howto-art svg').first()).toBeVisible(); // the sprites are drawn
   await dlg.getByRole('button', { name: "Let's go" }).click();
   await expect(dlg).toBeHidden();
-  expect((await saved(page)).seenHowTo).toBe(true);
+  await expect.poll(async () => (await saved(page))?.seenHowTo).toBe(true);
   await page.reload();
   await expect(page.locator('#board .cell').first()).toBeVisible();
   await expect(dlg).toBeHidden();
