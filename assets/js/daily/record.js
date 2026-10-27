@@ -6,7 +6,7 @@ import { parseDate } from '../play/daily.js';
 const LINE_KEY = /^\d+,\d+,[RD]$/;
 
 /** A fresh day: nothing tried yet. */
-export const freshDay = () => ({ tries: 0, won: false, stars: 0, walls: [], hint: null, done: false });
+export const freshDay = () => ({ tries: 0, won: false, stars: 0, walls: [], hint: null, done: false, finishedOn: null });
 
 /** "3,4,D" -> [3, 4, "D"], or null if it isn't a line key. */
 export function parseLineKey(key) {
@@ -28,7 +28,37 @@ export function cleanDay(d) {
   const walls = [];
   if (Array.isArray(d.walls)) for (const k of d.walls) if (parseLineKey(k) && !walls.includes(k)) walls.push(k);
   const hint = parseLineKey(d.hint) ? d.hint : null;
-  return { tries, won, stars, walls, hint, done };
+  const finishedOn = done && typeof d.finishedOn === 'string' && parseDate(d.finishedOn) !== null ? d.finishedOn : null;
+  return { tries, won, stars, walls, hint, done, finishedOn };
+}
+
+/**
+ * Two copies of one date's record (`a` already saved, `b` newer) as one, so two tabs can never
+ * lose a spent try: highest tries; done and won stay set (the finished copy's stars and walls win);
+ * an existing hint and finishedOn are kept. With equal tries the newer walls win.
+ */
+export function mergeDay(a, b) {
+  const x = a ? cleanDay(a) : null;
+  const y = b ? cleanDay(b) : null;
+  if (!x || !y) return x || y || freshDay();
+  const base = x.done ? x : y.done ? y : x.tries > y.tries ? x : y;
+  const done = x.done || y.done;
+  return cleanDay({
+    tries: Math.max(x.tries, y.tries),
+    won: x.won || y.won,
+    done,
+    stars: base.stars,
+    walls: base.walls,
+    hint: x.hint ?? y.hint,
+    finishedOn: x.finishedOn ?? y.finishedOn,
+  });
+}
+
+/** Two saved states (`a` already saved, `b` newer) as one: per-date mergeDay, seenHowTo if either. */
+export function mergeSaved(a, b) {
+  const days = { ...a.days };
+  for (const [date, d] of Object.entries(b.days)) days[date] = mergeDay(days[date], d);
+  return { seenHowTo: a.seenHowTo || b.seenHowTo, days };
 }
 
 /** Parse the saved JSON text into { seenHowTo, days }. Anything unreadable gives the empty state. */

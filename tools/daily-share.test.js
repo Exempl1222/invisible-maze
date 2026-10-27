@@ -56,3 +56,9 @@ test('pageUrl drops the query string and hash', () => {
   assert.equal(pageUrl(URL), URL);
   assert.equal(pageUrl('http://localhost:4173/daily/?date=2026-10-27'), 'http://localhost:4173/daily/');
 });
+
+test('an archive day says (archive) after the number', () => {
+  const t = shareText({ number: 3, url: 'https://x/daily/', par: 4, walls: 4, tries: 1, won: true, stars: 3, hint: false, archive: true });
+  assert.equal(t.split('\n')[0], 'Gnome Sweet Gnome #3 (archive) 🍄');
+  assert.equal(shareText({ number: 3, url: 'u', par: 4, walls: 4, tries: 1, won: true, stars: 3, hint: false }).split('\n')[0], 'Gnome Sweet Gnome #3 🍄');
+});

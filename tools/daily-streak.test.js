@@ -82,3 +82,39 @@ test('unfinished days are not played; win percentage rounds', () => {
   assert.equal(s.winPct, 67);
   assert.deepEqual(s.dist, { 3: 2, 2: 0, 1: 0, lost: 1 });
 });
+
+const late = (d, on) => ({ ...d, finishedOn: on });
+
+test('archive plays do not count toward the streak, but do count as played', () => {
+  const days = {
+    '2026-10-26': late(won(), '2026-10-27'), // caught up a day late
+    '2026-10-27': late(won(), '2026-10-27'),
+  };
+  const s = computeStats(days, '2026-10-27');
+  assert.equal(s.current, 1);
+  assert.equal(s.best, 1);
+  assert.equal(s.played, 2);
+  assert.equal(s.wins, 2);
+  assert.equal(s.winPct, 100);
+  assert.deepEqual(s.dist, { 3: 2, 2: 0, 1: 0, lost: 0 });
+});
+
+test('catching up does not repair a broken streak', () => {
+  const days = {
+    '2026-10-25': late(won(), '2026-10-25'),
+    '2026-10-26': late(won(), '2026-10-28'), // missed on the day, won later
+    '2026-10-27': late(won(), '2026-10-27'),
+  };
+  const s = computeStats(days, '2026-10-27');
+  assert.equal(s.current, 1);
+  assert.equal(s.best, 1);
+});
+
+test('records without finishedOn (older saves) count as finished on the day', () => {
+  assert.equal(computeStats({ '2026-10-26': won(), '2026-10-27': won() }, '2026-10-27').current, 2);
+});
+
+test('a today win finished late (after midnight, still on the old page) is not on the day', () => {
+  const s = computeStats({ '2026-10-27': late(won(), '2026-10-28') }, '2026-10-28');
+  assert.equal(s.current, 0);
+});

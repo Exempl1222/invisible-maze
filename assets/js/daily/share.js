@@ -10,17 +10,17 @@ export function pageUrl(href) {
 }
 
 /**
- * { number, url, par, walls, tries, won, stars, hint } -> the share text.
+ * { number, url, par, walls, tries, won, stars, hint, archive } -> the share text.
  *   Gnome Sweet Gnome #1 🍄
  *   ⭐⭐⭐ 4 fences (par 4)
  *   🟥🟩 2/3
  *   https://.../daily/
  */
-export function shareText({ number, url, par, walls, tries, won, stars, hint }) {
+export function shareText({ number, url, par, walls, tries, won, stars, hint, archive }) {
   const bulb = hint ? ' 💡' : '';
   const result = won
     ? `${'⭐'.repeat(stars)} ${walls} ${walls === 1 ? 'fence' : 'fences'} (par ${par})${bulb}`
     : `🏠 He made it home${bulb}`;
   const squares = won ? `${'🟥'.repeat(tries - 1)}🟩 ${tries}/${MAX_TRIES}` : `${'🟥'.repeat(tries)} X/${MAX_TRIES}`;
-  return [`Gnome Sweet Gnome #${number} 🍄`, result, squares, url].join('\n');
+  return [`Gnome Sweet Gnome #${number}${archive ? ' (archive)' : ''} 🍄`, result, squares, url].join('\n');
 }
