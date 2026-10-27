@@ -14,6 +14,7 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 | 5c | **Rules v3.1: no cutting every route** | Engine refuses walls that leave no route; solver, generator, pack and daily rebuilt (every win is out of moves); UI refusal message and copy. Independently re-verified | Builder (Sonnet), verified by Opus | Done 26 Oct 2026 |
 | 6a | **Lab v4 rules + hints** | Engine `rules` per level (`v3.1` default, `v4` lab) with the two-sides cap, 5-level Lab tab, hints on every level (inventory, earned from the daily, each hint costs a star), stored `answer` on every level | Builder (Sonnet) | Done 26 Oct 2026 |
 | 6b | **v4 rollout** | Rules v4 everywhere: 5x5 tutorial, bridges that span a river, new 30-level pack (par up to 7), 180-day daily with weekday par, home page and copy updated | Builder (Opus) | In review |
+| 6c | **Standalone daily** | `/daily/` page per `docs/DAILY_SPEC.md`: 3 tries, 1 hint a day, streak and stats, share, countdown, how-to-play, app link behind a flag. Unit and browser tests green, playtested on phone | Builder (Sonnet), reviewed by Opus | In progress |
 | 6 | **Polish and launch** | Daily level, packs of 30, hints, final name, analytics, custom domain, then ads | Mixed | Not started |
 | 7 | **Gnome retheme** | sprites in game, menus rethemed | Builder (Sonnet), reviewed by Opus | In review |
 
