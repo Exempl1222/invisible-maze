@@ -8,36 +8,43 @@ export function addDays(date, n) {
   return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
 }
 
-const resultOf = (d) => (d.won ? String(Math.min(3, Math.max(1, d.stars))) : 'lost');
+import { bestScore, bandOf, BANDS } from './score.js';
 
 /**
- * { played, wins, winPct, current, best, dist, today } for `days` (date -> saved day), as seen on
- * `today`. Current streak: consecutive dates won on the day itself (`finishedOn` is the date; archive
- * catch-ups don't count) ending today, or yesterday if today isn't done
- * yet. A lost or missed day ends it. `today` in the result is the key of today's result in `dist`,
- * or null if today isn't done.
+ * Stats for one mode's saved `days` (date -> record), as seen on `today`:
+ * { played, wins, winPct, average, bestScore, current, bestStreak, dist, today }.
+ * A day is played when it is done; its score is the best winning try (0 for a day with no win) and a
+ * win is a score above 0. `average` is over played days, lost days counting 0. `dist` counts days per
+ * score band (see BANDS). Current streak: consecutive dates with a score above 0, finished on the
+ * day itself (`finishedOn` is the date; archive catch-ups don't count), ending today, or yesterday if
+ * today isn't done yet. A lost or missed day ends it. `today` in the result is today's band key, or
+ * null if today isn't done.
  */
 export function computeStats(days, today) {
   const done = Object.entries(days).filter(([, d]) => d.done);
-  const dist = { 3: 0, 2: 0, 1: 0, lost: 0 };
-  const wonDates = new Set(); // every win, for played and win %
+  const dist = Object.fromEntries(BANDS.map((b) => [b.key, 0]));
   const streakDates = new Set(); // wins finished on their own date: the only ones a streak counts
+  let wins = 0;
+  let total = 0;
+  let top = 0;
   for (const [date, d] of done) {
-    dist[resultOf(d)]++;
-    if (d.won) {
-      wonDates.add(date);
+    const score = bestScore(d.tries);
+    dist[bandOf(score)]++;
+    total += score;
+    top = Math.max(top, score);
+    if (score > 0) {
+      wins++;
       if (!d.finishedOn || d.finishedOn === date) streakDates.add(date); // no finishedOn: an older save, taken as on the day
     }
   }
-  const wins = wonDates.size;
   const played = done.length;
 
-  let best = 0;
+  let bestStreak = 0;
   for (const date of streakDates) {
     if (streakDates.has(addDays(date, -1))) continue; // not the start of a run
     let len = 0;
     for (let d = date; streakDates.has(d); d = addDays(d, 1)) len++;
-    best = Math.max(best, len);
+    bestStreak = Math.max(bestStreak, len);
   }
 
   const todayDone = days[today]?.done === true;
@@ -52,9 +59,11 @@ export function computeStats(days, today) {
     played,
     wins,
     winPct: played ? Math.round((wins / played) * 100) : 0,
+    average: played ? Math.round(total / played) : 0,
+    bestScore: top,
     current,
-    best,
+    bestStreak,
     dist,
-    today: todayDone ? resultOf(days[today]) : null,
+    today: todayDone ? bandOf(bestScore(days[today].tries)) : null,
   };
 }

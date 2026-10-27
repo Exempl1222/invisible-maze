@@ -1,6 +1,7 @@
 // Which dates the daily page will play, and the rows of the archive list. Dates in, data out. No DOM.
 import { parseDate, dayIndex } from '../play/daily.js';
 import { addDays } from './streak.js';
+import { bestScore } from './score.js';
 
 /** How many past days (today minus 1 to today minus this) can be played. */
 export const ARCHIVE_DAYS = 29;
@@ -23,14 +24,19 @@ export function classifyDate(asked, today) {
 }
 
 function resultOf(d) {
-  if (d && d.done) return d.won ? { kind: 'won', stars: d.stars } : { kind: 'lost' };
-  if (d && (d.tries > 0 || d.hint || (d.walls && d.walls.length))) return { kind: 'progress' };
+  if (d && d.done) {
+    const score = bestScore(d.tries);
+    return score > 0 ? { kind: 'won', score } : { kind: 'lost', score: 0 };
+  }
+  if (d && ((d.tries && d.tries.length > 0) || d.hint || (d.walls && d.walls.length))) return { kind: 'progress' };
   return { kind: 'none' };
 }
 
 /**
  * The archive list: today and the 29 days before it, newest first. Days outside the batch
- * (`start`, `count` puzzles) are left out. Each row: { date, number, today, result }.
+ * (`start`, `count` puzzles) are left out. `days` is { easy: {date: record}, hard: {...} }.
+ * Each row: { date, number, today, results: { easy, hard } } with a result per mode:
+ * { kind: 'won', score } | { kind: 'lost', score: 0 } | { kind: 'progress' } | { kind: 'none' }.
  */
 export function archiveRows({ days, today, start, count }) {
   const rows = [];
@@ -38,7 +44,12 @@ export function archiveRows({ days, today, start, count }) {
     const date = addDays(today, -back);
     const i = dayIndex(start, date);
     if (i === null || i < 0 || i >= count) continue;
-    rows.push({ date, number: i + 1, today: back === 0, result: resultOf(days[date]) });
+    rows.push({ date, number: i + 1, today: back === 0, results: { easy: resultOf(days.easy?.[date]), hard: resultOf(days.hard?.[date]) } });
   }
   return rows;
+}
+
+/** What a row shows for one mode: the score, `0` for a lost day, `...` in progress, `-` not played. */
+export function resultText(result) {
+  return { won: String(result.score), lost: '0', progress: '...', none: '-' }[result.kind];
 }

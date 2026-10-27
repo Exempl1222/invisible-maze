@@ -1,26 +1,27 @@
 // The text a player shares. A pure function so the format is tested. No DOM.
-import { MAX_TRIES } from './config.js';
+import { MODE_LABEL } from './config.js';
 
-/** The page's own URL with no query string or hash. */
-export function pageUrl(href) {
+/** The page's own URL with no query string or hash, then `?mode=` for the mode played. */
+export function pageUrl(href, mode) {
   const u = new URL(href);
   u.search = '';
   u.hash = '';
+  if (mode) u.searchParams.set('mode', mode);
   return u.toString();
 }
 
 /**
- * { number, url, par, walls, tries, won, stars, hint, archive } -> the share text.
- *   Gnome Sweet Gnome #1 🍄
- *   ⭐⭐⭐ 4 fences (par 4)
- *   🟥🟩 2/3
- *   https://.../daily/
+ * { number, mode, url, score, tries, hint, archive } -> the share text. `tries` is [{ won }].
+ *   Gnome Sweet Gnome #1 Hard 🍄
+ *   82/100 💡
+ *   🟥🟩🟩
+ *   https://.../daily/?mode=hard
+ * One square per try used (🟥 loss, 🟩 win). 💡 only if the hint was used. A day with no win reads
+ * `0/100 🏠`. Archive days put `(archive)` after the number.
  */
-export function shareText({ number, url, par, walls, tries, won, stars, hint, archive }) {
-  const bulb = hint ? ' 💡' : '';
-  const result = won
-    ? `${'⭐'.repeat(stars)} ${walls} ${walls === 1 ? 'fence' : 'fences'} (par ${par})${bulb}`
-    : `🏠 He made it home${bulb}`;
-  const squares = won ? `${'🟥'.repeat(tries - 1)}🟩 ${tries}/${MAX_TRIES}` : `${'🟥'.repeat(tries)} X/${MAX_TRIES}`;
-  return [`Gnome Sweet Gnome #${number}${archive ? ' (archive)' : ''} 🍄`, result, squares, url].join('\n');
+export function shareText({ number, mode, url, score, tries, hint, archive }) {
+  const head = `Gnome Sweet Gnome #${number}${archive ? ' (archive)' : ''} ${MODE_LABEL[mode] ?? mode} 🍄`;
+  const line = `${score}/100${score === 0 ? ' 🏠' : ''}${hint ? ' 💡' : ''}`;
+  const squares = tries.map((t) => (t.won ? '🟩' : '🟥')).join('');
+  return [head, line, squares, url].join('\n');
 }

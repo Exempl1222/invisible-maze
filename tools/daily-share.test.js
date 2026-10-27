@@ -2,63 +2,48 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { shareText, pageUrl } from '../assets/js/daily/share.js';
 
-const URL = 'https://exempl1222.github.io/invisible-maze/daily/';
-const base = { number: 1, url: URL, par: 4, walls: 4, tries: 2, won: true, stars: 3, hint: false };
+const URL = 'https://exempl1222.github.io/invisible-maze/daily/?mode=hard';
+const W = { won: true };
+const L = { won: false };
+const base = { number: 1, mode: 'hard', url: URL, score: 82, tries: [L, W, W], hint: true, archive: false };
 
-test('a win on try 2 matches the spec format exactly', () => {
-  assert.equal(shareText(base), [
-    'Gnome Sweet Gnome #1 🍄',
-    '⭐⭐⭐ 4 fences (par 4)',
-    '🟥🟩 2/3',
-    URL,
-  ].join('\n'));
+test('the spec example matches exactly', () => {
+  assert.equal(shareText(base), ['Gnome Sweet Gnome #1 Hard 🍄', '82/100 💡', '🟥🟩🟩', URL].join('\n'));
 });
 
-test('a win on try 1 has a single green square', () => {
-  assert.equal(shareText({ ...base, tries: 1 }).split('\n')[2], '🟩 1/3');
+test('Easy names its mode, and one try is one square', () => {
+  const t = shareText({ ...base, mode: 'easy', url: URL.replace('hard', 'easy'), score: 100, tries: [W], hint: false });
+  assert.equal(t, ['Gnome Sweet Gnome #1 Easy 🍄', '100/100', '🟩', 'https://exempl1222.github.io/invisible-maze/daily/?mode=easy'].join('\n'));
 });
 
-test('a win on try 3', () => {
-  assert.equal(shareText({ ...base, tries: 3 }).split('\n')[2], '🟥🟥🟩 3/3');
+test('the bulb only shows when the hint was used', () => {
+  assert.equal(shareText({ ...base, hint: false }).split('\n')[1], '82/100');
+  assert.equal(shareText({ ...base, hint: true }).split('\n')[1], '82/100 💡');
 });
 
-test('stars follow the result, and one fence is singular', () => {
-  assert.equal(shareText({ ...base, stars: 2, walls: 5 }).split('\n')[1], '⭐⭐ 5 fences (par 4)');
-  assert.equal(shareText({ ...base, stars: 1, walls: 1, par: 1 }).split('\n')[1], '⭐ 1 fence (par 1)');
+test('a day with no win reads 0/100 with a house, all red squares', () => {
+  const t = shareText({ ...base, score: 0, tries: [L, L, L], hint: false });
+  assert.equal(t.split('\n')[1], '0/100 🏠');
+  assert.equal(t.split('\n')[2], '🟥🟥🟥');
+  assert.equal(shareText({ ...base, score: 0, tries: [L, L, L], hint: true }).split('\n')[1], '0/100 🏠 💡');
 });
 
-test('hint used appends the bulb to the star line only', () => {
-  const lines = shareText({ ...base, hint: true, stars: 2 }).split('\n');
-  assert.equal(lines[1], '⭐⭐ 4 fences (par 4) 💡');
-  assert.equal(lines[2], '🟥🟩 2/3');
+test('squares follow the tries in order, including a win then a worse win', () => {
+  assert.equal(shareText({ ...base, tries: [W, L] }).split('\n')[2], '🟩🟥');
+  assert.equal(shareText({ ...base, tries: [L, L, W] }).split('\n')[2], '🟥🟥🟩');
 });
 
-test('a lost day', () => {
-  assert.equal(shareText({ ...base, won: false, tries: 3, stars: 0 }), [
-    'Gnome Sweet Gnome #1 🍄',
-    '🏠 He made it home',
-    '🟥🟥🟥 X/3',
-    URL,
-  ].join('\n'));
+test('an archive day keeps (archive) after the number', () => {
+  assert.equal(shareText({ ...base, number: 12, archive: true }).split('\n')[0], 'Gnome Sweet Gnome #12 (archive) Hard 🍄');
 });
 
-test('a lost day with a hint', () => {
-  const lines = shareText({ ...base, won: false, tries: 3, hint: true }).split('\n');
-  assert.equal(lines[1], '🏠 He made it home 💡');
+test('no par, fences or stars in the text', () => {
+  const t = shareText(base);
+  assert.doesNotMatch(t, /par|fence|⭐/i);
 });
 
-test('the daily number is used', () => {
-  assert.equal(shareText({ ...base, number: 42 }).split('\n')[0], 'Gnome Sweet Gnome #42 🍄');
-});
-
-test('pageUrl drops the query string and hash', () => {
-  assert.equal(pageUrl('https://exempl1222.github.io/invisible-maze/daily/?date=2026-10-28#x'), URL);
-  assert.equal(pageUrl(URL), URL);
-  assert.equal(pageUrl('http://localhost:4173/daily/?date=2026-10-27'), 'http://localhost:4173/daily/');
-});
-
-test('an archive day says (archive) after the number', () => {
-  const t = shareText({ number: 3, url: 'https://x/daily/', par: 4, walls: 4, tries: 1, won: true, stars: 3, hint: false, archive: true });
-  assert.equal(t.split('\n')[0], 'Gnome Sweet Gnome #3 (archive) 🍄');
-  assert.equal(shareText({ number: 3, url: 'u', par: 4, walls: 4, tries: 1, won: true, stars: 3, hint: false }).split('\n')[0], 'Gnome Sweet Gnome #3 🍄');
+test('pageUrl strips the query and hash, then adds the mode', () => {
+  assert.equal(pageUrl('https://x.github.io/invisible-maze/daily/?date=2026-10-27#a', 'easy'), 'https://x.github.io/invisible-maze/daily/?mode=easy');
+  assert.equal(pageUrl('https://x.github.io/invisible-maze/daily/?mode=easy&date=2026-10-27', 'hard'), 'https://x.github.io/invisible-maze/daily/?mode=hard');
+  assert.equal(pageUrl('https://x.github.io/invisible-maze/daily/?date=2026-10-27'), 'https://x.github.io/invisible-maze/daily/');
 });
