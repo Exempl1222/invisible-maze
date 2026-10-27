@@ -39,6 +39,7 @@ async function placeAll(page, list) {
     const before = await bars(page).count();
     await press(page, w);
     await expect(bars(page)).toHaveCount(before + 1);
+    await expect(page.locator(`#board .wall-bar[data-line="${w.join(',')}"]`), `fence ${w.join(',')} landed on its own line`).toHaveCount(1);
   }
 }
 
@@ -584,6 +585,7 @@ test.describe('the archive', () => {
     await expect(page.locator('#archive-dlg .arch-row[data-date="2026-10-28"]').getByRole('img', { name: '3 stars' })).toBeVisible();
     await page.keyboard.press('Escape');
     await openDay(page, URL1_PLAIN);
+    await expect(page.locator('h1')).toContainText('Daily #4');
     await placeAll(page, dailyData.levels[3].answer);
     await go(page).click();
     await expect(result(page)).toHaveAttribute('data-result', 'win');
@@ -601,10 +603,12 @@ test.describe('the archive', () => {
     await expect(result(page)).toHaveAttribute('data-result', 'win');
     await setToday(page, '2026-10-30'); // 29 Oct missed
     await openDay(page, '/daily/?date=2026-10-29');
+    await expect(page.locator('h1')).toContainText('Daily #3');
     await placeAll(page, dailyData.levels[2].answer);
     await go(page).click();
     await expect(result(page)).toHaveAttribute('data-result', 'win');
     await openDay(page, URL1_PLAIN);
+    await expect(page.locator('h1')).toContainText('Daily #4');
     await placeAll(page, dailyData.levels[3].answer);
     await go(page).click();
     await expect(result(page)).toHaveAttribute('data-result', 'win');
