@@ -28,7 +28,7 @@ export function computeStats(days, today) {
   let total = 0;
   let top = 0;
   for (const [date, d] of done) {
-    const score = bestScore(d.tries);
+    const score = bestScore(d.tries, d.hint != null);
     dist[bandOf(score)]++;
     total += score;
     top = Math.max(top, score);
@@ -64,6 +64,6 @@ export function computeStats(days, today) {
     current,
     bestStreak,
     dist,
-    today: todayDone ? bandOf(bestScore(days[today].tries)) : null,
+    today: todayDone ? bandOf(bestScore(days[today].tries, days[today].hint != null)) : null,
   };
 }

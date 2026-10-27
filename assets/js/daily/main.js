@@ -7,8 +7,9 @@ import { capMessage, lineKey } from '../play/lines.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
 import { preloadSprites, sprite } from '../sprites.js';
 import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
-import { scoreFor, bestScore, dockWins, HINT_COST } from './score.js';
+import { scoreFor, shownScore, bestScore, maxScore, HINT_COST } from './score.js';
 import { freshDay, parseLineKey, mergeDay } from './record.js';
+
 import { loadStore, getDay, saveDay, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
 import { classifyDate, archiveRows } from './archive.js';
 import { shareText, pageUrl } from './share.js';
@@ -39,6 +40,8 @@ const resultEl = $('result');
 const newDayEl = $('new-day');
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** The day's score as shown: the best winning try's base, less the hint when it was used. */
+const dayScore = (day) => bestScore(day.tries, day.hint !== null);
 const plural = (n, word) => `${n} ${n === 1 ? word : word === 'try' ? 'tries' : `${word}s`}`;
 
 /** The date being played: today, or one of the 29 days before it (`?date=YYYY-MM-DD`, the archive). */
@@ -135,7 +138,7 @@ function updateCounters() {
   const { board, day, state } = game;
   const used = board.wallList().length;
   fencesEl.textContent = String(used);
-  const best = bestScore(day.tries);
+  const best = dayScore(day);
   bestEl.textContent = best > 0 ? String(best) : '-';
   const mine = used - board.hintLines().length;
   const editing = state === 'editing';
@@ -204,6 +207,24 @@ async function boot() {
     loading.append(p, b);
   };
   loadStore();
+
+  // v1 saves (one shared puzzle) become Hard records, scored against the Hard levels' pars. This runs
+  // before the mode is chosen, because a migrated player opens on Hard. If Hard's levels can't be
+  // fetched, migration is skipped for this load (the v1 text stays) and the page carries on.
+  let hardData = null;
+  const v1 = pendingV1();
+  if (v1 !== null) {
+    try {
+      hardData = await fetchJson(LEVEL_URL.hard);
+      adoptV1(v1, (d) => {
+        const i = dayIndex(hardData.start, d);
+        return i === null || i < 0 ? null : hardData.levels[i]?.par ?? null;
+      });
+    } catch {
+      hardData = null;
+    }
+  }
+
   const asked = query.get('mode');
   mode = MODES.includes(asked) ? asked : MODES.includes(lastMode()) ? lastMode() : DEFAULT_MODE;
   setupWordmark();
@@ -212,16 +233,7 @@ async function boot() {
 
   let data;
   try {
-    data = await fetchJson(LEVEL_URL[mode]);
-    // v1 saves (one shared puzzle) become Hard records, scored against the Hard levels' pars.
-    const v1 = pendingV1();
-    if (v1 !== null) {
-      const hard = mode === 'hard' ? data : await fetchJson(LEVEL_URL.hard);
-      adoptV1(v1, (d) => {
-        const i = dayIndex(hard.start, d);
-        return i === null || i < 0 ? null : hard.levels[i]?.par ?? null;
-      });
-    }
+    data = mode === 'hard' && hardData ? hardData : await fetchJson(LEVEL_URL[mode]);
     await preloadSprites();
   } catch {
     failed('The daily did not load. Check your connection and try again.');
@@ -284,7 +296,7 @@ function startDay(raw, number) {
     return;
   }
   const last = day.tries.at(-1);
-  if (last && last.won) {
+  if (last && last.won && day.reviewing) {
     // Reloaded on the win screen: show that try's fences and the choice again.
     restoreWalls(last.walls ?? day.walls);
     showReview();
@@ -357,14 +369,13 @@ clearBtn.addEventListener('click', () => {
 
 /* ---------- the hint ---------- */
 
-/** Why `line` can't go down right now on top of the board's fences, or null if it can. */
-function whyNot(line) {
+const NO_ROOM = 'No room for a hint right now. Take a fence back.';
+
+/** True if `line` can go down right now on top of the board's fences. */
+function fits(line) {
   const { board, level } = game;
   const walls = board.wallList();
-  const cap = wouldBreakCap(level, walls, line);
-  if (cap) return `${capMessage(cap)} Take a fence back to make room for the hint.`;
-  if (cutsAllRoutes(level, [...walls, line])) return 'Your fences leave no room for that hint: it would cut off the gnome completely. Take one back and try again.';
-  return null;
+  return !wouldBreakCap(level, walls, line) && !cutsAllRoutes(level, [...walls, line]);
 }
 
 function useHint() {
@@ -381,21 +392,18 @@ function useHint() {
     refused('Today has no hint.');
     return;
   }
+  // Hint = one fence of the stored answer. If every answer fence is already down, one of the player's
+  // own becomes the hint fence (and the hint is spent), so the hint is never a free answer check.
   const missing = answer.filter((w) => !board.hasWall(w));
-  if (missing.length === 0) {
-    setStatus('Every fence of the answer is already on the board. No hint used.');
+  const line = missing.length === 0 ? answer[0] : missing.find(fits);
+  if (!line || (missing.length > 0 && !fits(line))) {
+    refused(NO_ROOM); // generic on purpose: it must not say which fences are right
     return;
   }
-  // The first answer fence that can go down now; if none can, say why for the first and keep the hint.
-  const line = missing.find((w) => whyNot(w) === null);
-  if (!line) {
-    refused(`${whyNot(missing[0])} No hint used.`);
-    return;
-  }
+  if (missing.length === 0) board.setWall(line, false);
   board.setWall(line, true, { hint: true });
   day.hint = lineKey(line);
-  day.tries = dockWins(day.tries); // the hint takes points off every win so far
-  persist();
+  persist(); // tries keep their base score; the hint is docked when a score is shown
   setStatus(`Hint placed: one fence of a good answer. It takes ${HINT_COST} points off.`);
   updateCounters();
 }
@@ -416,13 +424,14 @@ async function run() {
   g.day.tries.push({
     fences: walls.length,
     won: win,
-    score: win ? scoreFor(walls.length, g.level.par, g.day.hint !== null) : 0,
+    base: win ? scoreFor(walls.length, g.level.par) : 0,
     walls: walls.map(lineKey),
   });
   if (g.day.tries.length >= MAX_TRIES) {
     g.day.done = true; // after try 3 the day ends on its own
     g.day.finishedOn = localDateString();
   }
+  g.day.reviewing = win && !g.day.done; // a reload on the win screen shows the choice again
   persist();
 
   g.state = 'running';
@@ -470,8 +479,8 @@ function showReview({ live = false } = {}) {
   g.board.play(sim, { instant: true, onMove: (i) => { movesLeftEl.textContent = String(g.level.moveLimit - i); } });
   updateCounters();
   renderResult();
-  setStatus(live ? `Fenced in. ${last.score} out of 100.` : '');
-  if (live) $('retry-btn').focus({ preventScroll: false });
+  setStatus(live ? `Fenced in. ${shownScore(last, g.day.hint !== null)} out of 100.` : '');
+  if (live) ($('retry-btn') ?? $('submit-btn')).focus({ preventScroll: false });
 }
 
 function retry() {
@@ -480,6 +489,8 @@ function retry() {
   if (adoptStored()) return;
   if (g.day.tries.length >= MAX_TRIES) return;
   g.state = 'editing';
+  g.day.reviewing = false; // a reload from here reopens the editor with these fences
+  persist();
   resultEl.hidden = true;
   controlsEl.hidden = false;
   g.board.resetRun();
@@ -505,7 +516,7 @@ function submit() {
 /** The fences to show on a finished day: the best winning try's, else whatever was last on the board. */
 function finalWalls(day) {
   let best = null;
-  for (const t of day.tries) if (t.won && t.walls && (!best || t.score > best.score)) best = t;
+  for (const t of day.tries) if (t.won && t.walls && (!best || t.base > best.base)) best = t;
   return best ? best.walls : day.walls;
 }
 
@@ -529,7 +540,7 @@ function showDone({ live = false, redraw = false } = {}) {
   board.play(sim, { instant: true, onMove: (i) => { movesLeftEl.textContent = String(level.moveLimit - i); } });
   updateCounters();
   renderResult();
-  const score = bestScore(day.tries);
+  const score = dayScore(day);
   if (live) setStatus(score > 0 ? `Day done. ${score} out of 100.` : 'He made it home. Out of tries.');
   else if (redraw) setStatus('');
   else setStatus('');
@@ -549,7 +560,7 @@ function actionButton(label, primary, handler) {
 function renderResult() {
   const { day, state } = game;
   const final = state === 'done';
-  const score = bestScore(day.tries);
+  const score = dayScore(day);
   resultEl.hidden = false;
   resultEl.dataset.result = score > 0 ? 'win' : 'lose';
   resultEl.dataset.state = final ? 'done' : 'review';
@@ -594,9 +605,10 @@ function renderResult() {
     const name = document.createElement('span');
     name.textContent = `Try ${i + 1}`;
     const val = document.createElement('strong');
-    val.textContent = t.won ? String(t.score) : 'He made it home';
+    const shown = shownScore(t, day.hint !== null);
+    val.textContent = t.won ? String(shown) : 'He made it home';
     li.append(name, val);
-    if (t.won && t.score === score && score > 0) li.className = 'top';
+    if (t.won && shown === score && score > 0) li.className = 'top';
     list.appendChild(li);
   });
   resultEl.appendChild(list);
@@ -611,13 +623,24 @@ function renderResult() {
 
   if (!final) {
     const left = MAX_TRIES - day.tries.length;
+    const top = score >= maxScore(day.hint !== null); // nothing can beat it: Submit is the only choice
+    if (!top) {
+      const note = document.createElement('p');
+      note.className = 'try-note';
+      note.id = 'try-note';
+      note.textContent = 'Fewer fences score higher.';
+      resultEl.appendChild(note);
+    }
     const actions = document.createElement('div');
     actions.className = 'result-actions choice';
-    const retryBtn = actionButton(`Retry for a better score (${left} left)`, true, retry);
-    retryBtn.id = 'retry-btn';
-    const submitBtn = actionButton('Submit', false, submit);
+    if (!top) {
+      const retryBtn = actionButton(`Retry for a better score (${left} left)`, true, retry);
+      retryBtn.id = 'retry-btn';
+      actions.appendChild(retryBtn);
+    }
+    const submitBtn = actionButton('Submit', top, submit);
     submitBtn.id = 'submit-btn';
-    actions.append(retryBtn, submitBtn);
+    actions.appendChild(submitBtn);
     resultEl.appendChild(actions);
     return;
   }
@@ -695,7 +718,7 @@ function currentShareText() {
     number,
     mode,
     url: pageUrl(location.href, mode),
-    score: bestScore(day.tries),
+    score: dayScore(day),
     tries: day.tries,
     hint: day.hint !== null,
     archive: isArchive,

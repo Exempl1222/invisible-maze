@@ -49,14 +49,13 @@ function renderStats(today, mode, rerender, focusTab = false) {
 
   const tabs = document.createElement('div');
   tabs.className = 'seg';
-  tabs.setAttribute('role', 'tablist');
+  tabs.setAttribute('role', 'group');
   tabs.setAttribute('aria-label', 'Puzzle size');
   for (const m of MODES) {
     const b = document.createElement('button');
     b.type = 'button';
     b.id = `stats-tab-${m}`;
-    b.setAttribute('role', 'tab');
-    b.setAttribute('aria-selected', String(m === mode));
+    b.setAttribute('aria-pressed', String(m === mode)); // plain toggle buttons, not a tab widget
     b.textContent = MODE_LABEL[m];
     b.addEventListener('click', () => rerender(m, true));
     tabs.appendChild(b);

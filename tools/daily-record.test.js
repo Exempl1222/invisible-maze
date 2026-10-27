@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { bestScore } from '../assets/js/daily/score.js';
 import { MAX_TRIES } from '../assets/js/daily/config.js';
 import { freshDay, emptySaved, cleanDay, parseSaved, serialize, parseLineKey, mergeDay, mergeSaved, migrateV1 } from '../assets/js/daily/record.js';
 
-const W = (fences, score) => ({ fences, won: true, score });
-const L = (fences = 3) => ({ fences, won: false, score: 0 });
+const W = (fences, base) => ({ fences, won: true, base });
+const L = (fences = 3) => ({ fences, won: false, base: 0 });
 
 test('freshDay is an empty, unfinished day; emptySaved has both modes', () => {
-  assert.deepEqual(freshDay(), { tries: [], hint: null, walls: [], done: false, finishedOn: null });
+  assert.deepEqual(freshDay(), { tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false });
   assert.deepEqual(emptySaved(), { easy: {}, hard: {}, lastMode: null, seenHowTo: false });
 });
 
@@ -19,8 +20,8 @@ test('serialize then parseSaved round-trips, both modes, lastMode and seenHowTo'
   const state = {
     seenHowTo: true,
     lastMode: 'hard',
-    easy: { '2026-10-27': { tries: [L(2), W(4, 88)], hint: '1,3,D', walls: ['0,3,D', '1,3,D'], done: true, finishedOn: '2026-10-28' } },
-    hard: { '2026-10-28': { tries: [L(5)], hint: null, walls: ['2,2,R'], done: false, finishedOn: null } },
+    easy: { '2026-10-27': { tries: [L(2), W(4, 88)], hint: '1,3,D', walls: ['0,3,D', '1,3,D'], done: true, finishedOn: '2026-10-28', reviewing: false } },
+    hard: { '2026-10-28': { tries: [L(5)], hint: null, walls: ['2,2,R'], done: false, finishedOn: null, reviewing: false } },
   };
   assert.deepEqual(parseSaved(serialize(state)), state);
   assert.equal(JSON.parse(serialize(state)).v, 2);
@@ -42,12 +43,12 @@ test('cleanDay repairs junk to a fresh day', () => {
   for (const bad of [null, 'x', [], 5, {}, { tries: 'many' }]) assert.deepEqual(cleanDay(bad), freshDay());
 });
 
-test('cleanDay: tries are capped at 3 and each is repaired (a loss scores 0, a win 1 to 100)', () => {
+test('cleanDay: tries are capped at 3 and each is repaired (a loss has base 0, a win 1 to 100)', () => {
   const d = cleanDay({ tries: [W(3, 100), L(), L(), L(), W(3, 100)] });
   assert.equal(d.tries.length, MAX_TRIES);
-  assert.deepEqual(cleanDay({ tries: [{ won: false, score: 80, fences: 'x' }] }).tries, [{ fences: 0, won: false, score: 0 }]);
-  assert.equal(cleanDay({ tries: [{ won: true, score: 400, fences: 3 }] }).tries[0].score, 1);
-  assert.equal(cleanDay({ tries: [{ won: true, score: 1.5, fences: 3 }] }).tries[0].score, 1);
+  assert.deepEqual(cleanDay({ tries: [{ won: false, score: 80, fences: 'x' }] }).tries, [{ fences: 0, won: false, base: 0 }]);
+  assert.equal(cleanDay({ tries: [{ won: true, base: 400, fences: 3 }] }).tries[0].base, 1);
+  assert.equal(cleanDay({ tries: [{ won: true, base: 1.5, fences: 3 }] }).tries[0].base, 1);
   assert.equal(cleanDay({ tries: [null, 4, W(3, 90)] }).tries.length, 1);
 });
 
@@ -110,7 +111,7 @@ test('mergeDay: done stays set, with its walls, tries and finishedOn', () => {
     assert.equal(m.done, true);
     assert.equal(m.finishedOn, '2026-10-27');
     assert.equal(m.tries.length, 2);
-    assert.equal(m.tries[1].score, 88);
+    assert.equal(m.tries[1].base, 88);
     assert.deepEqual(m.walls, ['1,1,R']);
   }
 });
@@ -151,7 +152,7 @@ test('migrateV1: nothing to carry gives null', () => {
   for (const raw of [null, '', '{bad', '[]', '{"days":5}']) assert.equal(migrateV1(raw, parOf), null, String(raw));
 });
 
-test('migrateV1: a won day becomes one winning try scored from its walls, the par and the hint', () => {
+test('migrateV1: a won day becomes one winning try scored (base) from its walls and the par, the hint kept', () => {
   const s = migrateV1(v1({
     '2026-10-27': { tries: 2, won: true, stars: 3, walls: ['0,0,R', '1,1,R', '2,2,R', '3,3,R'], hint: null, done: true, finishedOn: '2026-10-27' },
     '2026-10-28': { tries: 1, won: true, stars: 2, walls: ['0,0,R', '1,1,R', '2,2,R', '3,3,R', '4,4,R'], hint: '4,4,R', done: true, finishedOn: '2026-10-29' },
@@ -159,15 +160,16 @@ test('migrateV1: a won day becomes one winning try scored from its walls, the pa
   assert.deepEqual(s.easy, {});
   const a = s.hard['2026-10-27'];
   assert.equal(a.tries.length, 1);
-  assert.deepEqual([a.tries[0].won, a.tries[0].fences, a.tries[0].score], [true, 4, 100]); // par 4, 4 fences
+  assert.deepEqual([a.tries[0].won, a.tries[0].fences, a.tries[0].base], [true, 4, 100]); // par 4, 4 fences
   assert.equal(a.done, true);
   assert.equal(a.finishedOn, '2026-10-27');
   const b = s.hard['2026-10-28'];
-  assert.deepEqual([b.tries[0].fences, b.tries[0].score], [5, 91 - 15]); // par 4, 5 fences, hint
+  assert.deepEqual([b.tries[0].fences, b.tries[0].base], [5, 91]); // par 4, 5 fences: the base. The hint docks it when shown
+  assert.equal(bestScore(b.tries, b.hint !== null), 76);
   assert.equal(b.hint, '4,4,R');
   assert.equal(b.finishedOn, '2026-10-29'); // an archive catch-up stays one
   assert.equal(s.seenHowTo, true);
-  assert.equal(s.lastMode, null);
+  assert.equal(s.lastMode, 'hard'); // v1 players open on Hard the first time
 });
 
 test('migrateV1: a lost day keeps all its lost tries (score 0); an unfinished day keeps the tries it spent', () => {
@@ -177,7 +179,7 @@ test('migrateV1: a lost day keeps all its lost tries (score 0); an unfinished da
     '2026-10-29': { tries: 0, won: false, walls: [], hint: null, done: false },
   }), parOf);
   assert.equal(s.hard['2026-10-27'].tries.length, 3);
-  assert.ok(s.hard['2026-10-27'].tries.every((t) => !t.won && t.score === 0));
+  assert.ok(s.hard['2026-10-27'].tries.every((t) => !t.won && t.base === 0));
   assert.equal(s.hard['2026-10-27'].done, true);
   assert.equal(s.hard['2026-10-28'].tries.length, 2);
   assert.equal(s.hard['2026-10-28'].done, false);
@@ -188,5 +190,40 @@ test('migrateV1: a lost day keeps all its lost tries (score 0); an unfinished da
 test('migrateV1: days outside the batch and bad dates are dropped; a win with a corrupt wall list still migrates', () => {
   const s = migrateV1(v1({ '2020-01-01': { tries: 1, won: true, done: true }, nope: { tries: 1 }, '2026-10-30': { tries: 1, won: true, walls: 'x', done: true } }), parOf);
   assert.deepEqual(Object.keys(s.hard), ['2026-10-30']);
-  assert.equal(s.hard['2026-10-30'].tries[0].score, 100);
+  assert.equal(s.hard['2026-10-30'].tries[0].base, 100);
+});
+
+// ---- base scores, the hint, reviewing ----
+
+test('cleanDay: a try from the first v2 build (score only, already docked) gets its base back, once', () => {
+  const old = { tries: [{ fences: 3, won: true, score: 85 }, { fences: 5, won: true, score: 62 }, { fences: 4, won: false, score: 0 }], hint: '1,1,R' };
+  const d = cleanDay(old);
+  assert.deepEqual(d.tries.map((t) => t.base), [100, 77, 0]);
+  assert.equal(bestScore(d.tries, true), 85);
+  assert.deepEqual(cleanDay(d).tries, d.tries, 'cleaning again changes nothing');
+  assert.equal(cleanDay({ tries: [{ fences: 3, won: true, score: 100 }] }).tries[0].base, 100); // no hint: the score is the base
+  assert.equal(cleanDay({ tries: [{ fences: 3, won: true, score: 95 }], hint: '1,1,R' }).tries[0].base, 100); // capped
+});
+
+test('a hint used after a win survives a save and a merge, in either order', () => {
+  const won = { tries: [W(3, 100)], hint: null, walls: ['0,0,R'] };
+  const hinted = { ...won, hint: '1,1,R', walls: ['0,0,R', '1,1,R'] };
+  for (const m of [mergeDay(won, hinted), mergeDay(hinted, won), mergeDay(hinted, hinted)]) {
+    assert.equal(m.hint, '1,1,R');
+    assert.equal(m.tries[0].base, 100);
+    assert.equal(bestScore(m.tries, m.hint !== null), 85);
+  }
+  const s = parseSaved(serialize({ ...emptySaved(), easy: { '2026-10-27': hinted } }));
+  assert.equal(bestScore(s.easy['2026-10-27'].tries, s.easy['2026-10-27'].hint !== null), 85);
+});
+
+test('reviewing: kept for a win being decided, cleared by Retry, never set on a done day or a loss', () => {
+  const rev = cleanDay({ tries: [W(3, 100)] });
+  assert.equal(rev.reviewing, true, 'an older save with a last win is read as reviewing');
+  assert.equal(cleanDay({ tries: [W(3, 100)], reviewing: false }).reviewing, false);
+  assert.equal(cleanDay({ tries: [L()], reviewing: true }).reviewing, false);
+  assert.equal(cleanDay({ tries: [W(3, 100)], done: true, finishedOn: '2026-10-27', reviewing: true }).reviewing, false);
+  // Retry pressed in the newer copy with equal tries: editing wins; a copy with more tries decides otherwise
+  assert.equal(mergeDay({ tries: [W(3, 100)] }, { tries: [W(3, 100)], reviewing: false }).reviewing, false);
+  assert.equal(mergeDay({ tries: [W(3, 100), W(4, 88)] }, { tries: [W(3, 100)], reviewing: false }).reviewing, true);
 });

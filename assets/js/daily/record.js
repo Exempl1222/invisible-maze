@@ -2,15 +2,18 @@
 // hand-edited value can never break the page or hand back a try. No DOM, no storage.
 //
 // Saved state: { easy: { date: record }, hard: { date: record }, lastMode, seenHowTo }.
-// A record: { tries: [{ fences, won, score, walls }], hint, walls, done, finishedOn }.
+// A record: { tries: [{ fences, won, base, walls }], hint, walls, done, finishedOn, reviewing }.
+// `base` is a try's score before the hint; the shown score is derived (see score.js shownScore), so a
+// hint used after a win can never be lost by a save or a merge. `reviewing`: the last try won and the
+// player has not pressed Retry yet (a reload shows the Retry or Submit choice, not the editor).
 import { MAX_TRIES, MODES } from './config.js';
 import { parseDate } from '../play/daily.js';
-import { scoreFor } from './score.js';
+import { scoreFor, HINT_COST } from './score.js';
 
 const LINE_KEY = /^\d+,\d+,[RD]$/;
 
 /** A fresh day: nothing tried yet. */
-export const freshDay = () => ({ tries: [], hint: null, walls: [], done: false, finishedOn: null });
+export const freshDay = () => ({ tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false });
 
 /** The state with nothing saved. */
 export const emptySaved = () => ({ easy: {}, hard: {}, lastMode: null, seenHowTo: false });
@@ -28,12 +31,22 @@ function cleanKeys(list) {
   return out;
 }
 
-function cleanTry(t) {
+/**
+ * One saved try. `base` is the score without the hint. A try saved by the first v2 build has only
+ * `score`, which already had the hint docked: put the 15 back (cap 100) so it isn't docked twice.
+ */
+function cleanTry(t, hint) {
   if (!t || typeof t !== 'object') return null;
   const won = t.won === true;
   const fences = Number.isInteger(t.fences) && t.fences >= 0 ? t.fences : 0;
-  const score = won ? (Number.isInteger(t.score) && t.score >= 1 && t.score <= 100 ? t.score : 1) : 0;
-  const out = { fences, won, score };
+  let base = 0;
+  if (won) {
+    const ok = (v) => Number.isInteger(v) && v >= 1 && v <= 100;
+    if (ok(t.base)) base = t.base;
+    else if (ok(t.score)) base = hint ? Math.min(100, t.score + HINT_COST) : t.score;
+    else base = 1;
+  }
+  const out = { fences, won, base };
   if (Array.isArray(t.walls)) out.walls = cleanKeys(t.walls);
   return out;
 }
@@ -41,13 +54,14 @@ function cleanTry(t) {
 /** One day's record, repaired to something consistent. Never gives a try back. */
 export function cleanDay(d) {
   if (!d || typeof d !== 'object' || Array.isArray(d)) return freshDay();
+  const hint = parseLineKey(d.hint) ? d.hint : null;
   const tries = [];
-  if (Array.isArray(d.tries)) for (const t of d.tries) { const c = cleanTry(t); if (c && tries.length < MAX_TRIES) tries.push(c); }
+  if (Array.isArray(d.tries)) for (const t of d.tries) { const c = cleanTry(t, hint); if (c && tries.length < MAX_TRIES) tries.push(c); }
   const done = d.done === true || tries.length >= MAX_TRIES; // all tries spent is a finished day, never a fresh board
   if (done && tries.length < 1) return freshDay(); // a finished day with no tries can't have happened
-  const hint = parseLineKey(d.hint) ? d.hint : null;
   const finishedOn = done && typeof d.finishedOn === 'string' && parseDate(d.finishedOn) !== null ? d.finishedOn : null;
-  return { tries, hint, walls: cleanKeys(d.walls), done, finishedOn };
+  const reviewing = !done && tries.length > 0 && tries.at(-1).won && d.reviewing !== false; // unset on an older save: a win still being decided
+  return { tries, hint, walls: cleanKeys(d.walls), done, finishedOn, reviewing };
 }
 
 /**
@@ -67,6 +81,7 @@ export function mergeDay(a, b) {
     walls: base.walls,
     done: x.done || y.done,
     finishedOn: x.finishedOn ?? y.finishedOn,
+    reviewing: (x.tries.length === y.tries.length ? base : longer).reviewing, // the copy with more tries knows best where the player is
   });
 }
 
@@ -114,16 +129,17 @@ export function serialize(state) {
 /**
  * v1 saved text -> a v2 state with the old days as Hard records, or null if there is nothing to carry.
  * `parOf(date)` is the Hard level's par for that date (null outside the batch, and that day is dropped).
- *   - a won day becomes one winning try, scored from its walls, the par and the hint
+ *   - a won day becomes one winning try, its base scored from its walls and the par (the hint is kept and docks it when shown)
  *   - a finished lost day becomes all its lost tries (score 0)
  *   - an unfinished day keeps the tries it had spent, as lost tries, so none is given back
- * done and finishedOn are kept.
+ * done and finishedOn are kept. The migrated state opens on Hard (lastMode).
  */
 export function migrateV1(raw, parOf) {
   const saved = parseJson(raw);
   if (!saved || !saved.days || typeof saved.days !== 'object' || Array.isArray(saved.days)) return null;
   const out = emptySaved();
   out.seenHowTo = saved.seenHowTo === true;
+  out.lastMode = 'hard'; // v1 was one puzzle, now Hard: the first visit opens there
   for (const [date, d] of Object.entries(saved.days)) {
     if (parseDate(date) === null || !d || typeof d !== 'object') continue;
     const par = parOf(date);
@@ -134,8 +150,8 @@ export function migrateV1(raw, parOf) {
     const won = d.won === true;
     const done = d.done === true || won || spent >= MAX_TRIES;
     let tries;
-    if (won) tries = [{ fences: walls.length, won: true, score: scoreFor(walls.length, par, hint !== null), walls }];
-    else tries = Array.from({ length: done ? MAX_TRIES : spent }, () => ({ fences: walls.length, won: false, score: 0 }));
+    if (won) tries = [{ fences: walls.length, won: true, base: scoreFor(walls.length, par), walls }];
+    else tries = Array.from({ length: done ? MAX_TRIES : spent }, () => ({ fences: walls.length, won: false, base: 0 }));
     out.hard[date] = cleanDay({ tries, hint, walls, done, finishedOn: d.finishedOn });
     if (!done && tries.length === 0 && walls.length === 0 && hint === null) delete out.hard[date];
   }

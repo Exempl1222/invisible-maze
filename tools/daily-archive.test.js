@@ -32,9 +32,9 @@ test('a string that is not a real date is out of the archive; an empty query too
 });
 
 const mk = (tries, done, extra = {}) => ({ tries, hint: null, walls: [], done, finishedOn: null, ...extra });
-const won = (score) => mk([{ fences: 3, won: true, score }], true);
-const lost = mk([0, 1, 2].map(() => ({ fences: 3, won: false, score: 0 })), true);
-const started = mk([{ fences: 3, won: false, score: 0 }], false);
+const won = (score) => mk([{ fences: 3, won: true, base: score }], true);
+const lost = mk([0, 1, 2].map(() => ({ fences: 3, won: false, base: 0 })), true);
+const started = mk([{ fences: 3, won: false, base: 0 }], false);
 const none = { easy: {}, hard: {} };
 
 test('archiveRows: 30 rows, newest first, today first and marked, numbered from the batch start', () => {
@@ -76,7 +76,7 @@ test('archiveRows: a result for each mode on each row', () => {
 });
 
 test('archiveRows: a day with a win on an early try and a later loss scores its best try', () => {
-  const d = mk([{ fences: 4, won: true, score: 88 }, { fences: 3, won: false, score: 0 }], true);
+  const d = mk([{ fences: 4, won: true, base: 88 }, { fences: 3, won: false, base: 0 }], true);
   const rows = archiveRows({ days: { easy: { [TODAY]: d }, hard: {} }, today: TODAY, start: '2026-10-27', count: 365 });
   assert.deepEqual(rows[0].results.easy, { kind: 'won', score: 88 });
 });
@@ -98,4 +98,10 @@ test('resultText: both modes read like `Easy 88 · Hard -`', () => {
 
 test('archiveRows: before the batch has started there is nothing', () => {
   assert.deepEqual(archiveRows({ days: none, today: '2026-10-01', start: '2026-10-27', count: 365 }), []);
+});
+
+test('archiveRows: a hinted win shows its base less 15', () => {
+  const d = { ...won(100), hint: '1,1,R' };
+  const rows = archiveRows({ days: { easy: { '2026-11-10': d } }, today: TODAY, start: '2026-10-27', count: 365 });
+  assert.deepEqual(rows[0].results.easy, { kind: 'won', score: 85 });
 });

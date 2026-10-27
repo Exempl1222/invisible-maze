@@ -25,7 +25,7 @@ export function classifyDate(asked, today) {
 
 function resultOf(d) {
   if (d && d.done) {
-    const score = bestScore(d.tries);
+    const score = bestScore(d.tries, d.hint != null);
     return score > 0 ? { kind: 'won', score } : { kind: 'lost', score: 0 };
   }
   if (d && ((d.tries && d.tries.length > 0) || d.hint || (d.walls && d.walls.length))) return { kind: 'progress' };

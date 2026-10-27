@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { computeStats, addDays } from '../assets/js/daily/streak.js';
 
 const mk = (tries, done = true, finishedOn = null) => ({ tries, hint: null, walls: [], done, finishedOn });
-const won = (score = 100) => mk([{ fences: 3, won: true, score }]);
-const lost = () => mk([0, 1, 2].map(() => ({ fences: 3, won: false, score: 0 })));
-const open = () => mk([{ fences: 3, won: false, score: 0 }], false);
+const won = (score = 100) => mk([{ fences: 3, won: true, base: score }]);
+const lost = () => mk([0, 1, 2].map(() => ({ fences: 3, won: false, base: 0 })));
+const open = () => mk([{ fences: 3, won: false, base: 0 }], false);
 const late = (d, on) => ({ ...d, finishedOn: on });
 const noDist = { 100: 0, 80: 0, 60: 0, 30: 0, 1: 0, 0: 0 };
 
@@ -26,7 +26,7 @@ test('one win today: played, win %, average, best, streaks and its band', () => 
 });
 
 test('a day scores its best winning try, not the last one', () => {
-  const d = mk([{ fences: 5, won: true, score: 77 }, { fences: 3, won: true, score: 100 }, { fences: 9, won: true, score: 30 }]);
+  const d = mk([{ fences: 5, won: true, base: 77 }, { fences: 3, won: true, base: 100 }, { fences: 9, won: true, base: 30 }]);
   const s = computeStats({ '2026-10-27': d }, '2026-10-27');
   assert.equal(s.bestScore, 100);
   assert.equal(s.today, '100');
@@ -119,4 +119,12 @@ test('streaks are per mode: each mode computes from its own days only', () => {
   assert.equal(computeStats(easy, '2026-10-28').current, 3);
   assert.equal(computeStats(hard, '2026-10-28').current, 0);
   assert.equal(computeStats(hard, '2026-10-28').bestStreak, 1);
+});
+
+test('stats read the shown score: a hinted day counts its base less 15', () => {
+  const d = { ...won(100), hint: '1,1,R' };
+  const s = computeStats({ '2026-11-10': d }, '2026-11-10');
+  assert.equal(s.bestScore, 85);
+  assert.equal(s.average, 85);
+  assert.equal(s.today, '80');
 });

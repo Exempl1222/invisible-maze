@@ -21,6 +21,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { generateLevels, formatStats } from './generate.js';
+import { parseLevel, buildableLines, simulate, capViolation, cutsAllRoutes } from '../src/game/index.js';
 
 export const DAILY_DEFAULTS = { days: 180, start: '2026-10-27', seed: 20261027 };
 
@@ -62,6 +63,30 @@ const EASY_SETTINGS = {
 };
 
 /**
+ * True if the level can be won at par using only fences on the four sides of the gnome's start tile
+ * or of his house (at most 8 lines, so every subset is tried). Such a level is solved by walling in
+ * the two ends without reading the board, which the Easy daily must not allow. Uses the Easy page's
+ * rules: no fence limit, only buildable lines, the side cap, and a route must remain.
+ */
+export function winsAtParFromEnds(raw) {
+  const n = buildableLines(parseLevel(raw)).length;
+  const lv = parseLevel({ ...raw, wallBudget: n });
+  const buildable = new Set(buildableLines(lv).map((l) => l.join(',')));
+  const ends = new Set();
+  for (const [x, y] of [lv.start, lv.beacon]) {
+    for (const l of [[x, y, 'R'], [x - 1, y, 'R'], [x, y, 'D'], [x, y - 1, 'D']]) if (buildable.has(l.join(','))) ends.add(l.join(','));
+  }
+  const lines = [...ends].map((k) => { const [x, y, d] = k.split(','); return [Number(x), Number(y), d]; });
+  for (let mask = 0; mask < 1 << lines.length; mask++) {
+    const walls = lines.filter((_, i) => mask & (1 << i));
+    if (walls.length > raw.par) continue; // fewer than par can't win; more than par isn't "at par"
+    if (capViolation(lv, walls) !== null || cutsAllRoutes(lv, walls)) continue;
+    if (simulate(lv, walls).result === 'win') return true;
+  }
+  return false;
+}
+
+/**
  * The level for day i: a pure function of (seed, start, i). Tries up to 20 sub-seeds and returns the first
  * level the generator keeps, with the generator's stats, or `{ level: null }` if none was found.
  */
@@ -78,6 +103,7 @@ export function buildDay(i, { start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULT
     stats.tried += gen.stats.tried;
     for (const [k, v] of Object.entries(gen.stats.rejected)) stats.rejected[k] = (stats.rejected[k] ?? 0) + v;
     if (!gen.levels.length) continue;
+    if (easy && winsAtParFromEnds(gen.levels[0])) { stats.rejected['par-from-ends'] = (stats.rejected['par-from-ends'] ?? 0) + 1; continue; }
     if (gen.meta[0].usesTeleporter) stats.usesTeleporter++;
     const { id, ...rest } = gen.levels[0]; // drop the generator's temporary id
     return { level: { id: `${easy ? 'e' : 'd'}-${addDays(start, i)}`, ...rest }, stats };

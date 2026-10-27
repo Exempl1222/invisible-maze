@@ -2,29 +2,32 @@
 // A winning try with `fences` fences on a level of par `par` scores
 //   max(30, round(100 - 70 * (fences - par) / (2 * par)))
 // so par is 100 and three times par (or more) is the 30 floor. Fences can't be fewer than par; a
-// count below it is read as par. The hint takes 15 off after the floor, so the lowest hinted win is 15.
+// count below it is read as par. Tries are stored as `base` (no hint); the hint takes 15 off at read time, so the lowest hinted win is 15.
 
 export const HINT_COST = 15;
 export const FLOOR = 30;
 
-/** Score of one winning try. */
-export function scoreFor(fences, par, hintUsed) {
+/** The score of one winning try before any hint: what is stored (`base`). */
+export function scoreFor(fences, par) {
   const over = Math.max(0, fences - par);
-  const base = Math.max(FLOOR, Math.round(100 - (70 * over) / (2 * par)));
-  return hintUsed ? base - HINT_COST : base;
+  return Math.max(FLOOR, Math.round(100 - (70 * over) / (2 * par)));
 }
 
-/** The day's score: the best winning try, or 0 when no try won. `tries` is [{ won, score }]. */
-export function bestScore(tries) {
+/** The score a try shows: its base, less the hint's cost when the hint was used (floor 15). Lost tries show 0. */
+export function shownScore(t, hintUsed) {
+  if (!t || !t.won) return 0;
+  return hintUsed ? Math.max(HINT_COST, t.base - HINT_COST) : t.base;
+}
+
+/** The day's score: the best winning try as shown, or 0 when no try won. `tries` is [{ won, base }]. */
+export function bestScore(tries, hintUsed) {
   let best = 0;
-  for (const t of tries ?? []) if (t.won && t.score > best) best = t.score;
+  for (const t of tries ?? []) best = Math.max(best, shownScore(t, hintUsed));
   return best;
 }
 
-/** The hint was just used: every winning try so far loses HINT_COST (they are all above the floor, so none goes below 15). */
-export function dockWins(tries) {
-  return tries.map((t) => (t.won ? { ...t, score: Math.max(1, t.score - HINT_COST) } : t));
-}
+/** The most a try can show: 100, or 85 with the hint. Nothing can beat it. */
+export const maxScore = (hintUsed) => (hintUsed ? 100 - HINT_COST : 100);
 
 /** Score bands for the stats bars, best first. `min`/`max` are inclusive. */
 export const BANDS = [

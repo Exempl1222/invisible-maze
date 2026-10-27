@@ -47,7 +47,7 @@ The daily as its own page, so it can ship alone with a link to the full game lat
 - **Archive dialog:** each row shows both scores (`Easy 88 · Hard -`).
 
 ### Saved data
-- New key `gnome-sweet-gnome:daily:v2`, `{ easy: { date: record }, hard: { date: record }, lastMode, seenHowTo }`. A record holds `tries` (array of `{ fences, won, score }`), `hint`, `walls` (current fences), `done`, `finishedOn`. The cross-tab merge keeps the longer `tries` list.
+- New key `gnome-sweet-gnome:daily:v2`, `{ easy: { date: record }, hard: { date: record }, lastMode, seenHowTo }`. A record holds `tries` (array of `{ fences, won, base, walls }`; `base` is the score before the hint), `hint`, `walls` (current fences), `done`, `finishedOn`, `reviewing` (the last try won and Retry was not pressed yet). A try saved with only `score` is read as already docked: `base = hint ? min(100, score + 15) : score`. The cross-tab merge keeps the longer `tries` list.
 - On first load, v1 records become Hard records: one try, scored from their walls, the level's par and the hint, `done` and `finishedOn` kept. v1 is then left in place, unused.
 
 ## Where it lives

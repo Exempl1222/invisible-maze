@@ -32,7 +32,16 @@ async function press(page, [x, y, dir]) {
   await page.mouse.down();
   await page.mouse.up();
 }
-const placeAll = async (page, list) => { for (const w of list) await press(page, w); };
+/** Place each fence and wait for it to appear, so a click that missed fails here, not later. */
+async function placeAll(page, list) {
+  await page.evaluate(() => document.fonts.ready); // web fonts can shift the board after it first shows
+  for (const w of list) {
+    const before = await bars(page).count();
+    await press(page, w);
+    await expect(page.locator(`#board .wall-bar[data-line="${w.join(',')}"]`)).toHaveCount(1);
+    await expect(bars(page)).toHaveCount(before + 1);
+  }
+}
 
 /** `k` legal extra fences for a level: lines off its answer that keep the win and leave a route. */
 function extraFences(raw, k) {
@@ -82,6 +91,7 @@ const settle = (page) => expect(page.locator('#board[aria-busy="false"], #result
 /** Press Try and wait for the try to settle before anything touches the board or reads the result. */
 async function tryNow(page) {
   await tryBtn(page).click();
+  await page.clock.runFor(1000); // CI's Playwright 1.56 can leave the faked timers stalled after setSystemTime; this lets the walk finish
   await settle(page);
 }
 
@@ -221,7 +231,7 @@ test('the side cap and the no-cut refusal still apply', async ({ page }) => {
   await expect(result(page)).not.toHaveAttribute('data-state', 'done'); // the gnome had a way, so he was fenced in or got home
 });
 
-test('a win at the stored answer scores 100, offers Retry and Submit, and Submit ends the day', async ({ page }) => {
+test('a win at the stored answer scores 100, offers Submit only, and Submit ends the day', async ({ page }) => {
   const lv = level('easy');
   await openDay(page);
   await placeAll(page, lv.answer);
@@ -232,8 +242,10 @@ test('a win at the stored answer scores 100, offers Retry and Submit, and Submit
   await expect(page.locator('#try-list li')).toHaveCount(1);
   await expect(page.locator('#try-list li').first()).toContainText('Try 1');
   await expect(page.locator('#try-list li').first()).toContainText('100');
-  await expect(page.getByRole('button', { name: 'Retry for a better score (2 left)' })).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+  // 100 can't be beaten: Submit is the only button, and there is no "fewer fences" note
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeFocused();
+  await expect(page.getByRole('button', { name: /Retry/ })).toHaveCount(0);
+  await expect(page.locator('#try-note')).toHaveCount(0);
   await expect(page.locator('#controls')).toBeHidden();
   await expect(page.locator('#status')).toHaveText('Fenced in. 100 out of 100.');
   await expect(page.locator('#pips')).toHaveAttribute('aria-label', '2 tries left');
@@ -259,7 +271,7 @@ test('a win at the stored answer scores 100, offers Retry and Submit, and Submit
   await expect(page.locator('#best-score')).toHaveText('100');
 });
 
-test('a win with extra fences scores per the formula; Retry keeps the fences and the best try counts', async ({ page }) => {
+test('a win below the max offers Retry and Submit with the note; Retry keeps the fences and the best try counts', async ({ page }) => {
   const lv = level('easy');
   const extras = extraFences(lv, 2);
   await openDay(page);
@@ -267,6 +279,8 @@ test('a win with extra fences scores per the formula; Retry keeps the fences and
   await tryNow(page);
   const first = expected(lv.par + 2, lv.par);
   await expect(score(page)).toHaveText(`${first} / 100`);
+  await expect(page.locator('#try-note')).toHaveText('Fewer fences score higher.');
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Retry for a better score (2 left)' }).click();
   await expect(result(page)).toBeHidden();
@@ -274,11 +288,12 @@ test('a win with extra fences scores per the formula; Retry keeps the fences and
   await expect(bars(page)).toHaveCount(lv.par + 2); // the fences stay
   await expect(tryBtn(page)).toHaveText('Try again (2 left)');
   await expect(page.locator('#best-score')).toHaveText(String(first));
-  // take the two extras back and try the answer: 100
-  await placeAll(page, extras);
-  await expect(bars(page)).toHaveCount(lv.par);
+  // take one extra back: a better score, still below 100, so Retry is offered again
+  await press(page, extras[0]);
+  await expect(bars(page)).toHaveCount(lv.par + 1);
   await tryNow(page);
-  await expect(score(page)).toHaveText('100 / 100');
+  const second = expected(lv.par + 1, lv.par);
+  await expect(score(page)).toHaveText(`${second} / 100`);
   await expect(page.getByRole('button', { name: 'Retry for a better score (1 left)' })).toBeVisible();
 
   // last try: clear the board and lose it. The day ends on its own and keeps the best score.
@@ -287,14 +302,15 @@ test('a win with extra fences scores per the formula; Retry keeps the fences and
   await expect(bars(page)).toHaveCount(0);
   await tryNow(page);
   await expect(result(page)).toHaveAttribute('data-state', 'done');
-  await expect(score(page)).toHaveText('100 / 100');
+  await expect(score(page)).toHaveText(`${second} / 100`);
   const rows = page.locator('#try-list li');
   await expect(rows).toHaveCount(3);
   await expect(rows.nth(0)).toHaveText(new RegExp(`Try 1\\s*${first}`));
-  await expect(rows.nth(1)).toHaveText(/Try 2\s*100/);
+  await expect(rows.nth(1)).toHaveText(new RegExp(`Try 2\\s*${second}`));
   await expect(rows.nth(2)).toHaveText(/Try 3\s*He made it home/);
-  await expect(bars(page)).toHaveCount(lv.par); // the board shows the best try's fences
-  expect((await saved(page)).easy['2026-10-27'].tries.map((t) => t.score)).toEqual([first, 100, 0]);
+  await expect(bars(page)).toHaveCount(lv.par + 1); // the board shows the best try's fences
+  const day = (await saved(page)).easy['2026-10-27'];
+  expect(day.tries.map((t) => t.base)).toEqual([first, second, 0]);
 });
 
 test('a win on the last try ends the day without a Retry', async ({ page }) => {
@@ -370,16 +386,34 @@ test('a reload mid-day keeps tries used, the fences and the hint', async ({ page
 
 test('reloading on the win screen shows the choice again and does not give the try back', async ({ page }) => {
   const lv = level('easy');
+  const extra = extraFences(lv, 1);
   await openDay(page);
-  await placeAll(page, lv.answer);
+  await placeAll(page, [...lv.answer, ...extra]);
   await tryNow(page);
   await expect(result(page)).toHaveAttribute('data-state', 'review');
   await page.reload();
   await expect(result(page)).toHaveAttribute('data-state', 'review');
-  await expect(score(page)).toHaveText('100 / 100');
+  await expect(score(page)).toHaveText(`${expected(lv.par + 1, lv.par)} / 100`);
   await expect(page.getByRole('button', { name: 'Retry for a better score (2 left)' })).toBeVisible();
-  await expect(bars(page)).toHaveCount(lv.answer.length);
+  await expect(bars(page)).toHaveCount(lv.answer.length + 1);
   await expect(page.locator('#controls')).toBeHidden();
+});
+
+test('reloading while editing after Retry reopens the editor with the current fences, not the win screen', async ({ page }) => {
+  const lv = level('easy');
+  const extras = extraFences(lv, 2);
+  await openDay(page);
+  await placeAll(page, [...lv.answer, ...extras]);
+  await tryNow(page);
+  await page.getByRole('button', { name: /Retry for a better score/ }).click();
+  await press(page, extras[0]); // take one fence back, then reload before trying
+  await expect(bars(page)).toHaveCount(lv.par + 1);
+  await page.reload();
+  await expect(result(page)).toBeHidden();
+  await expect(page.locator('#controls')).toBeVisible();
+  await expect(bars(page)).toHaveCount(lv.par + 1);
+  await expect(tryBtn(page)).toHaveText('Try again (2 left)');
+  await expect(tryBtn(page)).toBeEnabled();
 });
 
 test('reloading right after pressing Try cannot give the try back', async ({ page }) => {
@@ -435,19 +469,59 @@ test('the hint costs 15 points, can be used once, stays through Reset, and shows
   expect(shared[0].text).toBe(['Gnome Sweet Gnome #1 Easy 🍄', '85/100 💡', '🟩', new URL('/daily/?mode=easy', page.url()).toString()].join('\n'));
 });
 
-test('a hint used after a win takes 15 off that win too (every winning try that day)', async ({ page }) => {
+test('a hint used after a win still costs 15 after a reload, a Submit, in the stats and in the share text', async ({ page }) => {
+  await stubShare(page, 'share');
+  const lv = level('easy');
+  const extra = extraFences(lv, 1)[0];
+  await openDay(page);
+  await placeAll(page, [...lv.answer, extra]);
+  await tryNow(page);
+  const first = expected(lv.par + 1, lv.par);
+  await expect(score(page)).toHaveText(`${first} / 100`);
+  await page.getByRole('button', { name: /Retry/ }).click();
+  await hintBtn(page).click(); // every answer fence is down: one of them becomes the hint, and the hint is spent
+  await expect(hintBars(page)).toHaveCount(1);
+  await expect(hintBtn(page)).toHaveText('Hint used');
+  await expect(page.locator('#best-score')).toHaveText(String(first - 15));
+  await page.reload(); // the docked score must come back from storage, not from memory
+  await expect(page.locator('#controls')).toBeVisible();
+  await expect(hintBars(page)).toHaveCount(1);
+  await expect(page.locator('#best-score')).toHaveText(String(first - 15));
+  // take the extra fence back: the answer alone is base 100, shown 85, the most a hinted day can score
+  await press(page, extra);
+  await expect(bars(page)).toHaveCount(lv.par);
+  await tryNow(page);
+  await expect(score(page)).toHaveText('85 / 100');
+  await expect(page.getByRole('button', { name: /Retry/ })).toHaveCount(0); // 85 is the max with the hint
+  await page.reload();
+  await expect(score(page)).toHaveText('85 / 100');
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(score(page)).toHaveText('85 / 100');
+  const day = (await saved(page)).easy['2026-10-27'];
+  expect(day.hint).not.toBeNull();
+  expect(day.tries.map((t) => t.base)).toEqual([first, 100]);
+  await page.reload();
+  await expect(score(page)).toHaveText('85 / 100');
+  await expect(page.locator('#best-score')).toHaveText('85');
+  await page.getByRole('button', { name: 'Share' }).click();
+  expect((await page.evaluate(() => window.__shared))[0].text).toContain('85/100 💡');
+  await page.locator('#result-stats-btn').click();
+  const dlg = page.locator('#stats-dlg');
+  await expect(statsCell(page, 'Best')).toHaveText('85');
+  await expect(statsCell(page, 'Average')).toHaveText('85');
+});
+
+test('the hint is not a free answer check: with every answer fence down it marks one as the hint and is spent', async ({ page }) => {
   const lv = level('easy');
   await openDay(page);
   await placeAll(page, lv.answer);
-  await tryNow(page);
-  await expect(score(page)).toHaveText('100 / 100');
-  await page.getByRole('button', { name: /Retry/ }).click();
-  await page.locator('#clear').click();
+  await expect(hintBars(page)).toHaveCount(0);
   await hintBtn(page).click();
-  await expect(page.locator('#best-score')).toHaveText('85');
-  await tryNow(page); // lose with the hint fence only
-  await expect(tryBtn(page)).toHaveText('Try again (1 left)');
-  await expect(page.locator('#best-score')).toHaveText('85');
+  await expect(hintBars(page)).toHaveCount(1);
+  await expect(bars(page)).toHaveCount(lv.par);
+  await expect(hintBtn(page)).toHaveText('Hint used');
+  await expect(hintBtn(page)).toBeDisabled();
+  expect((await saved(page)).easy['2026-10-27'].hint).not.toBeNull();
 });
 
 const stubShare = (page, mode) => page.addInitScript((m) => {
@@ -469,7 +543,8 @@ test('share text, Easy: mode name, score, squares and the ?mode URL', async ({ p
   await placeAll(page, [...lv.answer, ...extras]);
   await tryNow(page);
   await page.getByRole('button', { name: /Retry/ }).click();
-  await placeAll(page, extras); // back to par
+  await press(page, extras[0]); // back to par
+  await expect(bars(page)).toHaveCount(lv.par);
   await tryNow(page);
   await expect(result(page)).toHaveAttribute('data-state', 'done');
   await page.getByRole('button', { name: 'Share' }).click();
@@ -540,15 +615,15 @@ test('streaks and stats are per mode: Easy two days in a row, Hard only one', as
   await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
   const dlg = page.locator('#stats-dlg');
   await expect(dlg).toBeVisible();
-  await expect(dlg.getByRole('tab', { name: 'Hard' })).toHaveAttribute('aria-selected', 'true'); // opens on the mode on screen
+  await expect(dlg.getByRole('button', { name: 'Hard', pressed: true })).toBeVisible(); // opens on the mode on screen
   await expect(statsCell(page, 'Played')).toHaveText('1');
   await expect(statsCell(page, 'Win %')).toHaveText('100');
   await expect(statsCell(page, 'Average')).toHaveText('100');
   await expect(statsCell(page, 'Best')).toHaveText('100');
   await expect(statsCell(page, 'Streak')).toHaveText('1');
   await expect(statsCell(page, 'Best streak')).toHaveText('1');
-  await dlg.getByRole('tab', { name: 'Easy' }).click();
-  await expect(dlg.getByRole('tab', { name: 'Easy' })).toBeFocused();
+  await dlg.getByRole('button', { name: 'Easy' }).click();
+  await expect(dlg.getByRole('button', { name: 'Easy' })).toBeFocused();
   await expect(statsCell(page, 'Played')).toHaveText('2');
   await expect(statsCell(page, 'Streak')).toHaveText('2');
   await expect(statsCell(page, 'Best streak')).toHaveText('2');
@@ -615,7 +690,7 @@ test('v1 saved data migrates into Hard: scored from its walls, Easy untouched', 
   const s = await saved(page);
   expect(s.hard['2026-10-27']).toMatchObject({ done: true, finishedOn: '2026-10-27' });
   expect(s.hard['2026-10-27'].tries).toHaveLength(1);
-  expect(s.hard['2026-10-27'].tries[0]).toMatchObject({ won: true, score: 100, fences: lv.answer.length });
+  expect(s.hard['2026-10-27'].tries[0]).toMatchObject({ won: true, base: 100, fences: lv.answer.length });
   expect(s.hard['2026-10-28'].tries).toHaveLength(3);
   expect(s.easy).toEqual({});
   expect(await page.evaluate((k) => localStorage.getItem(k) !== null, V1_KEY)).toBe(true); // v1 is left in place
@@ -627,6 +702,7 @@ test('v1 saved data migrates into Hard: scored from its walls, Easy untouched', 
   await expect(rows.nth(0)).toContainText('Easy - · Hard 0');
   await expect(rows.nth(1)).toContainText('Easy - · Hard 100');
   void lv2;
+  expect(s.lastMode).toBe('hard');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
   await expect(statsCell(page, 'Played')).toHaveText('2');
@@ -634,6 +710,30 @@ test('v1 saved data migrates into Hard: scored from its walls, Easy untouched', 
   await openDay(page, url('easy')); // Easy has nothing
   await expect(tryBtn(page)).toHaveText('Try');
   await expect(left(page)).toHaveCount(3);
+});
+
+test('a v1 player with no ?mode opens on Hard the first time', async ({ page }) => {
+  await page.addInitScript(([k2, k1]) => {
+    if (sessionStorage.getItem('migrated')) return;
+    sessionStorage.setItem('migrated', '1');
+    localStorage.removeItem(k2);
+    localStorage.setItem(k1, JSON.stringify({ v: 1, seenHowTo: true, days: { '2026-10-27': { tries: 1, won: false, walls: [], hint: null, done: false } } }));
+  }, [KEY, V1_KEY]);
+  await openDay(page, '/daily/');
+  await expect(page.locator('#tab-hard')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#board .cell')).toHaveCount(81);
+});
+
+test('if the v1 migration cannot fetch the Hard levels, it is skipped and Easy still loads', async ({ page }) => {
+  await page.route('**/assets/levels/daily.json', (route) => route.abort());
+  await page.addInitScript(([k2, k1]) => {
+    localStorage.removeItem(k2);
+    localStorage.setItem(k1, JSON.stringify({ v: 1, seenHowTo: true, days: { '2026-10-27': { tries: 1, won: false, walls: [], hint: null, done: false } } }));
+  }, [KEY, V1_KEY]);
+  await openDay(page, url('easy'));
+  await expect(page.locator('#loading')).toBeHidden();
+  await expect(page.getByText('did not load')).toHaveCount(0);
+  expect(await page.evaluate((k) => localStorage.getItem(k) !== null, V1_KEY)).toBe(true);
 });
 
 test('the countdown shows after the day is done, then offers a new gnome at midnight', async ({ page }) => {
@@ -778,8 +878,9 @@ test('no par text anywhere on the page: loaded, mid-game, win choice, finished, 
   await placeAll(page, lv.answer.slice(0, 1));
   await hintBtn(page).click();
   await expectNoPar(page);
+  const hintLine = await hintBars(page).getAttribute('data-line');
   await page.locator('#clear').click();
-  await placeAll(page, lv.answer);
+  await placeAll(page, lv.answer.filter((w) => w.join(',') !== hintLine)); // the hint fence stays on the board
   await tryNow(page);
   await expectNoPar(page);
   await page.getByRole('button', { name: 'Submit' }).click();

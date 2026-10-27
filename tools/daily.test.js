@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseLevel, buildableLines, findPath, solve, countAnswers, simulate, cutsAllRoutes, capViolation } from '../src/game/index.js';
 import { isRingAnswer, invalidBridges } from './generate.js';
-import { addDays, buildDaily, dailyPar, easyPar, weekdayUTC, DAILY_DEFAULTS } from './build-daily.js';
+import { addDays, buildDaily, winsAtParFromEnds, dailyPar, easyPar, weekdayUTC, DAILY_DEFAULTS } from './build-daily.js';
 
 const file = fileURLToPath(new URL('../assets/levels/daily.json', import.meta.url));
 const daily = JSON.parse(readFileSync(file, 'utf8'));
@@ -152,4 +152,8 @@ test('daily-easy: every stored answer wins under the Easy page rules (budget = b
 test('daily-easy: reproducible from the seed (the first days rebuild identically)', () => {
   const again = buildDaily({ days: 7, start: easy.start, seed: DAILY_DEFAULTS.seed, size: 7 });
   assert.deepEqual(again.levels, easy.levels.slice(0, 7));
+});
+
+test('daily-easy: no level can be won at par using only fences beside the gnome or his house', () => {
+  for (const l of easy.levels) assert.equal(winsAtParFromEnds(l), false, l.id);
 });
