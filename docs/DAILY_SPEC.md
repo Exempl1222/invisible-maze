@@ -2,6 +2,46 @@
 
 The daily as its own page, so it can ship alone with a link to the full game later. Decided by Eric, 27 Oct 2026. Rules of play are unchanged (`docs/GAME_SPEC.md`, rules v4); this spec covers only what is new around them.
 
+## v2: Easy and Hard, scored out of 100 (Eric, 27 Oct)
+
+**This section supersedes the rest of the spec wherever they disagree** (tries as lives, wall budget, stars, par shown, answer reveal, one shared streak). Everything not mentioned here (archive, countdown, how-to-play, app link, cross-tab merge, storage safety, date handling) stays as written below.
+
+### Two dailies
+- **Easy:** 7x7, par 3 Monday to Saturday, par 4 Sunday. New batch `assets/levels/daily-easy.json`, built by `tools/build-daily.js --size 7` with the same start date (2026-10-27) and 180 days, verified like every level (rules v4, unique boards).
+- **Hard:** the existing 9x9 `daily.json`, unchanged.
+- Both share the day number (`#N`). Tabs `Easy | Hard` under the title; `?mode=easy|hard`. With no mode in the URL, the page opens the mode the player last chose, Easy on a first visit.
+- Each mode has its own record per date, its own hint, its own streak and its own stats.
+
+### Play
+- **No fence limit.** The player can place as many fences as they like. Still refused: cutting every route, more than 2 sides of the gnome or of his house (rules v4), unbuildable lines. In code the page gives the engine a budget equal to the number of buildable lines; the engine and the level files don't change.
+- Shown: `Fences` (count only), `Move limit`, `Moves left`, `Best` (best score so far today, `-` before a win). **Par is never shown**, and nothing reveals the answer, including on a lost day.
+- Buttons: **Try** (sends the gnome), **Reset** (removes the player's fences; a hint fence stays), **Hint**.
+- **3 tries a day.** Every Try spends one, win or lose.
+  - Win: the try's score shows. Buttons `Retry for a better score (N left)` (keeps the fences) and `Submit`. Submit ends the day.
+  - Loss: `He made it home`; with tries left, `Try again (N left)`, fences stay.
+  - After try 3 the day ends on its own.
+- **Day score = the best winning try** (best of 3). A day with no win scores 0.
+- **Score:** `max(30, round(100 - 70 * (fences - par) / (2 * par)))`. Par scores 100, 3x par or more scores 30. Fences can't be fewer than par.
+- **Hint:** 1 per mode per date. It places one fence from the stored answer (as now) and takes 15 points off every winning try that day after the floor, so the lowest hinted win is 15. The button reads `Hint (-15)`, then `Hint used`.
+
+### Results, share, streaks
+- Result panel: the day score large (`82 / 100`), then one line per try (`Try 1  65`, `Try 2  82`, `Try 3  He made it home`), Share, Stats, countdown.
+- Share (pure function, unit tested):
+  ```
+  Gnome Sweet Gnome #1 Hard 🍄
+  82/100 💡
+  🟥🟩🟩
+  https://exempl1222.github.io/invisible-maze/daily/?mode=hard
+  ```
+  One square per try used: 🟥 loss, 🟩 win. ` 💡` only if the hint was used. Lost day: `0/100 🏠`. Archive days keep `(archive)` after the number.
+- **Streak per mode:** consecutive days with a score above 0, finished on their own date (as before).
+- **Stats per mode** (the dialog has the same Easy | Hard tabs): played, win %, average score, best score, current and best streak, and bars for 100, 80 to 99, 60 to 79, 30 to 59, 1 to 29, and 0.
+- **Archive dialog:** each row shows both scores (`Easy 88 · Hard -`).
+
+### Saved data
+- New key `gnome-sweet-gnome:daily:v2`, `{ easy: { date: record }, hard: { date: record }, lastMode, seenHowTo }`. A record holds `tries` (array of `{ fences, won, score }`), `hint`, `walls` (current fences), `done`, `finishedOn`. The cross-tab merge keeps the longer `tries` list.
+- On first load, v1 records become Hard records: one try, scored from their walls, the level's par and the hint, `done` and `finishedOn` kept. v1 is then left in place, unused.
+
 ## Where it lives
 
 - Page: `daily/index.html`, served at `/invisible-maze/daily/`. This is the link that gets shared.
