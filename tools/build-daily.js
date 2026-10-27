@@ -2,13 +2,15 @@
 // Builds assets/levels/daily.json (shipped to the site). Offline, deterministic.
 //
 //   node tools/build-daily.js [--days 180] [--start 2026-10-27] [--seed 20261027] [--out assets/levels/daily.json]
-//                             [--jobs 2] [--from 0 --to 180]   (build days [from, to) and merge into --out; for pieces under a time limit)
+//                             [--jobs 2] [--from 0 --to 180] [--size 7]   (build days [from, to) and merge into --out; for pieces under a time limit)
 //
 // One 9x9 level per calendar day: levels[0] is the start date, levels[i] is start + i days.
 // Rules v4 (docs/GAME_SPEC.md): "rules": "v4", wallBudget = par + 2, par, parAnswers (counted up
 // to 50, a single par answer is not required) and one par answer ("answer"). The weekday comes from
 // the YYYY-MM-DD string in UTC (never the build machine's time zone) and sets the par:
 // Monday to Wednesday par 4, Thursday to Saturday par 5, Sunday par 6 (the weekly hard day).
+// `--size 7` builds the Easy batch (assets/levels/daily-easy.json, ids e-YYYY-MM-DD): 7x7, par 3
+// Monday to Saturday and par 4 on Sunday, same start date, rules and checks.
 // Every level is ring-free with a route of at least 9; boards are unique within the batch. Each day
 // has its own sub-seed, so the batch is a pure function of the seed, the start date and the day
 // index (more days never change earlier ones). Par 6 takes about 11 s a level, so a full build is
@@ -42,24 +44,35 @@ export function dailyPar(date) {
   return wd === 0 ? 6 : wd <= 3 ? 4 : 5;
 }
 
+/** Target par for the Easy 7x7 daily: Monday to Saturday 3, Sunday 4. */
+export function easyPar(date) {
+  return weekdayUTC(date) === 0 ? 4 : 3;
+}
+
 // Move-limit slack over the open route and solver work budget, by par (as the Lab levels are made).
 const PAR_SETTINGS = {
   4: { slack: [4, 8], tries: 20000, maxNodes: 300000 },
   5: { slack: [6, 9], tries: 20000, maxNodes: 300000 },
   6: { slack: [8, 11], tries: 3000, maxNodes: 600000 },
 };
+// 7x7 (as the 7x7 levels of build-pack.js are made)
+const EASY_SETTINGS = {
+  3: { slack: [3, 6], tries: 4000, maxNodes: 200000 },
+  4: { slack: [4, 7], tries: 4000, maxNodes: 200000 },
+};
 
 /**
  * The level for day i: a pure function of (seed, start, i). Tries up to 20 sub-seeds and returns the first
  * level the generator keeps, with the generator's stats, or `{ level: null }` if none was found.
  */
-export function buildDay(i, { start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULTS.seed } = {}) {
-  const par = dailyPar(addDays(start, i));
-  const cfg = PAR_SETTINGS[par];
+export function buildDay(i, { start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULTS.seed, size = 9 } = {}) {
+  const easy = size === 7;
+  const par = (easy ? easyPar : dailyPar)(addDays(start, i));
+  const cfg = (easy ? EASY_SETTINGS : PAR_SETTINGS)[par];
   const stats = { tried: 0, rejected: {}, usesTeleporter: 0 };
   for (let attempt = 0; attempt < 20; attempt++) {
     const gen = generateLevels({
-      size: 9, count: 1, seed: `${seed}-${i}-${attempt}`, minPar: par, maxPar: par, minSlack: cfg.slack[0], maxSlack: cfg.slack[1],
+      size, count: 1, seed: `${seed}-${i}-${attempt}`, minPar: par, maxPar: par, minSlack: cfg.slack[0], maxSlack: cfg.slack[1],
       maxTries: cfg.tries, maxNodes: cfg.maxNodes, rules: 'v4', unique: false, budgetExtra: 2, answerCap: 50,
     });
     stats.tried += gen.stats.tried;
@@ -67,7 +80,7 @@ export function buildDay(i, { start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULT
     if (!gen.levels.length) continue;
     if (gen.meta[0].usesTeleporter) stats.usesTeleporter++;
     const { id, ...rest } = gen.levels[0]; // drop the generator's temporary id
-    return { level: { id: `d-${addDays(start, i)}`, ...rest }, stats };
+    return { level: { id: `${easy ? 'e' : 'd'}-${addDays(start, i)}`, ...rest }, stats };
   }
   return { level: null, stats };
 }
@@ -79,32 +92,32 @@ function addStats(total, st) {
 }
 
 /** Builds days [from, to) of the batch in this thread. Boards must differ across the batch (checked by the caller). */
-export function buildDaily({ days = DAILY_DEFAULTS.days, start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULTS.seed, log = () => {} } = {}) {
+export function buildDaily({ days = DAILY_DEFAULTS.days, start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULTS.seed, size = 9, log = () => {} } = {}) {
   const levels = [];
   const total = { tried: 0, kept: 0, rejected: {}, usesTeleporter: 0 };
   for (let i = 0; i < days; i++) {
-    const { level, stats } = buildDay(i, { start, seed });
+    const { level, stats } = buildDay(i, { start, seed, size });
     addStats(total, stats);
     if (!level) { log(`day ${i}: no level found, stopping at ${levels.length}`); break; }
     total.kept++;
     levels.push(level);
   }
   log(formatStats(total));
-  return { id: 'daily', start, levels };
+  return { id: size === 7 ? 'daily-easy' : 'daily', start, levels };
 }
 
 if (!isMainThread && workerData?.job === 'daily-days') {
   // worker: build the listed day indices and send them back
-  const { indices, start, seed } = workerData;
-  parentPort.postMessage(indices.map((i) => ({ i, ...buildDay(i, { start, seed }) })));
+  const { indices, start, seed, size } = workerData;
+  parentPort.postMessage(indices.map((i) => ({ i, ...buildDay(i, { start, seed, size }) })));
 }
 
 /** Builds days [from, to) across `jobs` worker threads. Day i is the same whoever builds it. */
-async function buildRange({ from, to, start, seed, jobs }) {
+async function buildRange({ from, to, start, seed, size, jobs }) {
   const lanes = Array.from({ length: jobs }, () => []);
   for (let i = from; i < to; i++) lanes[(i - from) % jobs].push(i);
   const parts = await Promise.all(lanes.filter((l) => l.length).map((indices) => new Promise((res, rej) => {
-    const w = new Worker(fileURLToPath(import.meta.url), { workerData: { job: 'daily-days', indices, start, seed } });
+    const w = new Worker(fileURLToPath(import.meta.url), { workerData: { job: 'daily-days', indices, start, seed, size } });
     w.once('message', res);
     w.once('error', rej);
   })));
@@ -115,26 +128,29 @@ async function main() {
   const argv = process.argv.slice(2);
   const here = dirname(fileURLToPath(import.meta.url));
   const opts = { ...DAILY_DEFAULTS };
-  let out = resolve(here, '../assets/levels/daily.json');
+  let out = null, size = 9;
   let from = 0, to = null, jobs = Math.min(2, cpus().length);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--days') opts.days = Number(argv[++i]);
     else if (a === '--start') opts.start = argv[++i];
     else if (a === '--seed') opts.seed = Number(argv[++i]);
+    else if (a === '--size') size = Number(argv[++i]);
     else if (a === '--out') out = resolve(argv[++i]);
     else if (a === '--from') from = Number(argv[++i]); // build days [from, to) and merge them into --out
     else if (a === '--to') to = Number(argv[++i]);
     else if (a === '--jobs') jobs = Number(argv[++i]);
     else throw new Error(`unknown argument ${a}`);
   }
+  if (size !== 7 && size !== 9) throw new Error('--size must be 7 or 9');
+  out ??= resolve(here, size === 7 ? '../assets/levels/daily-easy.json' : '../assets/levels/daily.json');
   if (to === null) to = opts.days;
   const t0 = performance.now();
   // days already in --out (when building in pieces) are kept for indices outside [from, to)
   let existing = [];
   if (from > 0 && existsSync(out)) existing = JSON.parse(readFileSync(out, 'utf8')).levels.slice(0, from);
   if (existing.length !== from) throw new Error(`--from ${from} needs ${out} to hold at least ${from} levels (found ${existing.length})`);
-  const built = await buildRange({ from, to, start: opts.start, seed: opts.seed, jobs });
+  const built = await buildRange({ from, to, start: opts.start, seed: opts.seed, size, jobs });
   const total = { tried: 0, kept: 0, rejected: {}, usesTeleporter: 0 };
   const levels = existing.slice();
   for (const b of built) {
@@ -146,7 +162,7 @@ async function main() {
   console.log(formatStats(total));
   const boards = new Set(levels.map((l) => l.tiles.join('/')));
   if (boards.size !== levels.length) throw new Error('two days share a board; change the seed');
-  const daily = { id: 'daily', start: opts.start, levels };
+  const daily = { id: size === 7 ? 'daily-easy' : 'daily', start: opts.start, levels };
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(daily, null, 1) + '\n');
   const pars = {};
