@@ -75,6 +75,18 @@ async function setToday(page, date) {
   await page.clock.setSystemTime(NOON(date));
 }
 
+/**
+ * A fresh page in the same browser context (so the same saved data) whose clock starts at noon on `date`.
+ * Use this rather than setToday when a test moves "today" between page loads: on CI's Playwright 1.56,
+ * changing the faked time on a page that then loads again can leave the gnome's walk stuck.
+ */
+async function pageAt(context, date) {
+  const p = await context.newPage();
+  await seedStorage(p);
+  await p.clock.install({ time: NOON(date) });
+  return p;
+}
+
 test.beforeEach(async ({ page }) => {
   await seedStorage(page);
   await page.clock.install({ time: NOON('2026-10-27') });
@@ -191,7 +203,7 @@ test('first visit shows how to play once, with the v2 copy, and the ? button reo
   await expect(dlg.locator('.howto-art svg').first()).toBeVisible(); // the sprites are drawn
   await dlg.getByRole('button', { name: "Let's go" }).click();
   await expect(dlg).toBeHidden();
-  expect((await saved(page)).seenHowTo).toBe(true);
+  await expect.poll(async () => (await saved(page))?.seenHowTo).toBe(true);
   await page.reload();
   await expect(page.locator('#board .cell').first()).toBeVisible();
   await expect(dlg).toBeHidden();
@@ -1006,16 +1018,17 @@ test.describe('the archive', () => {
     await expect(statsCell(page, 'Best streak')).toHaveText('1');
   });
 
-  test('catching up a missed day in the archive does not repair the streak', async ({ page }) => {
-    await setToday(page, '2026-10-28');
-    await winDay(page, 'hard', 1, url('hard')); // #2, won on the day
-    await setToday(page, '2026-10-30'); // 29 Oct missed
-    await winDay(page, 'hard', 2, url('hard', '2026-10-29'));
-    await winDay(page, 'hard', 3, url('hard'));
-    await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
-    await expect(statsCell(page, 'Played')).toHaveText('3');
-    await expect(statsCell(page, 'Streak')).toHaveText('1');
-    await expect(statsCell(page, 'Best streak')).toHaveText('1');
+  test('catching up a missed day in the archive does not repair the streak', async ({ context }) => {
+    const day28 = await pageAt(context, '2026-10-28');
+    await winDay(day28, 'hard', 1, url('hard')); // #2, won on the day
+    await day28.close();
+    const day30 = await pageAt(context, '2026-10-30'); // 29 Oct missed
+    await winDay(day30, 'hard', 2, url('hard', '2026-10-29'));
+    await winDay(day30, 'hard', 3, url('hard'));
+    await day30.getByRole('button', { name: 'Stats', exact: true }).first().click();
+    await expect(statsCell(day30, 'Played')).toHaveText('3');
+    await expect(statsCell(day30, 'Streak')).toHaveText('1');
+    await expect(statsCell(day30, 'Best streak')).toHaveText('1');
   });
 
   test('a lost archive day shows 0 in the list for that mode; a day in progress shows ...', async ({ page }) => {
