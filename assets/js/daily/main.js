@@ -7,11 +7,12 @@ import { starsMarkup } from '../play/icons.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
 import { preloadSprites, sprite } from '../sprites.js';
 import { APP_LINK, MAX_TRIES, DAILY_URL } from './config.js';
-import { freshDay, parseLineKey } from './record.js';
-import { loadStore, getDay, saveDay, seenHowTo } from './store.js';
+import { freshDay, parseLineKey, mergeDay } from './record.js';
+import { loadStore, getDay, saveDay, allDays, seenHowTo, refresh, onExternalChange } from './store.js';
+import { classifyDate, archiveRows } from './archive.js';
 import { shareText, pageUrl } from './share.js';
 import { nextGnome, msToNextMinute } from './countdown.js';
-import { setupHowTo, setupStats } from './dialogs.js';
+import { setupHowTo, setupStats, setupArchive } from './dialogs.js';
 
 const STEP_MS = 220;
 
@@ -33,18 +34,24 @@ const goBtn = $('go');
 const clearBtn = $('clear');
 const hintBtn = $('hint-btn');
 const resultEl = $('result');
+const answerNoteEl = $('answer-note');
+const wallsLabelEl = $('walls-label');
+const newDayEl = $('new-day');
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const plural = (n, word) => `${n} ${n === 1 ? word : word === 'try' ? 'tries' : `${word}s`}`;
 
-/** The date being played. `?date=YYYY-MM-DD` is for testing and dev. */
+/** The date being played: today, or one of the 29 days before it (`?date=YYYY-MM-DD`, the archive). */
 const realToday = localDateString();
-const asked = new URLSearchParams(location.search).get('date');
-const date = parseDate(asked) !== null ? asked : realToday;
+const route = classifyDate(new URLSearchParams(location.search).get('date'), realToday);
+const date = route.date;
+const isArchive = route.kind === 'archive';
+const goToday = () => { location.href = location.pathname; };
 
 let game = null; // { level, board, number, day, state: 'editing' | 'running' | 'done' }
 let stats = null;
-let countdownTimer = 0;
+let clockTimer = 0;
+let countdownBox = null; // { box, text } once a day is done
 
 /* ---------- page chrome ---------- */
 
@@ -62,11 +69,14 @@ function setupWordmark() {
 function showBreak(message, more) {
   titleEl.textContent = 'Daily';
   document.title = 'Daily · Gnome Sweet Gnome';
-  dateLineEl.textContent = formatDaily(date);
+  dateLineEl.textContent = parseDate(date) !== null ? formatDaily(date) : '';
   triesEl.hidden = true;
   gameView.hidden = true;
   $('break-text').textContent = message || 'The daily is taking a break.';
-  $('break-more').textContent = more || 'There is no puzzle for this date yet. Check back soon.';
+  const moreEl = $('break-more');
+  moreEl.textContent = more === undefined ? 'There is no puzzle for this date yet. Check back soon.' : more;
+  moreEl.hidden = !moreEl.textContent;
+  $('break-today').hidden = date === realToday; // a way back to today, never to the full game
   const old = breakEl.querySelector('a');
   if (old) old.remove();
   if (APP_LINK.enabled) {
@@ -79,10 +89,13 @@ function showBreak(message, more) {
   breakEl.hidden = false;
 }
 
+/** Filled pips are tries left; the won try is a tick; spent and unused-after-the-end pips are empty. */
 function renderPips() {
-  const left = MAX_TRIES - game.day.tries;
-  [...pipsEl.children].forEach((pip, i) => pip.classList.toggle('spent', i < game.day.tries));
-  pipsEl.setAttribute('aria-label', `${plural(left, 'try')} left`);
+  const { tries, won, done } = game.day;
+  [...pipsEl.children].forEach((pip, i) => {
+    pip.className = won && i === tries - 1 ? 'won' : !done && i >= tries ? 'left' : '';
+  });
+  pipsEl.setAttribute('aria-label', won ? `Won on try ${tries}` : done ? 'No tries left' : `${plural(MAX_TRIES - tries, 'try')} left`);
 }
 
 function setStatus(text, cls = '') {
@@ -117,6 +130,36 @@ function persist() {
   saveDay(date, game.day);
 }
 
+/**
+ * Take in what another tab saved for this date: more tries, a used hint, a finished day. Returns
+ * true if the day is finished now (and shown as such). The board's own walls are kept.
+ */
+function adoptStored() {
+  const g = game;
+  refresh();
+  const stored = getDay(date);
+  if (!stored || g.state === 'running' || g.state === 'done') return g.state === 'done';
+  const changed = stored.tries > g.day.tries || stored.done || (stored.hint !== null && g.day.hint === null);
+  if (!changed) return false;
+  const walls = g.day.walls;
+  g.day = mergeDay(stored, g.day);
+  if (g.day.done) {
+    showDone({ redraw: true });
+    return true;
+  }
+  g.day.walls = walls;
+  updateCounters();
+  return false;
+}
+
+// Another tab saved something: if it changed the day on screen, show it.
+onExternalChange(() => {
+  if (!game || game.state !== 'editing') return;
+  const before = game.day.tries;
+  if (adoptStored()) return;
+  if (game.day.tries !== before) setStatus(`Updated from another tab. ${plural(MAX_TRIES - game.day.tries, 'try')} left today.`);
+});
+
 /* ---------- starting a day ---------- */
 
 async function boot() {
@@ -149,11 +192,23 @@ async function boot() {
   loading.hidden = true;
 
   const howto = setupHowTo();
-  stats = setupStats(() => date);
+  stats = setupStats(() => realToday);
+  setupArchive({
+    getRows: () => archiveRows({ days: allDays(), today: realToday, start: data.start, count: data.levels.length }),
+    onPick: (row) => { location.href = row.today ? location.pathname : `${location.pathname}?date=${row.date}`; },
+    currentDate: date,
+  });
+  $('break-today').addEventListener('click', goToday);
+  $('today-link').addEventListener('click', goToday);
+  $('new-day-play').addEventListener('click', goToday);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) clockTick(); });
 
   const i = dayIndex(data.start, date);
-  if (i === null || i < 0 || i >= data.levels.length) showBreak();
+  if (route.kind === 'future') showBreak('Not ready yet. This gnome is still packing.', '');
+  else if (route.kind === 'old') showBreak('That day is out of the archive.', '');
+  else if (i === null || i < 0 || i >= data.levels.length) showBreak();
   else startDay(parseLevel(data.levels[i]), i + 1);
+  clockTick();
 
   if (!seenHowTo()) howto.show($('help-btn'));
 }
@@ -162,6 +217,13 @@ function startDay(level, number) {
   const day = getDay(date) || freshDay();
   game = { level, number, day, state: 'editing', board: null };
   titleEl.textContent = `Daily #${number}`;
+  if (isArchive) {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = 'Archive';
+    titleEl.append(' ', tag);
+    $('today-link').hidden = false;
+  }
   document.title = `Daily #${number} · Gnome Sweet Gnome`;
   triesEl.hidden = false;
   gameView.hidden = false;
@@ -261,6 +323,11 @@ function whyNot(line) {
 function useHint() {
   if (!game || game.state !== 'editing' || game.day.hint !== null) return;
   statusEl.classList.remove('refused');
+  if (adoptStored()) return;
+  if (game.day.hint !== null) {
+    setStatus('The hint was already used in another tab.');
+    return;
+  }
   const { board, level, day } = game;
   const answer = level.answer;
   if (!Array.isArray(answer) || answer.length === 0) {
@@ -291,9 +358,11 @@ hintBtn.addEventListener('click', useHint);
 async function run() {
   if (!game || game.state !== 'editing') return;
   const g = game;
+  if (adoptStored()) return; // another tab already finished this day
   const walls = g.board.wallList();
   const sim = simulate(g.level, walls);
-  // Settle the try before anything animates, so a reload can never give it back.
+  // Settle the try before anything animates, so a reload can never give it back. adoptStored
+  // brought in tries spent in other tabs first, so this one goes on top of them.
   g.day.tries++;
   if (sim.result === 'win') {
     g.day.won = true;
@@ -302,6 +371,7 @@ async function run() {
   } else if (g.day.tries >= MAX_TRIES) {
     g.day.done = true;
   }
+  if (g.day.done) g.day.finishedOn = localDateString();
   persist();
 
   g.state = 'running';
@@ -318,7 +388,7 @@ async function run() {
   });
 
   if (g.day.done) {
-    showDone();
+    showDone({ live: true });
     return;
   }
   // Lost with tries left: the fences stay, the gnome goes back to the start.
@@ -334,15 +404,24 @@ goBtn.addEventListener('click', run);
 
 /* ---------- a finished day ---------- */
 
-/** Lock the board in its final state and show the result. Used live and on reload. */
-function showDone() {
+/**
+ * Lock the board in its final state and show the result. Used live and on reload.
+ * `live`: the day just ended here (announce it, move focus to Share). `redraw`: wipe the board
+ * first (the day was finished in another tab).
+ */
+function showDone({ live = false, redraw = false } = {}) {
   const g = game;
   const { board, level, day } = g;
   g.state = 'done';
   board.setLocked(true);
   controlsEl.hidden = true;
+  newDayEl.hidden = true;
   triesEl.hidden = false;
   renderPips();
+  if (redraw) {
+    board.resetRun();
+    board.clearWalls({ all: true });
+  }
 
   let walls = board.wallList();
   if (day.won && walls.length === 0 && day.walls.length > 0) {
@@ -354,17 +433,23 @@ function showDone() {
   if (day.won) {
     sim = simulate(level, walls);
     wallsUsedEl.textContent = `${walls.length} / ${level.wallBudget}`;
-    setStatus('');
+    wallsLabelEl.textContent = 'Walls';
+    setStatus(live ? `Fenced in on try ${day.tries}, ${day.stars} ${day.stars === 1 ? 'star' : 'stars'}.` : '');
+    answerNoteEl.hidden = true;
   } else {
     // Lost: show one par answer in the hint style.
     board.clearWalls({ all: true });
     for (const w of level.answer) board.setWall(w, true, { hint: true });
     sim = simulate(level, level.answer);
+    wallsLabelEl.textContent = 'Answer';
     wallsUsedEl.textContent = `${level.answer.length} / ${level.wallBudget}`;
-    setStatus(`One way to fence him in (par ${level.par}).`, 'note');
+    setStatus(live ? 'He made it home. Out of tries.' : '');
+    answerNoteEl.textContent = `One way to fence him in (par ${level.par}).`;
+    answerNoteEl.hidden = false;
   }
   board.play(sim, { instant: true, onMove: (i) => { movesLeftEl.textContent = String(level.moveLimit - i); } });
   renderResult();
+  if (live) $('share-btn').focus({ preventScroll: false });
 }
 
 function actionButton(label, primary, handler) {
@@ -459,7 +544,8 @@ function renderResult() {
   cdText.id = 'countdown';
   cd.appendChild(cdText);
   resultEl.appendChild(cd);
-  startCountdown(cd, cdText);
+  countdownBox = { box: cd, text: cdText };
+  clockTick();
 
   if (APP_LINK.enabled) {
     const card = document.createElement('div');
@@ -475,24 +561,27 @@ function renderResult() {
   }
 }
 
-/* ---------- countdown ---------- */
+/* ---------- the clock ---------- */
 
-function startCountdown(box, textEl) {
-  clearTimeout(countdownTimer);
-  const tick = () => {
-    const r = nextGnome(new Date(), realToday);
-    textEl.textContent = r.text;
-    if (r.newDay) {
-      if (!box.querySelector('button')) {
-        const play = actionButton('Play', true, () => { location.href = location.pathname; });
-        play.id = 'play-new';
-        box.appendChild(play);
-      }
-      return;
+/**
+ * One tick for everything that depends on the time of day: the countdown on a finished day, and
+ * the "new gnome" card on an unfinished today that has gone past midnight. Re-runs every minute
+ * and when the tab comes back into view (timers sleep in the background).
+ */
+function clockTick() {
+  clearTimeout(clockTimer);
+  const now = new Date();
+  const r = nextGnome(now, realToday);
+  if (countdownBox && countdownBox.box.isConnected) {
+    countdownBox.text.textContent = r.text;
+    if (r.newDay && !countdownBox.box.querySelector('button')) {
+      const play = actionButton('Play', true, goToday);
+      play.id = 'play-new';
+      countdownBox.box.appendChild(play);
     }
-    countdownTimer = setTimeout(tick, msToNextMinute(new Date()) + 20);
-  };
-  tick();
+  }
+  if (r.newDay && game && date === realToday && game.state !== 'done') newDayEl.hidden = false;
+  if (!r.newDay) clockTimer = setTimeout(clockTick, msToNextMinute(now) + 20);
 }
 
 /* ---------- share ---------- */
@@ -504,6 +593,7 @@ function currentShareText() {
     url: pageUrl(location.href),
     par: level.par,
     walls: day.won ? day.walls.length : 0,
+    archive: isArchive,
     tries: day.tries,
     won: day.won,
     stars: day.stars,

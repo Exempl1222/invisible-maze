@@ -3,6 +3,8 @@
 import { sprite } from '../sprites.js';
 import { markSeenHowTo, allDays } from './store.js';
 import { computeStats } from './streak.js';
+import { starsMarkup } from '../play/icons.js';
+import { formatDaily } from '../play/daily.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -102,5 +104,70 @@ export function setupStats(getToday) {
     open(dlg, opener);
   };
   $('stats-btn').addEventListener('click', () => show($('stats-btn')));
+  return { show };
+}
+
+/** What a row of the archive says about its day. */
+function resultCell(result) {
+  const el = document.createElement('span');
+  el.className = `arch-result ${result.kind}`;
+  if (result.kind === 'won') {
+    el.innerHTML = starsMarkup(result.stars);
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', result.stars === 1 ? '1 star' : `${result.stars} stars`);
+  } else {
+    el.textContent = { lost: 'Lost', progress: 'In progress', none: 'Not played' }[result.kind];
+  }
+  return el;
+}
+
+/**
+ * The archive: the last 30 days, newest first. `getRows()` gives the rows (see archiveRows),
+ * `onPick(row)` goes to that day. `currentDate` is the day on screen.
+ */
+export function setupArchive({ getRows, onPick, currentDate }) {
+  const dlg = $('archive-dlg');
+  closeOnBackdrop(dlg);
+  const show = (opener) => {
+    const body = $('archive-body');
+    body.replaceChildren();
+    const h = document.createElement('h2');
+    h.id = 'archive-title';
+    h.textContent = 'Archive';
+    const list = document.createElement('ul');
+    list.className = 'archive-list';
+    for (const row of getRows()) {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'arch-row';
+      b.dataset.date = row.date;
+      if (row.date === currentDate) b.setAttribute('aria-current', 'date');
+      const num = document.createElement('span');
+      num.className = 'arch-num';
+      num.textContent = `#${row.number}`;
+      const when = document.createElement('span');
+      when.className = 'arch-date';
+      when.textContent = formatDaily(row.date);
+      if (row.today) {
+        const tag = document.createElement('span');
+        tag.className = 'arch-today';
+        tag.textContent = 'Today';
+        when.append(' ', tag);
+      }
+      b.append(num, when, resultCell(row.result));
+      b.addEventListener('click', () => onPick(row));
+      li.appendChild(b);
+      list.appendChild(li);
+    }
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'btn';
+    close.textContent = 'Close';
+    close.addEventListener('click', () => dlg.close());
+    body.append(h, list, close);
+    open(dlg, opener);
+  };
+  $('archive-btn').addEventListener('click', () => show($('archive-btn')));
   return { show };
 }

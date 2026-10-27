@@ -28,6 +28,9 @@
     </div>
     <div class="header-actions">
       <button type="button" class="btn quiet icon-btn" id="help-btn" aria-label="How to play" aria-haspopup="dialog">?</button>
+      <button type="button" class="btn quiet icon-btn" id="archive-btn" aria-label="Archive" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M3.5 10h17M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
       <button type="button" class="btn quiet icon-btn" id="stats-btn" aria-label="Stats" aria-haspopup="dialog">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>
       </button>
@@ -39,9 +42,10 @@
       <div class="title-block">
         <h1 id="title">Daily</h1>
         <p class="date-line" id="date-line"></p>
+        <button type="button" class="btn quiet today-link" id="today-link" hidden>Today's gnome</button>
       </div>
       <div class="tries" id="tries" hidden>
-        <span class="tries-label">Tries</span>
+        <span class="tries-label">Tries left</span>
         <span class="pips" id="pips" role="img" aria-label="3 tries left"><i></i><i></i><i></i></span>
       </div>
     </div>
@@ -52,11 +56,12 @@
     <div id="daily-break" class="daily-note" hidden>
       <p><strong id="break-text">The daily is taking a break.</strong></p>
       <p id="break-more">There is no puzzle for this date yet. Check back soon.</p>
+      <button type="button" class="btn" id="break-today" hidden>Today's gnome</button>
     </div>
 
     <div id="game-view" class="game" hidden>
       <div class="stats" aria-label="Level limits">
-        <p class="stat"><span class="stat-label">Walls</span><strong id="walls-used">0 / 0</strong></p>
+        <p class="stat"><span class="stat-label" id="walls-label">Walls</span><strong id="walls-used">0 / 0</strong></p>
         <p class="stat"><span class="stat-label">Par</span><strong id="par">0</strong></p>
         <p class="stat"><span class="stat-label">Move limit</span><strong id="move-limit">0</strong></p>
         <p class="stat"><span class="stat-label">Moves left</span><strong id="moves-left">0</strong></p>
@@ -67,19 +72,24 @@
 
       <div class="side">
         <p class="hint" id="status" role="status"></p>
+        <p class="hint note" id="answer-note" hidden></p>
+        <div class="daily-note new-day" id="new-day" hidden>
+          <p><strong>A new gnome is here</strong></p>
+          <button type="button" class="btn" id="new-day-play">Play</button>
+        </div>
         <div class="controls" id="controls">
           <button type="button" class="btn quiet" id="clear">Clear walls</button>
           <button type="button" class="btn quiet" id="hint-btn" aria-describedby="hint-cost">Hint (1)</button>
           <p class="hint-cost" id="hint-cost">One free hint a day. It shows one fence and costs 1 star.</p>
           <button type="button" class="btn" id="go">Go</button>
         </div>
-        <div class="result" id="result" role="status" hidden></div>
+        <div class="result" id="result" hidden></div>
       </div>
     </div>
   </main>
 
   <footer class="site-footer"><div class="wrap">
-    Gnome Sweet Gnome is in development.</div>
+    A new gnome every day.</div>
   </footer>
 
   <dialog class="dlg" id="howto-dlg" aria-labelledby="howto-title">
@@ -92,6 +102,10 @@
       </ol>
       <button type="button" class="btn" id="howto-close">Let's go</button>
     </div>
+  </dialog>
+
+  <dialog class="dlg" id="archive-dlg" aria-labelledby="archive-title">
+    <div class="dlg-body" id="archive-body"></div>
   </dialog>
 
   <dialog class="dlg" id="stats-dlg" aria-labelledby="stats-title">

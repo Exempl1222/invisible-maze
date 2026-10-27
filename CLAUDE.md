@@ -23,7 +23,7 @@ tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mj
 tools/sprites.html     dev gallery of every sprite
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs
 assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
-assets/js/daily/      standalone daily: main, config (APP_LINK switch), pure record/streak/share/countdown, store, dialogs
+assets/js/daily/      standalone daily: main, config (APP_LINK switch), pure record (with merge)/streak/share/countdown/archive, store, dialogs
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
 assets/levels/        level packs (pack-01.json), the daily batch (daily.json) and the lab pack (lab.json, rules v4)
 assets/js/teaser.js   hero replay (canned, not game logic)
