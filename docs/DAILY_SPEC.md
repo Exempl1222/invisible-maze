@@ -5,7 +5,8 @@ The daily as its own page, so it can ship alone with a link to the full game lat
 ## Where it lives
 
 - Page: `daily/index.html`, served at `/invisible-maze/daily/`. This is the link that gets shared.
-- `?date=YYYY-MM-DD` loads another day (testing and dev). Without it, the player's local date.
+- Without a query, the page plays the player's local date (**today**).
+- `?date=YYYY-MM-DD` is the **archive** (Eric, 27 Oct): any of the 29 days before today (today minus 1 to today minus 29) plays for real and is saved. Today's date in `?date` is the same as no query. A future date shows `Not ready yet. This gnome is still packing.` with a button to today. A date older than 29 days, or not a real date, shows `That day is out of the archive.` with a button to today. Dates outside the batch still show the break message.
 - Code: `assets/js/daily/` (new). Reuses the engine (`src/game/`), `assets/js/play/board.js`, `lines.js`, `icons.js`, `daily.js` (date maths) and `assets/js/sprites.js`. It must not import `assets/js/play/main.js` or `storage.js`.
 - The deploy workflow copies `daily/` into the site.
 - `/play/?daily` (the in-app Daily tab) is left as it is for now.
@@ -26,12 +27,21 @@ The daily as its own page, so it can ship alone with a link to the full game lat
 ## Saved on the device
 
 - One localStorage key, `gnome-sweet-gnome:daily:v1`, separate from the full game. Same pattern as `storage.js`: every access wrapped, memory is the fallback, corrupt data is ignored.
-- Per date: `{ tries, won, stars, walls, hint, done }` (walls as line keys).
+- Per date: `{ tries, won, stars, walls, hint, done, finishedOn }` (walls as line keys).
+- **Never lose a spent try across tabs:** before every write, re-read storage and merge per date (highest `tries`, `done` and `won` stay true once set, keep an existing `hint` and `finishedOn`). Listen for the `storage` event and re-render if the day on screen changed.
 - Plus `seenHowTo: true` once the how-to-play card has been closed.
+
+## Archive
+
+- A calendar button in the header opens an **Archive** dialog: the last 30 days, newest first (today at the top, marked `Today`), each row showing `#N`, the date and its result (stars, `Lost`, `In progress` or `Not played`). Days before the batch start are left out. Tapping a row goes to that day.
+- An archive day plays exactly like today (3 tries, 1 hint, locked when done) and is saved under its own date.
+- The title line says `Daily #N` plus an `Archive` tag on past days, with a `Today's gnome` link back.
+- **Archive plays don't count toward the streak** (only a day finished on its own date does). They do count in played, win % and the star bars. Each record stores `finishedOn` (local date the day was finished) to tell them apart.
+- Share text for an archive day is the same, with `(archive)` after the number.
 
 ## Streak and stats
 
-- **Current streak:** consecutive dates won, ending today, or yesterday if today isn't done yet. A lost day or a missed day ends it.
+- **Current streak:** consecutive dates won on the day itself (`finishedOn` equals the date), ending today, or yesterday if today isn't done yet. A lost day or a missed day ends it; catching up in the archive does not repair it.
 - **Best streak:** longest run ever.
 - **Stats card:** played, win %, current streak, best streak, and a bar chart of results: 3 stars, 2 stars, 1 star, lost. Today's result is highlighted.
 - Streak logic is pure and unit tested (dates in, numbers out).
@@ -81,6 +91,15 @@ https://exempl1222.github.io/invisible-maze/daily/
 - When `enabled` is true: the wordmark links to `href`, the result panel shows a card `Want more? Play the full game.` with that link, and the break message links there too.
 - When false, nothing on the page links to the full game.
 
+## Review fixes (27 Oct)
+
+- Tries indicator reads `Tries left` with filled pips for tries remaining (won try shown as a done tick, lost tries as empty).
+- When the day ends live, focus moves to Share. `#result` loses `role="status"`; `#status` announces one line (`Fenced in on try 1, 3 stars.` / `He made it home. Out of tries.`) and the empty status line takes no space.
+- On a lost day the walls stat is labelled `Answer` and shows the answer's wall count.
+- Countdown re-ticks on `visibilitychange`; a tab left open past midnight on an unfinished today shows `A new gnome is here` with Play.
+- Footer: `A new gnome every day.` (no "in development").
+- No hard-coded colours in daily.css; use tokens.
+
 ## Not in this pass
 
-Preview image, archive of past dailies, server-side stats or leaderboards, retiring `/play/?daily`.
+Preview image, server-side stats or leaderboards, retiring `/play/?daily`.
