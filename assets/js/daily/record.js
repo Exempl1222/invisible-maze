@@ -16,7 +16,7 @@ const LINE_KEY = /^\d+,\d+,[RD]$/;
 export const freshDay = () => ({ tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false });
 
 /** The state with nothing saved. */
-export const emptySaved = () => ({ easy: {}, hard: {}, lastMode: null, seenHowTo: false });
+export const emptySaved = () => ({ easy: {}, hard: {}, lastMode: null, seenHowTo: false, v1Migrated: false });
 
 /** "3,4,D" -> [3, 4, "D"], or null if it isn't a line key. */
 export function parseLineKey(key) {
@@ -87,7 +87,7 @@ export function mergeDay(a, b) {
 
 /** Two saved states (`a` already saved, `b` newer) as one: per-mode, per-date mergeDay; seenHowTo if either; the newer lastMode. */
 export function mergeSaved(a, b) {
-  const out = { lastMode: b.lastMode ?? a.lastMode ?? null, seenHowTo: a.seenHowTo || b.seenHowTo };
+  const out = { lastMode: b.lastMode ?? a.lastMode ?? null, seenHowTo: a.seenHowTo || b.seenHowTo, v1Migrated: a.v1Migrated === true || b.v1Migrated === true };
   for (const mode of MODES) {
     const days = { ...a[mode] };
     for (const [date, d] of Object.entries(b[mode] ?? {})) days[date] = mergeDay(days[date], d);
@@ -119,11 +119,12 @@ export function parseSaved(raw) {
   }
   out.lastMode = MODES.includes(saved.lastMode) ? saved.lastMode : null;
   out.seenHowTo = saved.seenHowTo === true;
+  out.v1Migrated = saved.v1Migrated === true;
   return out;
 }
 
 export function serialize(state) {
-  return JSON.stringify({ v: 2, easy: state.easy, hard: state.hard, lastMode: state.lastMode ?? null, seenHowTo: state.seenHowTo === true });
+  return JSON.stringify({ v: 2, easy: state.easy, hard: state.hard, lastMode: state.lastMode ?? null, seenHowTo: state.seenHowTo === true, v1Migrated: state.v1Migrated === true });
 }
 
 /**

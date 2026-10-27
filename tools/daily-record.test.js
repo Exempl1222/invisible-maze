@@ -9,7 +9,7 @@ const L = (fences = 3) => ({ fences, won: false, base: 0 });
 
 test('freshDay is an empty, unfinished day; emptySaved has both modes', () => {
   assert.deepEqual(freshDay(), { tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false });
-  assert.deepEqual(emptySaved(), { easy: {}, hard: {}, lastMode: null, seenHowTo: false });
+  assert.deepEqual(emptySaved(), { easy: {}, hard: {}, lastMode: null, seenHowTo: false, v1Migrated: false });
 });
 
 test('parseSaved: empty, missing and corrupt data give an empty state', () => {
@@ -19,6 +19,7 @@ test('parseSaved: empty, missing and corrupt data give an empty state', () => {
 test('serialize then parseSaved round-trips, both modes, lastMode and seenHowTo', () => {
   const state = {
     seenHowTo: true,
+    v1Migrated: true,
     lastMode: 'hard',
     easy: { '2026-10-27': { tries: [L(2), W(4, 88)], hint: '1,3,D', walls: ['0,3,D', '1,3,D'], done: true, finishedOn: '2026-10-28', reviewing: false } },
     hard: { '2026-10-28': { tries: [L(5)], hint: null, walls: ['2,2,R'], done: false, finishedOn: null, reviewing: false } },
@@ -226,4 +227,14 @@ test('reviewing: kept for a win being decided, cleared by Retry, never set on a 
   // Retry pressed in the newer copy with equal tries: editing wins; a copy with more tries decides otherwise
   assert.equal(mergeDay({ tries: [W(3, 100)] }, { tries: [W(3, 100)], reviewing: false }).reviewing, false);
   assert.equal(mergeDay({ tries: [W(3, 100), W(4, 88)] }, { tries: [W(3, 100)], reviewing: false }).reviewing, true);
+});
+
+test('v1Migrated: starts false, round-trips, and stays true once either side has it', () => {
+  assert.equal(emptySaved().v1Migrated, false);
+  const s = { ...emptySaved(), v1Migrated: true };
+  assert.equal(parseSaved(serialize(s)).v1Migrated, true);
+  assert.equal(parseSaved(serialize(emptySaved())).v1Migrated, false);
+  assert.equal(mergeSaved(s, emptySaved()).v1Migrated, true);
+  assert.equal(mergeSaved(emptySaved(), s).v1Migrated, true);
+  assert.equal(parseSaved('{"v":2,"v1Migrated":"yes"}').v1Migrated, false);
 });

@@ -37,10 +37,10 @@ function persist() {
   }
 }
 
-/** The v1 text still waiting to be carried over: only while there is no v2 save yet. Null otherwise. */
+/** The v1 text still waiting to be carried over, until a migration has run (v1Migrated). Null otherwise. */
 export function pendingV1() {
   try {
-    if (window.localStorage.getItem(STORAGE_KEY) !== null) return null;
+    if (state.v1Migrated) return null;
     return window.localStorage.getItem(V1_KEY);
   } catch {
     return null;
@@ -51,6 +51,7 @@ export function pendingV1() {
 export function adoptV1(raw, parOf) {
   const migrated = migrateV1(raw, parOf);
   if (migrated) state = mergeSaved(state, migrated);
+  state = { ...state, v1Migrated: true }; // never again, even if the v1 text had nothing to carry
   persist();
 }
 

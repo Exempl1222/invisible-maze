@@ -736,6 +736,33 @@ test('if the v1 migration cannot fetch the Hard levels, it is skipped and Easy s
   expect(await page.evaluate((k) => localStorage.getItem(k) !== null, V1_KEY)).toBe(true);
 });
 
+test('a skipped v1 migration still happens on a later visit, even after Easy was played and saved', async ({ page }) => {
+  const lv = level('hard', 0);
+  const v1 = { v: 1, seenHowTo: true, days: { '2026-10-27': { tries: 1, won: true, stars: 3, walls: lv.answer.map((w) => w.join(',')), hint: null, done: true, finishedOn: '2026-10-27' } } };
+  await page.addInitScript(([k2, k1, old]) => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.removeItem(k2);
+    localStorage.setItem(k1, JSON.stringify(old));
+  }, [KEY, V1_KEY, v1]);
+  // Visit 1: the Hard levels can't load, so migration is skipped; the player loses an Easy try (a v2 save now exists).
+  await page.route('**/assets/levels/daily.json', (route) => route.abort());
+  await openDay(page, url('easy'));
+  await page.locator('#howto-close').click(); // seenHowTo lives in the v1 text, which wasn't carried yet
+  await loseOnce(page, 'Try');
+  const first = await saved(page);
+  expect(first.v1Migrated).toBe(false);
+  expect(first.hard).toEqual({});
+  // Visit 2: the Hard levels load, and the old win is carried over.
+  await page.unroute('**/assets/levels/daily.json');
+  await openDay(page, url('hard'));
+  const s = await saved(page);
+  expect(s.v1Migrated).toBe(true);
+  expect(s.hard['2026-10-27'].tries[0]).toMatchObject({ won: true, base: 100 });
+  expect(s.easy['2026-10-27'].tries).toHaveLength(1); // the Easy try survives the merge
+  await expect(score(page)).toHaveText('100 / 100');
+});
+
 test('the countdown shows after the day is done, then offers a new gnome at midnight', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-10-27T18:48:00+11:00') });
   await page.goto(url('easy'));
