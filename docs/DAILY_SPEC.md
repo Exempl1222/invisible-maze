@@ -24,6 +24,14 @@ The daily as its own page, so it can ship alone with a link to the full game lat
 - **Score:** `max(30, round(100 - 70 * (fences - par) / (2 * par)))`. Par scores 100, 3x par or more scores 30. Fences can't be fewer than par.
 - **Hint:** 1 per mode per date. It places one fence from the stored answer (as now) and takes 15 points off every winning try that day after the floor, so the lowest hinted win is 15. The button reads `Hint (-15)`, then `Hint used`.
 
+### Review fixes (v2, 27 Oct)
+- **Hint can't be used as a free answer check.** If every answer fence is already on the board, the hint marks one of the player's answer fences as the hint fence and is still spent. If a hint fence can't go down (side cap or it would cut every route), the message is generic, `No room for a hint right now. Take a fence back.`, and the hint is not spent.
+- **Scores are stored without the hint** (per try `base`); the shown score is `base - 15` when the hint was used (floor 15). This keeps the hint cost through reloads and tab merges.
+- **When a try can't be beaten** (100, or 85 with the hint), Submit is the only button. Otherwise Retry and Submit both show, with `Fewer fences score higher.` under the try list.
+- **A reload while editing after Retry** reopens in editing with the player's current fences, not the review screen.
+- **Easy levels can't be won at par using only fences on the sides of the gnome and his house**; the generator rejects those.
+- A player whose saves came from v1 (Hard only) opens on Hard the first time.
+
 ### Results, share, streaks
 - Result panel: the day score large (`82 / 100`), then one line per try (`Try 1  65`, `Try 2  82`, `Try 3  He made it home`), Share, Stats, countdown.
 - Share (pure function, unit tested):
