@@ -69,8 +69,8 @@ jobs:
   worker:
     # The stats Worker (worker/). Only main deploys, only after the tests pass, and only when Cloudflare
     # secrets exist and the Worker or what it bundles (the engine, the levels, the shared judge) changed.
-    # Pull requests never reach this job.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # A manual run (Actions > Run workflow, on main) always deploys. Pull requests never reach this job.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-24.04
     concurrency:
@@ -97,10 +97,13 @@ jobs:
         id: changed
         if: steps.secrets.outputs.go == 'true'
         run: |
-          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual run: deploying."
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
             echo "No usable previous commit: deploying."
             echo "go=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- worker src/game assets/levels assets/js/daily/judge.js assets/js/daily/score.js assets/js/play/daily.js | grep -q .; then
+          elif git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- .github/workflows/deploy.yml worker src/game assets/levels assets/js/daily/judge.js assets/js/daily/score.js assets/js/play/daily.js | grep -q .; then
             echo "go=true" >> "$GITHUB_OUTPUT"
           else
             echo "Nothing the Worker uses changed: skipping."
@@ -113,8 +116,8 @@ jobs:
       - name: Create the tables (safe to repeat)
         if: steps.changed.outputs.go == 'true'
         working-directory: worker
-        run: npx wrangler@3 d1 execute gnome-stats --remote --file schema.sql
+        run: npx --yes wrangler@4.0.0 d1 execute gnome-stats --remote --file schema.sql
       - name: Deploy the Worker
         if: steps.changed.outputs.go == 'true'
         working-directory: worker
-        run: npx wrangler@3 deploy
+        run: npx --yes wrangler@4.0.0 deploy

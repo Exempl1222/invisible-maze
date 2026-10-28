@@ -185,7 +185,47 @@ test('bad device, mode, date, hint, tries and body are rejected', async () => {
   const { post } = setup();
   assert.equal((await post('not json')).status, 400);
   assert.equal((await post('[1,2]')).status, 400);
-  assert.equal((await post('x'.repeat(10000))).status, 400);
+  assert.equal((await post('x'.repeat(10000))).status, 413);
+  // a win cannot be posted as null fences unless all 3 tries were spent
+  for (const tries of [1, 2]) assert.equal((await setup().post(payload({ fences: null, tries }))).status, 400, `null fences, ${tries} tries`);
+  assert.equal((await setup().post(payload({ fences: null, tries: 3 }))).status, 200);
+});
+
+test('a declared Content-Length over the limit is refused with 413 before the body is read', async () => {
+  const { call, db } = setup();
+  let read = false;
+  const req = new Request('https://stats.example/result', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Length': '9000' }, body: JSON.stringify(payload()) });
+  req.text = async () => { read = true; return JSON.stringify(payload()); };
+  const res = await handle(req, { DB: db, LEVELS }, NOW);
+  assert.equal(res.status, 413);
+  assert.equal(read, false);
+  assert.equal(db.results.size, 0);
+  assert.ok(call);
+});
+
+test('rate limit: an allowed post goes through, a limited one is a 429 that writes nothing, no binding means no limit', async () => {
+  const seen = [];
+  const limiter = (ok) => ({ async limit(arg) { seen.push(arg); return { success: ok() }; } });
+  const run = async (POST_LIMIT, headers = {}) => {
+    const db = fakeD1();
+    const res = await handle(new Request('https://stats.example/result', { method: 'POST', headers: { Origin: ORIGIN, ...headers }, body: JSON.stringify(payload()) }), { DB: db, LEVELS, POST_LIMIT }, NOW);
+    return { res, db };
+  };
+  let a = await run(limiter(() => true), { 'CF-Connecting-IP': '203.0.113.7' });
+  assert.equal(a.res.status, 200);
+  assert.deepEqual(seen.at(-1), { key: '203.0.113.7' });
+  a = await run(limiter(() => false), { 'CF-Connecting-IP': '203.0.113.7' });
+  assert.equal(a.res.status, 429);
+  assert.equal(a.db.results.size, 0);
+  a = await run(limiter(() => true));
+  assert.equal(a.res.status, 200);
+  assert.deepEqual(seen.at(-1), { key: 'none' });
+  a = await run(undefined);
+  assert.equal(a.res.status, 200);
+  // GET /stats is never limited
+  const db = fakeD1();
+  const g = await handle(new Request('https://stats.example/stats?mode=easy&date=2026-10-27'), { DB: db, LEVELS, POST_LIMIT: limiter(() => false) }, NOW);
+  assert.equal(g.status, 200);
 });
 
 test('the date window is the server UTC date minus 1 to plus 1; anything else is rejected', async () => {
@@ -235,14 +275,14 @@ test('counts stay in step with results; a repeat post bumps nothing; rejected po
   const total = () => [...db.counts.values()].reduce((a, b) => a + b, 0);
   await post(payload({ device: 'dev-count-01' })); // 100
   await post(payload({ device: 'dev-count-02' })); // 100
-  await post(payload({ device: 'dev-count-03', fences: null })); // 0
+  await post(payload({ device: 'dev-count-03', fences: null, tries: 3 })); // 0
   await post(payload({ device: 'dev-count-04', fences: withExtras(r, 2) }));
   assert.equal(db.results.size, 4);
   assert.equal(total(), 4);
   assert.equal(db.counts.get('easy|2026-10-27|100'), 2);
   assert.equal(db.counts.get('easy|2026-10-27|0'), 1);
   // repeat posts (even with a different score) change neither table
-  const dup = await bodyOf(await post(payload({ device: 'dev-count-01', fences: null })));
+  const dup = await bodyOf(await post(payload({ device: 'dev-count-01', fences: null, tries: 3 })));
   assert.equal(dup.duplicate, true);
   assert.equal(db.results.size, 4);
   assert.equal(total(), 4);
@@ -259,16 +299,24 @@ test('counts stay in step with results; a repeat post bumps nothing; rejected po
   assert.deepEqual([...db.counts].sort(), [...fromResults].sort());
 });
 
-test('a failed batch leaves results and counts as they were', async () => {
-  const { post, db, env } = setup();
+test('a failed insert leaves results and counts as they were', async () => {
+  const { post, db } = setup();
   await post(payload({ device: 'dev-fail-001' }));
-  const realBatch = db.batch.bind(db);
-  db.batch = async (stmts) => realBatch([stmts[0], { sql: 'BROKEN', args: [] }]); // the count bump fails after the insert
+  const realPrepare = db.prepare.bind(db);
+  db.prepare = () => { throw new Error('d1 down'); };
   const res = await post(payload({ device: 'dev-fail-002' }));
   assert.equal(res.status, 500);
+  db.prepare = realPrepare;
   assert.equal(db.results.size, 1);
   assert.equal(db.counts.get('easy|2026-10-27|100'), 1);
-  assert.ok(env);
+});
+
+test('a post is one statement; the trigger keeps counts in step', async () => {
+  const { post, db } = setup();
+  await post(payload());
+  await post(payload());
+  assert.equal(db.log.filter((s) => s.startsWith('INSERT')).length, 2, 'one INSERT OR IGNORE per post, nothing else');
+  assert.equal(db.counts.get('easy|2026-10-27|100'), 1);
 });
 
 test('GET /stats gives players, the six bands and the score counts, read from counts', async () => {

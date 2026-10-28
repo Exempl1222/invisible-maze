@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { statsUrl, dayBefore, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent, MIN_PLAYERS } from '../assets/js/daily/everyone.js';
+import { statsUrl, dayBefore, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent, MIN_PLAYERS, utcDate } from '../assets/js/daily/everyone.js';
 import { cleanDay } from '../assets/js/daily/record.js';
 
 const W = (fences, base, walls) => ({ fences, won: true, base, walls });
@@ -64,13 +64,28 @@ test('pendingResults: finished-on-own-date, unsent days from today or yesterday,
   assert.deepEqual(got, ['easy 2026-10-27', 'easy 2026-10-28']);
 });
 
-test('postOutcome: 2xx is sent, 429 and server or network trouble retry, other 4xx is given up on', () => {
+test('postOutcome: 2xx is sent, only 400 is given up on, everything else retries', () => {
   assert.equal(postOutcome(200), 'sent');
   assert.equal(postOutcome(204), 'sent');
-  for (const s of [429, 500, 502, 503]) assert.equal(postOutcome(s), 'retry', String(s));
-  for (const s of [400, 403, 404, 405]) assert.equal(postOutcome(s), 'rejected', String(s));
+  assert.equal(postOutcome(400), 'rejected');
+  for (const s of [403, 404, 405, 413, 429, 500, 502, 503]) assert.equal(postOutcome(s), 'retry', String(s));
   assert.equal(postOutcome(undefined), 'retry');
   assert.equal(postOutcome(NaN), 'retry');
+});
+
+test('utcDate is the UTC calendar day', () => {
+  assert.equal(utcDate(new Date('2026-10-28T13:30:00Z')), '2026-10-28');
+  assert.equal(utcDate(new Date('2026-10-28T23:59:59Z')), '2026-10-28');
+});
+
+test('pendingResults: yesterday is only retried while the server would still take it (UTC day -1 to +1)', () => {
+  const win = [W(3, 100, ['0,3,D'])];
+  const days = { easy: { '2026-10-27': done({ tries: win, finishedOn: '2026-10-27' }), '2026-10-28': done({ tries: win, finishedOn: '2026-10-28' }) } };
+  const list = (utc) => pendingResults(days, '2026-10-28', utc).map((p) => p.date).sort();
+  assert.deepEqual(list('2026-10-28'), ['2026-10-27', '2026-10-28']);
+  assert.deepEqual(list('2026-10-27'), ['2026-10-27', '2026-10-28'], 'a player ahead of UTC: both are within a day');
+  assert.deepEqual(list('2026-10-29'), ['2026-10-28'], 'a player behind UTC: yesterday is too old now');
+  assert.deepEqual(list('2026-10-30'), [], 'and so is today, two UTC days on');
 });
 
 const reply = (o = {}) => ({ players: 14, bands: { 100: 5, '80-99': 3, '60-79': 2, '30-59': 2, '1-29': 1, 0: 1 }, scores: { 100: 5, 88: 3, 70: 2, 40: 2, 20: 1, 0: 1 }, ...o });

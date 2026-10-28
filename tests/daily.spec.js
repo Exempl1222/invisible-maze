@@ -3,6 +3,8 @@
 // skipped (reduced motion) so tests stay fast; the animation itself is covered by play.spec.js.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { handle } from '../worker/src/handle.js';
+import { fakeD1 } from '../tools/worker-fake-d1.js';
 import { parseLevel, buildableLines, capViolation, cutsAllRoutes } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -988,6 +990,8 @@ test.describe('the optimal solution toggle', () => {
 
     await solBtn(page).click();
     await expect(solBtn(page)).toHaveText('Hide the solution');
+    await expect(solBtn(page)).not.toHaveAttribute('aria-pressed', /.*/); // the changing label alone announces the state
+    await expect(page.locator('#board')).toBeInViewport(); // showing the solution scrolls the board into view
     await expect(page.locator('#solution-note')).toHaveText(`Par ${lv.par}: one way to fence him in with ${lv.par} fences.`);
     expect(lv.par).toBe(lv.answer.length);
     await expect(bars(page)).toHaveCount(lv.answer.length);
@@ -1106,6 +1110,34 @@ test.describe('everyone\'s scores', () => {
     return hits;
   };
   const sameFences = (a, b) => expect([...a].map((w) => w.join(',')).sort()).toEqual([...b].map((w) => w.join(',')).sort());
+
+  test('the real Worker handler accepts what the page posts, and its score is the score the page shows', async ({ page }) => {
+    const db = fakeD1();
+    const env = { DB: db, LEVELS: data };
+    const NOW = NOON('2026-10-27').getTime();
+    const seen = [];
+    await page.route(`**${STATS}/**`, async (route) => {
+      const req = route.request();
+      const u = new URL(req.url());
+      const real = new Request(`https://stats.example${u.pathname.slice(STATS.length)}${u.search}`, {
+        method: req.method(),
+        headers: req.headers(),
+        body: req.method() === 'POST' ? req.postData() : undefined,
+      });
+      const res = await handle(real, env, NOW);
+      seen.push(`${req.method()} ${res.status}`);
+      await route.fulfill({ status: res.status, contentType: 'application/json', body: await res.text() });
+    });
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(seen).toEqual(['POST 200', 'GET 200']);
+    expect(db.results.size).toBe(1);
+    const row = [...db.results.values()][0];
+    expect(row).toMatchObject({ mode: 'easy', date: '2026-10-27', tries: 1, hint: 0 });
+    await expect(score(page)).toHaveText(`${row.score} / 100`);
+    await expect(page.locator('#everyone-count')).toHaveText('1 player today');
+    expect((await saved(page)).easy['2026-10-27'].sent).toBe(true);
+  });
 
   test('a finished day posts once with the right body, and a reload does not post again', async ({ page }) => {
     const srv = await stubServer(page);

@@ -8,8 +8,8 @@ Adds to v2; nothing in v2 changes unless stated.
 
 ### See the optimal solution
 - Shown only once the day is done (Submitted, or all 3 tries used). Never before.
-- Button `See the optimal solution` in the result panel, under the score. It toggles: `Hide the solution`.
-- Showing it draws the stored par answer on the board in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk with those fences (respecting reduced motion). Hiding it puts the player's own final fences back.
+- Button `See the optimal solution` in the result panel, under the score. It toggles: `Hide the solution`. The changing label alone announces the state (no `aria-pressed`).
+- Showing it scrolls the board into view (smoothly, or at once with reduced motion), draws the stored par answer on the board in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk with those fences (respecting reduced motion). Hiding it puts the player's own final fences back.
 - This is where par is revealed, and only here. Still never shown during play.
 - Seeing it changes nothing saved: score, share, streaks and stats stay as they were. A reload shows the player's fences, with the button.
 - Works the same on archive days.
@@ -31,8 +31,11 @@ POST {STATS_URL}/result
 - **Re-checks the fences** with the game engine (`src/game/`): every fence buildable, no duplicates, side cap respected, at least one route left, and the result is a win. If any check fails, the result is rejected (400). It then computes the score itself with the v2 formula (par from the level, the hint taken from the request; the hint only lowers a score). `fences: null` scores 0.
 - Accepts a date only if it is today somewhere in the world (server UTC date minus 1 to plus 1 day), so old or future days can't be posted.
 - One row per (device, mode, date); a repeat post is ignored (200, `duplicate: true`), never an overwrite.
-- Stores no IP addresses or other personal data. Abuse limit: the one-row-per-(device, mode, date) key; there is no separate 30-posts-a-day counter, because counting every post would spend D1's free write allowance (100k rows a day) faster than it protects it.
-- **Cheap reads:** an accepted result is inserted into `results` and bumps a pre-counted `counts(mode, date, score, n)` row in one batch; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
+- Stores no IP addresses or other personal data. Abuse limits: the one-row-per-(device, mode, date) key, a body cap (413 above 8 KB), and a Workers Rate Limiting binding on `POST /result` (10 a minute per caller address, answered 429). The IP is used only for that in-memory limit and is never stored or logged. There is no stored posts-a-day counter, because counting every post would spend D1's free write allowance (100k rows a day) faster than it protects it. With no binding (tests, local runs) there is no limit.
+- `fences: null` (a day with no win) is accepted only with `tries: 3`.
+- **Accepted limitations:** the `hint` flag is the client's word, so a player could drop it for +15; `tries` can't be verified; a determined script using many IPs and device ids can still add rows. The stats are for fun, not a leaderboard with prizes.
+- **Page side:** only a 400 marks a result as settled (refused for good); 403, 404, 413, 429 and 5xx retry on a later load. An unsent day is retried only while its date is still within the server's window (UTC date minus 1 to plus 1). "You beat X%" counts the player as included only when the send succeeded, and `/stats` is fetched with `cache: 'no-cache'` right after a send.
+- **Cheap reads:** an accepted result is one `INSERT OR IGNORE` into `results`, and an AFTER INSERT trigger bumps a pre-counted `counts(mode, date, score, n)` row in the same statement; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
 - `GET {STATS_URL}/stats?mode=easy&date=YYYY-MM-DD` returns `{ players, bands: { "100": n, "80-99": n, "60-79": n, "30-59": n, "1-29": n, "0": n }, scores: { "<score>": n, ... } }`.
 - CORS: only `https://exempl1222.github.io` and `http://localhost:4173` (and the test port).
 

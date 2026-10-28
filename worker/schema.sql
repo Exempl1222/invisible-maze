@@ -3,8 +3,8 @@
 
 CREATE TABLE IF NOT EXISTS results (
   device   TEXT    NOT NULL,           -- random id, made once per browser
-  mode     TEXT    NOT NULL,           -- 'easy' or 'hard'
-  date     TEXT    NOT NULL,           -- the puzzle's day, YYYY-MM-DD
+  mode     TEXT    NOT NULL,           -- easy or hard
+  date     TEXT    NOT NULL,           -- the day of the puzzle, YYYY-MM-DD
   score    INTEGER NOT NULL,           -- 0 to 100, worked out by the server
   tries    INTEGER NOT NULL,           -- 1 to 3
   hint     INTEGER NOT NULL,           -- 0 or 1
@@ -12,10 +12,8 @@ CREATE TABLE IF NOT EXISTS results (
   PRIMARY KEY (device, mode, date)     -- one result per device, mode and day
 );
 
-CREATE INDEX IF NOT EXISTS results_by_day ON results (mode, date);
-
 -- Pre-counted scores, so GET /stats reads at most 101 rows however many players there are
--- (D1's free tier caps rows read per day). Bumped in the same batch as the insert into results.
+-- (the D1 free tier caps rows read per day). Kept in step by the trigger below.
 CREATE TABLE IF NOT EXISTS counts (
   mode  TEXT    NOT NULL,
   date  TEXT    NOT NULL,
@@ -23,3 +21,11 @@ CREATE TABLE IF NOT EXISTS counts (
   n     INTEGER NOT NULL,
   PRIMARY KEY (mode, date, score)
 );
+
+-- Every accepted result bumps its score count in the same statement. A repeat post is ignored by the
+-- primary key of results, so no row is inserted and the trigger does not fire.
+CREATE TRIGGER IF NOT EXISTS results_bump AFTER INSERT ON results
+BEGIN
+  INSERT INTO counts (mode, date, score, n) VALUES (NEW.mode, NEW.date, NEW.score, 1)
+  ON CONFLICT (mode, date, score) DO UPDATE SET n = n + 1;
+END;

@@ -10,11 +10,14 @@ import { d1Store } from './store.js';
 export const ALLOWED_ORIGINS = [
   'https://exempl1222.github.io',
   'http://localhost:4173',
-  'http://127.0.0.1:4173', // the Playwright test server
+  // The Playwright test server. These two localhost origins are allowed in production too: CORS only says which
+  // pages may read replies, it is not a login, and every post is re-judged and limited the same way whatever its origin.
+  'http://127.0.0.1:4173',
 ];
 export const MODES = ['easy', 'hard'];
 export const MAX_TRIES = 3;
 const MAX_BODY = 8192;
+const NO_RESULT = 'a day with no win takes all 3 tries';
 const MAX_FENCES = 400;
 const DEVICE = /^[A-Za-z0-9_-]{8,64}$/;
 
@@ -59,8 +62,10 @@ export function summarize(rows) {
 }
 
 async function readJson(request) {
+  const declared = Number(request.headers.get('Content-Length'));
+  if (Number.isFinite(declared) && declared > MAX_BODY) return { error: 'body too large', status: 413 };
   const text = await request.text();
-  if (text.length > MAX_BODY) return { error: 'body too large' };
+  if (text.length > MAX_BODY) return { error: 'body too large', status: 413 };
   try {
     const v = JSON.parse(text);
     return v && typeof v === 'object' && !Array.isArray(v) ? { value: v } : { error: 'body must be a JSON object' };
@@ -70,8 +75,14 @@ async function readJson(request) {
 }
 
 async function postResult(request, env, now, origin) {
+  // In-memory rate limit per caller address (Workers Rate Limiting binding). The address is used for this
+  // and nothing else: it is never stored or logged. No binding (tests, local runs) means no limit.
+  if (env.POST_LIMIT) {
+    const { success } = await env.POST_LIMIT.limit({ key: request.headers.get('CF-Connecting-IP') || 'none' });
+    if (!success) return fail(429, 'too many requests', origin);
+  }
   const body = await readJson(request);
-  if (body.error) return fail(400, body.error, origin);
+  if (body.error) return fail(body.status ?? 400, body.error, origin);
   const { device, mode, date, fences, hint, tries } = body.value;
 
   if (typeof device !== 'string' || !DEVICE.test(device)) return fail(400, 'bad device', origin);
@@ -83,6 +94,7 @@ async function postResult(request, env, now, origin) {
   if (away === null || Math.abs(away) > 1) return fail(400, 'that day is not open for results', origin);
   if (typeof hint !== 'boolean') return fail(400, 'bad hint', origin);
   if (!Number.isInteger(tries) || tries < 1 || tries > MAX_TRIES) return fail(400, 'bad tries', origin);
+  if (fences === null && tries !== MAX_TRIES) return fail(400, NO_RESULT, origin);
   if (fences !== null && (!Array.isArray(fences) || fences.length > MAX_FENCES)) return fail(400, 'bad fences', origin);
 
   const batch = env.LEVELS?.[mode];

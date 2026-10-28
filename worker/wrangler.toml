@@ -7,3 +7,11 @@ compatibility_date = "2026-10-01"
 binding = "DB"
 database_name = "gnome-stats"
 database_id = "39175d81-ccd6-41dd-9aca-472bcfe4eaa3"
+
+# Rate limit on POST /result: 10 per minute per caller address, counted in memory by Cloudflare.
+# Nothing is stored, so no personal data. (Wrangler 4 still takes the unsafe.bindings form.)
+[[unsafe.bindings]]
+name = "POST_LIMIT"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }

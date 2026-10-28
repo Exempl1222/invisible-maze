@@ -1,4 +1,4 @@
-// An in-memory stand-in for the D1 binding, for the Worker's unit tests. It knows exactly the four
+// An in-memory stand-in for the D1 binding, for the Worker's unit tests. It knows exactly the
 // statements in worker/src/store.js (matched by their text) and nothing else, so a new statement in
 // the Worker fails loudly here until the fake learns it. Not a test file (no .test.js in the name).
 import { SQL } from '../worker/src/store.js';
@@ -8,7 +8,6 @@ export function fakeD1() {
   const counts = new Map(); // "mode|date|score" -> n
   const log = [];
   let reads = 0; // rows handed back by SELECTs, to check /stats stays cheap
-  let lastChanges = 0;
 
   function run(sql, args) {
     log.push(sql);
@@ -16,17 +15,12 @@ export function fakeD1() {
       case SQL.saveResult: {
         const [device, mode, date, score, tries, hint, received] = args;
         const k = `${device}|${mode}|${date}`;
-        if (results.has(k)) return (lastChanges = 0), { all: [], changes: 0 }; // INSERT OR IGNORE
+        if (results.has(k)) return { all: [], changes: 0 }; // INSERT OR IGNORE
         results.set(k, { device, mode, date, score, tries, hint, received });
-        lastChanges = 1;
-        return { all: [], changes: 1 };
-      }
-      case SQL.bumpCount: {
-        if (lastChanges > 0) {
-          const k = args.join('|');
-          counts.set(k, (counts.get(k) ?? 0) + 1);
-        }
-        return { all: [], changes: lastChanges > 0 ? 1 : 0 };
+        // The AFTER INSERT trigger results_bump in worker/schema.sql: upsert the score's count. Not run for an ignored insert.
+        const ck = `${mode}|${date}|${score}`;
+        counts.set(ck, (counts.get(ck) ?? 0) + 1);
+        return { all: [], changes: 1 }; // changes() does not count the trigger's write
       }
       case SQL.spread: {
         const rows = [];

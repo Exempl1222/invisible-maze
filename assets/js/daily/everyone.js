@@ -3,7 +3,7 @@
 import { STATS_URL } from './config.js';
 import { BANDS } from './score.js';
 import { parseLineKey } from './record.js';
-import { parseDate } from '../play/daily.js';
+import { parseDate, dayIndex } from '../play/daily.js';
 
 /** Players needed before "You beat X%" is shown. */
 export const MIN_PLAYERS = 10;
@@ -23,6 +23,9 @@ export function statsUrl(search, hostname, configured = STATS_URL) {
   }
   return typeof url === 'string' && url !== '' ? url.replace(/\/+$/, '') : null;
 }
+
+/** The UTC calendar date of `now` (a Date) as YYYY-MM-DD, the day the server counts by. */
+export const utcDate = (now = new Date()) => now.toISOString().slice(0, 10);
 
 /** The date before `date` (YYYY-MM-DD), or null if `date` is not a date. */
 export function dayBefore(date) {
@@ -56,10 +59,14 @@ export function resultBody({ device, mode, date, day }) {
 
 /**
  * Finished days that still need sending: done, finished on their own date, not yet sent, and dated today or
- * yesterday (the server only takes those). `days` is { easy: { date: record }, hard: { ... } }.
+ * yesterday, and still within a day of the server's UTC date (it refuses anything older or later).
+ * `days` is { easy: { date: record }, hard: { ... } }.
  */
-export function pendingResults(days, realToday) {
-  const open = [realToday, dayBefore(realToday)];
+export function pendingResults(days, realToday, serverToday = utcDate()) {
+  const open = [realToday, dayBefore(realToday)].filter((d) => {
+    const away = d === null ? null : dayIndex(d, serverToday);
+    return away !== null && Math.abs(away) <= 1;
+  });
   const out = [];
   for (const mode of Object.keys(days)) {
     for (const [date, day] of Object.entries(days[mode] ?? {})) {
@@ -71,12 +78,12 @@ export function pendingResults(days, realToday) {
 
 /**
  * What a POST's HTTP status means for the `sent` flag: 'sent' (the server has it, or already had it),
- * 'rejected' (the server refused this result for good, so stop trying) or 'retry' (try again next load).
+ * 'rejected' (400: the server refused this result for good, so stop trying) or 'retry' (anything else:
+ * rate limit, server trouble, a wrong address, a network failure; try again next load).
  */
 export function postOutcome(status) {
   if (status >= 200 && status < 300) return 'sent';
-  if (status === 429 || status >= 500 || !Number.isInteger(status)) return 'retry';
-  return status >= 400 ? 'rejected' : 'retry';
+  return status === 400 ? 'rejected' : 'retry';
 }
 
 const SERVER_KEY = { 100: '100', 80: '80-99', 60: '60-79', 30: '30-59', 1: '1-29', 0: '0' };

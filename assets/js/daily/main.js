@@ -569,13 +569,13 @@ async function toggleSolution(button, note) {
     for (const w of walls) board.setWall(w, true, { hint: true });
     button.textContent = 'Hide the solution';
     note.textContent = `Par ${level.par}: one way to fence him in with ${plural(level.par, 'fence')}.`;
+    boardEl.scrollIntoView?.({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
   } else {
     restoreWalls(finalWalls(day));
     walls = board.wallList();
     button.textContent = 'See the optimal solution';
     note.textContent = '';
   }
-  button.setAttribute('aria-pressed', String(g.solution));
   fencesEl.textContent = String(board.wallList().length);
   const sim = simulate(level, walls);
   movesLeftEl.textContent = String(level.moveLimit);
@@ -641,7 +641,6 @@ function renderResult() {
     const solBtn = actionButton('See the optimal solution', false, () => toggleSolution(solBtn, solNote));
     solBtn.id = 'solution-btn';
     solBtn.classList.add('solution-btn');
-    solBtn.setAttribute('aria-pressed', 'false');
     const solNote = document.createElement('p');
     solNote.className = 'solution-note';
     solNote.id = 'solution-note';
@@ -799,7 +798,7 @@ function everyoneBlock(score) {
     if (!g.day.sent) included = await sendResult(mode, date, g.day);
     let stats;
     try {
-      const res = await fetch(`${STATS}/stats?mode=${mode}&date=${date}`);
+      const res = await fetch(`${STATS}/stats?mode=${mode}&date=${date}`, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`${res.status}`);
       stats = parseStats(await res.json());
     } catch {
