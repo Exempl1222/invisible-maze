@@ -934,6 +934,131 @@ test('no par text anywhere on the page: loaded, mid-game, win choice, finished, 
   await expectNoPar(page);
 });
 
+/* ---------- the optimal solution (v3) ---------- */
+
+test.describe('the optimal solution toggle', () => {
+  const solBtn = (page) => page.locator('#solution-btn');
+  const rawSaved = (page) => page.evaluate((k) => localStorage.getItem(k), KEY);
+  /** Win with one fence more than par (so the player's fences differ from the answer) and Submit. */
+  async function submitOneOver(page, mode = 'easy', i = 0, path = url(mode)) {
+    const lv = level(mode, i);
+    const extra = extraFences(lv, 1);
+    await openDay(page, path);
+    await placeAll(page, [...lv.answer, ...extra]);
+    await tryNow(page);
+    await expect(result(page)).toHaveAttribute('data-state', 'review');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    return lv;
+  }
+
+  test('it is not on the page during play or on the Retry/Submit screen, and the page text has no par', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await expect(solBtn(page)).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText('optimal');
+    await placeAll(page, [...lv.answer, ...extraFences(lv, 1)]);
+    await tryNow(page);
+    await expect(result(page)).toHaveAttribute('data-state', 'review');
+    await expect(page.getByRole('button', { name: /Retry/ })).toBeVisible();
+    await expect(solBtn(page)).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText('optimal');
+    await expectNoPar(page);
+  });
+
+  test('after Submit it shows the answer in hint style with the par line; Hide puts the player\'s fences back; nothing saved changes; a reload shows the player\'s fences', async ({ page }) => {
+    const lv = await submitOneOver(page);
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await expectNoPar(page); // the day is done, but the answer is not revealed until asked for
+    const mine = await bars(page).count();
+    expect(mine).toBe(lv.answer.length + 1);
+    await expect(hintBars(page)).toHaveCount(0);
+    const before = await rawSaved(page);
+    const scoreBefore = await score(page).textContent();
+
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    await expect(page.locator('#solution-note')).toHaveText(`Par ${lv.par}: one way to fence him in with ${lv.par} fences.`);
+    expect(lv.par).toBe(lv.answer.length);
+    await expect(bars(page)).toHaveCount(lv.answer.length);
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    for (const w of lv.answer) await expect(page.locator(`#board .wall-bar[data-hint="1"][data-line="${w.join(',')}"]`)).toHaveCount(1);
+    await expect(page.locator('#board .cell.reached')).toHaveCount(0); // fenced in: he does not reach the house
+    await expect(score(page)).toHaveText(scoreBefore);
+    expect(await rawSaved(page)).toBe(before);
+
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await expect(page.locator('#solution-note')).toHaveText('');
+    await expect(bars(page)).toHaveCount(mine);
+    await expect(hintBars(page)).toHaveCount(0);
+    expect(await rawSaved(page)).toBe(before);
+
+    await solBtn(page).click(); // shown again, then a reload while it is showing
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await page.reload();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    await expect(bars(page)).toHaveCount(mine);
+    await expect(hintBars(page)).toHaveCount(0);
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await expect(page.locator('body')).not.toContainText('Par');
+    expect(await rawSaved(page)).toBe(before);
+  });
+
+  test('after three losses it shows the answer and hides it again', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await loseOnce(page, 'Try');
+    await loseOnce(page, 'Try again (2 left)');
+    await expect(solBtn(page)).toHaveCount(0);
+    await loseOnce(page, 'Try again (1 left)');
+    await expect(result(page)).toHaveAttribute('data-result', 'lose');
+    await expect(solBtn(page)).toBeVisible();
+    await expect(bars(page)).toHaveCount(0);
+    await expectNoPar(page);
+    const before = await rawSaved(page);
+    await solBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await expect(page.locator('#solution-note')).toContainText(`Par ${lv.par}:`);
+    expect(await rawSaved(page)).toBe(before);
+    await solBtn(page).click();
+    await expect(bars(page)).toHaveCount(0);
+    expect(await rawSaved(page)).toBe(before);
+    expect((await saved(page)).easy['2026-10-27'].walls).toEqual([]);
+  });
+
+  test('it works the same on a Hard archive day', async ({ page }) => {
+    await setToday(page, '2026-10-30');
+    const lv = await submitOneOver(page, 'hard', 1, url('hard', '2026-10-28'));
+    await expect(page.locator('h1 .tag')).toHaveText('Archive');
+    const mine = await bars(page).count();
+    const before = await rawSaved(page);
+    await solBtn(page).click();
+    await expect(page.locator('#solution-note')).toHaveText(`Par ${lv.par}: one way to fence him in with ${lv.par} fences.`);
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await solBtn(page).click();
+    await expect(bars(page)).toHaveCount(mine);
+    expect(await rawSaved(page)).toBe(before);
+  });
+
+  test('a hint used on the day stays the hint fence after Hide', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await placeAll(page, lv.answer.slice(0, 1));
+    await hintBtn(page).click();
+    const hintLine = await hintBars(page).getAttribute('data-line');
+    await page.locator('#clear').click();
+    await placeAll(page, lv.answer.filter((w) => w.join(',') !== hintLine));
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await solBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await solBtn(page).click();
+    await expect(bars(page)).toHaveCount(lv.answer.length);
+    await expect(hintBars(page)).toHaveCount(1);
+  });
+});
+
 /* ---------- the archive ---------- */
 
 test.describe('the archive', () => {

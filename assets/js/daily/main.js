@@ -64,6 +64,7 @@ let game = null; // { level, board, number, day, state: 'editing' | 'running' | 
 let stats = null;
 let clockTimer = 0;
 let countdownBox = null; // { box, text } once a day is done
+let playToken = 0; // bumps whenever the board replays, so a walk cut short by a toggle stops drawing
 
 /* ---------- page chrome ---------- */
 
@@ -151,7 +152,7 @@ function updateCounters() {
 }
 
 function persist() {
-  game.day.walls = game.board.wallList().map(lineKey);
+  if (!game.solution) game.day.walls = game.board.wallList().map(lineKey); // the optimal solution on the board is never saved as the player's fences
   saveDay(mode, date, game.day);
 }
 
@@ -273,7 +274,7 @@ function levelWithoutLimit(raw) {
 function startDay(raw, number) {
   const level = levelWithoutLimit(raw);
   const day = getDay(mode, date) || freshDay();
-  game = { level, number, day, state: 'editing', board: null };
+  game = { level, number, day, state: 'editing', board: null, solution: false };
   titleEl.textContent = `Daily #${number}`;
   if (isArchive) {
     const tag = document.createElement('span');
@@ -529,6 +530,8 @@ function showDone({ live = false, redraw = false } = {}) {
   const g = game;
   const { board, level, day } = g;
   g.state = 'done';
+  g.solution = false; // always opens on the player's own fences
+  playToken++;
   board.setLocked(true);
   controlsEl.hidden = true;
   newDayEl.hidden = true;
@@ -545,6 +548,43 @@ function showDone({ live = false, redraw = false } = {}) {
   else if (redraw) setStatus('');
   else setStatus('');
   if (live) $('share-btn').focus({ preventScroll: false });
+}
+
+/**
+ * Show the stored answer on an otherwise empty board in the hint style, with its par line, and walk the
+ * gnome through it; press again to put the player's own final fences back. Changes nothing saved.
+ */
+async function toggleSolution(button, note) {
+  const g = game;
+  if (!g || g.state !== 'done') return;
+  const { board, level, day } = g;
+  const token = ++playToken;
+  g.solution = !g.solution;
+  board.resetRun();
+  board.clearWalls({ all: true });
+  const instant = g.solution ? reducedMotion() : true;
+  let walls;
+  if (g.solution) {
+    walls = level.answer.map((w) => [...w]);
+    for (const w of walls) board.setWall(w, true, { hint: true });
+    button.textContent = 'Hide the solution';
+    note.textContent = `Par ${level.par}: one way to fence him in with ${plural(level.par, 'fence')}.`;
+  } else {
+    restoreWalls(finalWalls(day));
+    walls = board.wallList();
+    button.textContent = 'See the optimal solution';
+    note.textContent = '';
+  }
+  button.setAttribute('aria-pressed', String(g.solution));
+  fencesEl.textContent = String(board.wallList().length);
+  const sim = simulate(level, walls);
+  movesLeftEl.textContent = String(level.moveLimit);
+  await board.play(sim, {
+    stepMs: STEP_MS,
+    instant,
+    cancelled: () => token !== playToken,
+    onMove: (i) => { if (token === playToken) movesLeftEl.textContent = String(level.moveLimit - i); },
+  });
 }
 
 function actionButton(label, primary, handler) {
@@ -594,6 +634,19 @@ function renderResult() {
     sub.className = 'result-text';
     sub.textContent = isArchive ? 'Not this time. Try another day from the archive.' : 'Not today. A new gnome tomorrow.';
     resultEl.appendChild(sub);
+  }
+
+  if (final) {
+    // The answer is revealed here and nowhere else, and only once the day is done. Nothing about it is in the page before the button is pressed.
+    const solBtn = actionButton('See the optimal solution', false, () => toggleSolution(solBtn, solNote));
+    solBtn.id = 'solution-btn';
+    solBtn.classList.add('solution-btn');
+    solBtn.setAttribute('aria-pressed', 'false');
+    const solNote = document.createElement('p');
+    solNote.className = 'solution-note';
+    solNote.id = 'solution-note';
+    solNote.setAttribute('role', 'status');
+    resultEl.append(solBtn, solNote);
   }
 
   const list = document.createElement('ol');

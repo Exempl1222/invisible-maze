@@ -181,3 +181,8 @@
 .result-actions.choice { grid-template-columns: 1fr; }
 .arch-date { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
 .arch-today { margin-left: 0; }
+
+/* The optimal solution toggle, under the score on a finished day. */
+.solution-btn { width: 100%; }
+.solution-note { margin: 0; font-weight: 700; color: var(--chalk); font-size: var(--step--1); }
+.solution-note:empty { display: none; }
