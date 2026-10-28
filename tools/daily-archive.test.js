@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyDate, archiveRows, ARCHIVE_DAYS } from '../assets/js/daily/archive.js';
+import { classifyDate, archiveRows, resultText, ARCHIVE_DAYS } from '../assets/js/daily/archive.js';
 
 const TODAY = '2026-11-10';
 
@@ -31,12 +31,14 @@ test('a string that is not a real date is out of the archive; an empty query too
   }
 });
 
-const won = (stars) => ({ tries: 1, won: true, stars, walls: [], hint: null, done: true, finishedOn: null });
-const lost = { tries: 3, won: false, stars: 0, walls: [], hint: null, done: true, finishedOn: null };
-const started = { tries: 1, won: false, stars: 0, walls: [], hint: null, done: false, finishedOn: null };
+const mk = (tries, done, extra = {}) => ({ tries, hint: null, walls: [], done, finishedOn: null, ...extra });
+const won = (score) => mk([{ fences: 3, won: true, base: score }], true);
+const lost = mk([0, 1, 2].map(() => ({ fences: 3, won: false, base: 0 })), true);
+const started = mk([{ fences: 3, won: false, base: 0 }], false);
+const none = { easy: {}, hard: {} };
 
 test('archiveRows: 30 rows, newest first, today first and marked, numbered from the batch start', () => {
-  const rows = archiveRows({ days: {}, today: TODAY, start: '2026-10-27', count: 365 });
+  const rows = archiveRows({ days: none, today: TODAY, start: '2026-10-27', count: 365 });
   assert.equal(rows.length, 15); // 10-27 .. 11-10
   assert.equal(rows[0].date, TODAY);
   assert.equal(rows[0].today, true);
@@ -47,37 +49,59 @@ test('archiveRows: 30 rows, newest first, today first and marked, numbered from 
 });
 
 test('archiveRows: capped at today plus 29 days, and days before the batch start are left out', () => {
-  const rows = archiveRows({ days: {}, today: TODAY, start: '2026-01-01', count: 365 });
+  const rows = archiveRows({ days: none, today: TODAY, start: '2026-01-01', count: 365 });
   assert.equal(rows.length, 30);
   assert.equal(rows.at(-1).date, '2026-10-12');
-  const short = archiveRows({ days: {}, today: '2026-10-28', start: '2026-10-27', count: 365 });
+  const short = archiveRows({ days: none, today: '2026-10-28', start: '2026-10-27', count: 365 });
   assert.deepEqual(short.map((r) => r.date), ['2026-10-28', '2026-10-27']);
 });
 
 test('archiveRows: days past the end of the batch are left out', () => {
-  const rows = archiveRows({ days: {}, today: '2026-10-30', start: '2026-10-27', count: 2 });
+  const rows = archiveRows({ days: none, today: '2026-10-30', start: '2026-10-27', count: 2 });
   assert.deepEqual(rows.map((r) => r.date), ['2026-10-28', '2026-10-27']);
 });
 
-test('archiveRows: result per row', () => {
+test('archiveRows: a result for each mode on each row', () => {
   const rows = archiveRows({
-    days: { '2026-11-10': won(2), '2026-11-09': lost, '2026-11-08': started },
+    days: {
+      easy: { '2026-11-10': won(88), '2026-11-09': lost, '2026-11-08': started },
+      hard: { '2026-11-10': won(15) },
+    },
     today: TODAY, start: '2026-10-27', count: 365,
   });
-  assert.deepEqual(rows[0].result, { kind: 'won', stars: 2 });
-  assert.deepEqual(rows[1].result, { kind: 'lost' });
-  assert.deepEqual(rows[2].result, { kind: 'progress' });
-  assert.deepEqual(rows[3].result, { kind: 'none' });
+  assert.deepEqual(rows[0].results, { easy: { kind: 'won', score: 88 }, hard: { kind: 'won', score: 15 } });
+  assert.deepEqual(rows[1].results, { easy: { kind: 'lost', score: 0 }, hard: { kind: 'none' } });
+  assert.deepEqual(rows[2].results, { easy: { kind: 'progress' }, hard: { kind: 'none' } });
+  assert.deepEqual(rows[3].results, { easy: { kind: 'none' }, hard: { kind: 'none' } });
+});
+
+test('archiveRows: a day with a win on an early try and a later loss scores its best try', () => {
+  const d = mk([{ fences: 4, won: true, base: 88 }, { fences: 3, won: false, base: 0 }], true);
+  const rows = archiveRows({ days: { easy: { [TODAY]: d }, hard: {} }, today: TODAY, start: '2026-10-27', count: 365 });
+  assert.deepEqual(rows[0].results.easy, { kind: 'won', score: 88 });
 });
 
 test('archiveRows: a hint or walls alone count as in progress', () => {
-  const hinted = { ...started, tries: 0, hint: '1,1,R' };
-  const walled = { ...started, tries: 0, walls: ['1,1,R'] };
-  const rows = archiveRows({ days: { [TODAY]: hinted, '2026-11-09': walled }, today: TODAY, start: '2026-10-27', count: 365 });
-  assert.equal(rows[0].result.kind, 'progress');
-  assert.equal(rows[1].result.kind, 'progress');
+  const hinted = mk([], false, { hint: '1,1,R' });
+  const walled = mk([], false, { walls: ['1,1,R'] });
+  const rows = archiveRows({ days: { easy: { [TODAY]: hinted }, hard: { '2026-11-09': walled } }, today: TODAY, start: '2026-10-27', count: 365 });
+  assert.equal(rows[0].results.easy.kind, 'progress');
+  assert.equal(rows[1].results.hard.kind, 'progress');
+});
+
+test('resultText: both modes read like `Easy 88 · Hard -`', () => {
+  assert.equal(resultText({ kind: 'won', score: 88 }), '88');
+  assert.equal(resultText({ kind: 'lost', score: 0 }), '0');
+  assert.equal(resultText({ kind: 'none' }), '-');
+  assert.equal(resultText({ kind: 'progress' }), '...');
 });
 
 test('archiveRows: before the batch has started there is nothing', () => {
-  assert.deepEqual(archiveRows({ days: {}, today: '2026-10-01', start: '2026-10-27', count: 365 }), []);
+  assert.deepEqual(archiveRows({ days: none, today: '2026-10-01', start: '2026-10-27', count: 365 }), []);
+});
+
+test('archiveRows: a hinted win shows its base less 15', () => {
+  const d = { ...won(100), hint: '1,1,R' };
+  const rows = archiveRows({ days: { easy: { '2026-11-10': d } }, today: TODAY, start: '2026-10-27', count: 365 });
+  assert.deepEqual(rows[0].results.easy, { kind: 'won', score: 85 });
 });

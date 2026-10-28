@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parseLevel, findPath, solve, countAnswers, simulate, cutsAllRoutes, capViolation } from '../src/game/index.js';
+import { parseLevel, buildableLines, findPath, solve, countAnswers, simulate, cutsAllRoutes, capViolation } from '../src/game/index.js';
 import { isRingAnswer, invalidBridges } from './generate.js';
-import { addDays, buildDaily, dailyPar, weekdayUTC, DAILY_DEFAULTS } from './build-daily.js';
+import { addDays, buildDaily, winsAtParFromEnds, dailyPar, easyPar, weekdayUTC, DAILY_DEFAULTS } from './build-daily.js';
 
 const file = fileURLToPath(new URL('../assets/levels/daily.json', import.meta.url));
 const daily = JSON.parse(readFileSync(file, 'utf8'));
@@ -92,4 +92,68 @@ test('daily: every level is consistent with the engine under v4 (all of them are
 test('daily: reproducible from the seed (the first days rebuild identically, Sunday included)', () => {
   const again = buildDaily({ days: 7, start: daily.start, seed: DAILY_DEFAULTS.seed });
   assert.deepEqual(again.levels, daily.levels.slice(0, 7));
+});
+
+// ---- Easy: 7x7, par 3 Monday to Saturday, par 4 Sunday ----
+const easyFile = fileURLToPath(new URL('../assets/levels/daily-easy.json', import.meta.url));
+const easy = JSON.parse(readFileSync(easyFile, 'utf8'));
+
+test('easyPar: par 3 Monday to Saturday, par 4 on Sunday (weekday from the date, UTC)', () => {
+  assert.deepEqual(['2026-10-26', '2026-10-27', '2026-10-31', '2026-11-01'].map(easyPar), [3, 3, 3, 4]);
+});
+
+test('daily-easy: shape, 180 days, ids e-DATE from the same start, 7x7, v4, boards unique', () => {
+  assert.equal(easy.id, 'daily-easy');
+  assert.equal(easy.start, daily.start);
+  assert.equal(easy.levels.length, 180);
+  easy.levels.forEach((l, i) => {
+    assert.equal(l.id, `e-${addDays(easy.start, i)}`);
+    assert.equal(l.size, 7, l.id);
+    assert.equal(l.rules, 'v4', l.id);
+  });
+  assert.equal(new Set(easy.levels.map((l) => l.tiles.join('/'))).size, easy.levels.length, 'all boards differ');
+});
+
+test('daily-easy: par follows the schedule', () => {
+  let sundays = 0;
+  for (const l of easy.levels) {
+    const date = l.id.slice(2);
+    assert.equal(l.par, easyPar(date), l.id);
+    if (weekdayUTC(date) === 0) sundays++;
+  }
+  assert.equal(sundays, 25);
+});
+
+test('daily-easy: every bridge spans a river', () => {
+  for (const l of easy.levels) assert.deepEqual(invalidBridges(l.tiles), [], `${l.id}\n${l.tiles.join('\n')}`);
+});
+
+test('daily-easy: every stored answer wins under the Easy page rules (budget = buildable lines), par is exact on a sample', () => {
+  easy.levels.forEach((raw, idx) => {
+    const base = parseLevel(raw);
+    const lv = parseLevel({ ...raw, wallBudget: buildableLines(base).length });
+    assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot reaches the beacon with no walls`);
+    assert.ok(Array.isArray(raw.answer) && raw.answer.length === raw.par, `${raw.id} answer is par-sized`);
+    assert.ok(raw.parAnswers >= 1 && raw.parAnswers <= 50, `${raw.id} parAnswers range`);
+    assert.equal(capViolation(lv, raw.answer), null, `${raw.id} answer within the side cap`);
+    assert.equal(cutsAllRoutes(lv, raw.answer), false, `${raw.id} answer leaves a route`);
+    const won = simulate(lv, raw.answer);
+    assert.equal(won.result, 'win', `${raw.id} stored answer wins`);
+    assert.equal(won.reason, 'too-far', `${raw.id} win is out of moves`);
+    assert.equal(isRingAnswer(lv, raw.answer), false, `${raw.id} ring`);
+    if (idx % 3 === 0) {
+      const s = solve(lv, { maxPar: raw.par });
+      assert.equal(s.par, raw.par, `${raw.id} par is the true par`);
+      assert.equal(countAnswers(lv, s.par, 50), raw.parAnswers, `${raw.id} countAnswers`);
+    }
+  });
+});
+
+test('daily-easy: reproducible from the seed (the first days rebuild identically)', () => {
+  const again = buildDaily({ days: 7, start: easy.start, seed: DAILY_DEFAULTS.seed, size: 7 });
+  assert.deepEqual(again.levels, easy.levels.slice(0, 7));
+});
+
+test('daily-easy: no level can be won at par using only fences beside the gnome or his house', () => {
+  for (const l of easy.levels) assert.equal(winsAtParFromEnds(l), false, l.id);
 });

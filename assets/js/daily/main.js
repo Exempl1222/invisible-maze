@@ -1,14 +1,16 @@
-// The standalone daily page: one puzzle a day, three tries, one free hint, a share button.
-// Reuses the engine, the board and the sprites. It does not import the full game's main.js or storage.
-import { parseLevel, simulate, cutsAllRoutes, wouldBreakCap, stars as scoreStars } from '../../../src/game/index.js';
+// The standalone daily page: two puzzles a day (Easy 7x7 and Hard 9x9), three tries, a score out
+// of 100, one hint, a share button. Reuses the engine, the board and the sprites. It does not
+// import the full game's main.js or storage.
+import { parseLevel, buildableLines, simulate, cutsAllRoutes, wouldBreakCap } from '../../../src/game/index.js';
 import { createBoard } from '../play/board.js';
 import { capMessage, lineKey } from '../play/lines.js';
-import { starsMarkup } from '../play/icons.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
 import { preloadSprites, sprite } from '../sprites.js';
-import { APP_LINK, MAX_TRIES, DAILY_URL } from './config.js';
+import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
+import { scoreFor, shownScore, bestScore, maxScore, HINT_COST } from './score.js';
 import { freshDay, parseLineKey, mergeDay } from './record.js';
-import { loadStore, getDay, saveDay, allDays, seenHowTo, refresh, onExternalChange } from './store.js';
+
+import { loadStore, getDay, saveDay, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
 import { classifyDate, archiveRows } from './archive.js';
 import { shareText, pageUrl } from './share.js';
 import { nextGnome, msToNextMinute } from './countdown.js';
@@ -21,11 +23,12 @@ const titleEl = $('title');
 const dateLineEl = $('date-line');
 const triesEl = $('tries');
 const pipsEl = $('pips');
+const tabsEl = $('size-tabs');
 const gameView = $('game-view');
 const boardEl = $('board');
 const breakEl = $('daily-break');
-const wallsUsedEl = $('walls-used');
-const parEl = $('par');
+const fencesEl = $('fences-used');
+const bestEl = $('best-score');
 const limitEl = $('move-limit');
 const movesLeftEl = $('moves-left');
 const statusEl = $('status');
@@ -34,21 +37,30 @@ const goBtn = $('go');
 const clearBtn = $('clear');
 const hintBtn = $('hint-btn');
 const resultEl = $('result');
-const answerNoteEl = $('answer-note');
-const wallsLabelEl = $('walls-label');
 const newDayEl = $('new-day');
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** The day's score as shown: the best winning try's base, less the hint when it was used. */
+const dayScore = (day) => bestScore(day.tries, day.hint !== null);
 const plural = (n, word) => `${n} ${n === 1 ? word : word === 'try' ? 'tries' : `${word}s`}`;
 
 /** The date being played: today, or one of the 29 days before it (`?date=YYYY-MM-DD`, the archive). */
 const realToday = localDateString();
-const route = classifyDate(new URLSearchParams(location.search).get('date'), realToday);
+const query = new URLSearchParams(location.search);
+const route = classifyDate(query.get('date'), realToday);
 const date = route.date;
 const isArchive = route.kind === 'archive';
-const goToday = () => { location.href = location.pathname; };
 
-let game = null; // { level, board, number, day, state: 'editing' | 'running' | 'done' }
+// The mode: ?mode=, else the one chosen last, else Easy. Read after the store loads (see boot).
+let mode = DEFAULT_MODE;
+const urlFor = (m, d) => {
+  const q = new URLSearchParams({ mode: m });
+  if (d) q.set('date', d);
+  return `${location.pathname}?${q}`;
+};
+const goToday = () => { location.href = urlFor(mode, null); };
+
+let game = null; // { level, board, number, day, state: 'editing' | 'running' | 'review' | 'done' }
 let stats = null;
 let clockTimer = 0;
 let countdownBox = null; // { box, text } once a day is done
@@ -64,6 +76,16 @@ function setupWordmark() {
   a.href = APP_LINK.href;
   a.append(...old.childNodes);
   old.replaceWith(a);
+}
+
+function setupTabs() {
+  for (const m of MODES) {
+    const a = $(`tab-${m}`);
+    a.href = urlFor(m, isArchive ? date : null);
+    if (m === mode) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  }
+  tabsEl.hidden = false;
 }
 
 function showBreak(message, more) {
@@ -89,13 +111,14 @@ function showBreak(message, more) {
   breakEl.hidden = false;
 }
 
-/** Filled pips are tries left; the won try is a tick; spent and unused-after-the-end pips are empty. */
+/** Filled pips are tries left; a won try is a tick; spent lost tries are empty. */
 function renderPips() {
-  const { tries, won, done } = game.day;
+  const { tries, done } = game.day;
   [...pipsEl.children].forEach((pip, i) => {
-    pip.className = won && i === tries - 1 ? 'won' : !done && i >= tries ? 'left' : '';
+    pip.className = i < tries.length ? (tries[i].won ? 'won' : '') : !done ? 'left' : '';
   });
-  pipsEl.setAttribute('aria-label', won ? `Won on try ${tries}` : done ? 'No tries left' : `${plural(MAX_TRIES - tries, 'try')} left`);
+  const wins = tries.filter((t) => t.won).length;
+  pipsEl.setAttribute('aria-label', done ? `${plural(tries.length, 'try')} used${wins ? `, ${plural(wins, 'win')}` : ''}` : `${plural(MAX_TRIES - tries.length, 'try')} left`);
 }
 
 function setStatus(text, cls = '') {
@@ -104,7 +127,7 @@ function setStatus(text, cls = '') {
   if (cls) statusEl.classList.add(cls);
 }
 
-/** A press that can't place a wall: say why, loudly. */
+/** A press that can't place a fence: say why, loudly. */
 function refused(text) {
   setStatus(text);
   void statusEl.offsetWidth;
@@ -112,34 +135,36 @@ function refused(text) {
 }
 
 function updateCounters() {
-  const { board, level, day, state } = game;
+  const { board, day, state } = game;
   const used = board.wallList().length;
-  wallsUsedEl.textContent = `${used} / ${level.wallBudget}`;
+  fencesEl.textContent = String(used);
+  const best = dayScore(day);
+  bestEl.textContent = best > 0 ? String(best) : '-';
   const mine = used - board.hintLines().length;
   const editing = state === 'editing';
   clearBtn.disabled = mine === 0 || !editing;
   hintBtn.disabled = !editing || day.hint !== null;
-  hintBtn.textContent = day.hint !== null ? 'Hint used' : 'Hint (1)';
+  hintBtn.textContent = day.hint !== null ? 'Hint used' : `Hint (-${HINT_COST})`;
   goBtn.disabled = !editing;
-  goBtn.textContent = day.tries === 0 ? 'Go' : `Try again (${MAX_TRIES - day.tries} left)`;
+  goBtn.textContent = day.tries.length === 0 ? 'Try' : `Try again (${MAX_TRIES - day.tries.length} left)`;
   renderPips();
 }
 
 function persist() {
   game.day.walls = game.board.wallList().map(lineKey);
-  saveDay(date, game.day);
+  saveDay(mode, date, game.day);
 }
 
 /**
  * Take in what another tab saved for this date: more tries, a used hint, a finished day. Returns
- * true if the day is finished now (and shown as such). The board's own walls are kept.
+ * true if the day is finished now (and shown as such). The board's own fences are kept.
  */
 function adoptStored() {
   const g = game;
   refresh();
-  const stored = getDay(date);
+  const stored = getDay(mode, date);
   if (!stored || g.state === 'running' || g.state === 'done') return g.state === 'done';
-  const changed = stored.tries > g.day.tries || stored.done || (stored.hint !== null && g.day.hint === null);
+  const changed = stored.tries.length > g.day.tries.length || stored.done || (stored.hint !== null && g.day.hint === null);
   if (!changed) return false;
   const walls = g.day.walls;
   g.day = mergeDay(stored, g.day);
@@ -155,12 +180,18 @@ function adoptStored() {
 // Another tab saved something: if it changed the day on screen, show it.
 onExternalChange(() => {
   if (!game || game.state !== 'editing') return;
-  const before = game.day.tries;
+  const before = game.day.tries.length;
   if (adoptStored()) return;
-  if (game.day.tries !== before) setStatus(`Updated from another tab. ${plural(MAX_TRIES - game.day.tries, 'try')} left today.`);
+  if (game.day.tries.length !== before) setStatus(`Updated from another tab. ${plural(MAX_TRIES - game.day.tries.length, 'try')} left today.`);
 });
 
 /* ---------- starting a day ---------- */
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
 
 async function boot() {
   const loading = $('loading');
@@ -176,26 +207,46 @@ async function boot() {
     loading.append(p, b);
   };
   loadStore();
+
+  // v1 saves (one shared puzzle) become Hard records, scored against the Hard levels' pars. This runs
+  // before the mode is chosen, because a migrated player opens on Hard. If Hard's levels can't be
+  // fetched, migration is skipped for this load (the v1 text stays) and the page carries on.
+  let hardData = null;
+  const v1 = pendingV1();
+  if (v1 !== null) {
+    try {
+      hardData = await fetchJson(LEVEL_URL.hard);
+      adoptV1(v1, (d) => {
+        const i = dayIndex(hardData.start, d);
+        return i === null || i < 0 ? null : hardData.levels[i]?.par ?? null;
+      });
+    } catch {
+      hardData = null;
+    }
+  }
+
+  const asked = query.get('mode');
+  mode = MODES.includes(asked) ? asked : MODES.includes(lastMode()) ? lastMode() : DEFAULT_MODE;
   setupWordmark();
+  setupTabs();
   dateLineEl.textContent = formatDaily(date);
 
   let data;
   try {
-    const res = await fetch(DAILY_URL);
-    if (!res.ok) throw new Error(`${res.status}`);
-    data = await res.json();
+    data = mode === 'hard' && hardData ? hardData : await fetchJson(LEVEL_URL[mode]);
     await preloadSprites();
   } catch {
     failed('The daily did not load. Check your connection and try again.');
     return;
   }
+  setLastMode(mode);
   loading.hidden = true;
 
   const howto = setupHowTo();
-  stats = setupStats(() => realToday);
+  stats = setupStats(() => realToday, () => mode);
   setupArchive({
     getRows: () => archiveRows({ days: allDays(), today: realToday, start: data.start, count: data.levels.length }),
-    onPick: (row) => { location.href = row.today ? location.pathname : `${location.pathname}?date=${row.date}`; },
+    onPick: (row) => { location.href = urlFor(mode, row.today ? null : row.date); },
     currentDate: date,
   });
   $('break-today').addEventListener('click', goToday);
@@ -207,14 +258,21 @@ async function boot() {
   if (route.kind === 'future') showBreak('Not ready yet. This gnome is still packing.', '');
   else if (route.kind === 'old') showBreak('That day is out of the archive.', '');
   else if (i === null || i < 0 || i >= data.levels.length) showBreak();
-  else startDay(parseLevel(data.levels[i]), i + 1);
+  else startDay(data.levels[i], i + 1);
   clockTick();
 
   if (!seenHowTo()) howto.show($('help-btn'));
 }
 
-function startDay(level, number) {
-  const day = getDay(date) || freshDay();
+/** The level as the page plays it: no fence limit, so the engine's budget is every buildable line. */
+function levelWithoutLimit(raw) {
+  const n = buildableLines(parseLevel(raw)).length;
+  return parseLevel({ ...raw, wallBudget: n });
+}
+
+function startDay(raw, number) {
+  const level = levelWithoutLimit(raw);
+  const day = getDay(mode, date) || freshDay();
   game = { level, number, day, state: 'editing', board: null };
   titleEl.textContent = `Daily #${number}`;
   if (isArchive) {
@@ -224,13 +282,12 @@ function startDay(level, number) {
     titleEl.append(' ', tag);
     $('today-link').hidden = false;
   }
-  document.title = `Daily #${number} · Gnome Sweet Gnome`;
+  document.title = `${MODE_LABEL[mode]} #${number} · Gnome Sweet Gnome`;
   triesEl.hidden = false;
   gameView.hidden = false;
 
   game.board = createBoard(boardEl, level, { onLine, onHelp });
   game.board.fit();
-  parEl.textContent = String(level.par);
   limitEl.textContent = String(level.moveLimit);
   movesLeftEl.textContent = String(level.moveLimit);
 
@@ -238,28 +295,35 @@ function startDay(level, number) {
     showDone();
     return;
   }
-  restoreWalls();
+  const last = day.tries.at(-1);
+  if (last && last.won && day.reviewing) {
+    // Reloaded on the win screen: show that try's fences and the choice again.
+    restoreWalls(last.walls ?? day.walls);
+    showReview();
+    return;
+  }
+  restoreWalls(day.walls);
   updateCounters();
-  if (day.tries > 0) setStatus(`Welcome back. ${plural(MAX_TRIES - day.tries, 'try')} left today.`);
+  if (day.tries.length > 0) setStatus(`Welcome back. ${plural(MAX_TRIES - day.tries.length, 'try')} left today.`);
   else setStatus("Tap a line between two tiles to place a fence. Make the gnome's route longer than his move limit.");
 }
 
-/** Put the saved walls back, the hint wall in hint style. Lines that no longer fit the level are skipped. */
-function restoreWalls() {
+/** Put fences back, the hint fence in hint style. Lines that no longer fit the level are skipped. */
+function restoreWalls(keys) {
   const { board, level, day } = game;
-  for (const k of day.walls) {
+  for (const k of keys) {
     const line = parseLineKey(k);
-    if (!line || board.wallList().length >= level.wallBudget) continue;
+    if (!line) continue;
     if (line[0] < 0 || line[1] < 0 || line[0] >= level.size || line[1] >= level.size) continue;
     if (!level.lineBuildable(line[0], line[1], line[2])) continue;
     board.setWall(line, true, { hint: k === day.hint });
   }
 }
 
-/* ---------- placing walls ---------- */
+/* ---------- placing fences ---------- */
 
 function onHelp() {
-  setStatus('Press Shift and an arrow key to place or remove a wall on that side of this tile.');
+  setStatus('Press Shift and an arrow key to place or remove a fence on that side of this tile.');
 }
 
 function onLine(target) {
@@ -280,10 +344,7 @@ function onLine(target) {
     setStatus('Fence removed.');
   } else if (board.wallList().length >= level.wallBudget) {
     board.refuse(target);
-    wallsUsedEl.parentElement.classList.remove('refused');
-    void wallsUsedEl.offsetWidth;
-    wallsUsedEl.parentElement.classList.add('refused');
-    refused(`All ${plural(level.wallBudget, 'fence')} placed. Tap a fence to take it back.`);
+    refused('Every line already has a fence.'); // the budget is every buildable line
   } else if (wouldBreakCap(level, board.wallList(), line)) {
     board.refuse(target);
     refused(capMessage(wouldBreakCap(level, board.wallList(), line)));
@@ -292,8 +353,7 @@ function onLine(target) {
     refused('The gnome needs at least one way through.');
   } else {
     board.setWall(line, true);
-    const used = board.wallList().length;
-    setStatus(used === level.wallBudget ? 'All fences placed. Press Go.' : `Fence placed. ${used} of ${level.wallBudget} used.`);
+    setStatus(`Fence placed. ${plural(board.wallList().length, 'fence')} on the board.`);
   }
   persist();
   updateCounters();
@@ -309,15 +369,13 @@ clearBtn.addEventListener('click', () => {
 
 /* ---------- the hint ---------- */
 
-/** Why `line` can't go down right now on top of the board's walls, or null if it can. */
-function whyNot(line) {
+const NO_ROOM = 'No room for a hint right now. Take a fence back.';
+
+/** True if `line` can go down right now on top of the board's fences. */
+function fits(line) {
   const { board, level } = game;
   const walls = board.wallList();
-  if (walls.length >= level.wallBudget) return `All ${plural(level.wallBudget, 'fence')} are placed, so there is no room for the hint. Take one back first.`;
-  const cap = wouldBreakCap(level, walls, line);
-  if (cap) return `${capMessage(cap)} Take a fence back to make room for the hint.`;
-  if (cutsAllRoutes(level, [...walls, line])) return 'Your fences leave no room for that hint: it would cut off the gnome completely. Take one back and try again.';
-  return null;
+  return !wouldBreakCap(level, walls, line) && !cutsAllRoutes(level, [...walls, line]);
 }
 
 function useHint() {
@@ -334,44 +392,46 @@ function useHint() {
     refused('Today has no hint.');
     return;
   }
+  // Hint = one fence of the stored answer. If every answer fence is already down, one of the player's
+  // own becomes the hint fence (and the hint is spent), so the hint is never a free answer check.
   const missing = answer.filter((w) => !board.hasWall(w));
-  if (missing.length === 0) {
-    setStatus('Every fence of the answer is already on the board. No hint used.');
+  const line = missing.length === 0 ? answer[0] : missing.find(fits);
+  if (!line || (missing.length > 0 && !fits(line))) {
+    refused(NO_ROOM); // generic on purpose: it must not say which fences are right
     return;
   }
-  // The first answer fence that can go down now; if none can, say why for the first and keep the hint.
-  const line = missing.find((w) => whyNot(w) === null);
-  if (!line) {
-    refused(`${whyNot(missing[0])} No hint used.`);
-    return;
-  }
+  if (missing.length === 0) board.setWall(line, false);
   board.setWall(line, true, { hint: true });
   day.hint = lineKey(line);
-  persist();
-  setStatus(`Hint placed: one fence of a par answer. It costs 1 star.`);
+  persist(); // tries keep their base score; the hint is docked when a score is shown
+  setStatus(`Hint placed: one fence of a good answer. It takes ${HINT_COST} points off.`);
   updateCounters();
 }
 hintBtn.addEventListener('click', useHint);
 
-/* ---------- Go ---------- */
+/* ---------- Try ---------- */
 
 async function run() {
   if (!game || game.state !== 'editing') return;
   const g = game;
   if (adoptStored()) return; // another tab already finished this day
+  if (g.day.tries.length >= MAX_TRIES) return;
   const walls = g.board.wallList();
   const sim = simulate(g.level, walls);
+  const win = sim.result === 'win';
   // Settle the try before anything animates, so a reload can never give it back. adoptStored
   // brought in tries spent in other tabs first, so this one goes on top of them.
-  g.day.tries++;
-  if (sim.result === 'win') {
-    g.day.won = true;
-    g.day.done = true;
-    g.day.stars = scoreStars(g.level.par, walls.length, g.level.wallBudget, g.day.hint !== null ? 1 : 0);
-  } else if (g.day.tries >= MAX_TRIES) {
-    g.day.done = true;
+  g.day.tries.push({
+    fences: walls.length,
+    won: win,
+    base: win ? scoreFor(walls.length, g.level.par) : 0,
+    walls: walls.map(lineKey),
+  });
+  if (g.day.tries.length >= MAX_TRIES) {
+    g.day.done = true; // after try 3 the day ends on its own
+    g.day.finishedOn = localDateString();
   }
-  if (g.day.done) g.day.finishedOn = localDateString();
+  g.day.reviewing = win && !g.day.done; // a reload on the win screen shows the choice again
   persist();
 
   g.state = 'running';
@@ -391,18 +451,74 @@ async function run() {
     showDone({ live: true });
     return;
   }
+  if (win) {
+    showReview({ live: true });
+    return;
+  }
   // Lost with tries left: the fences stay, the gnome goes back to the start.
   g.state = 'editing';
   g.board.resetRun();
   g.board.setLocked(false);
   movesLeftEl.textContent = String(g.level.moveLimit);
   updateCounters();
-  setStatus(`He made it home. Move a fence and try again, ${plural(MAX_TRIES - g.day.tries, 'try')} left.`);
+  setStatus(`He made it home. Move a fence and try again, ${plural(MAX_TRIES - g.day.tries.length, 'try')} left.`);
   goBtn.focus({ preventScroll: true });
 }
 goBtn.addEventListener('click', run);
 
+/* ---------- a win with tries left: Retry or Submit ---------- */
+
+function showReview({ live = false } = {}) {
+  const g = game;
+  g.state = 'review';
+  g.board.setLocked(true);
+  controlsEl.hidden = true;
+  newDayEl.hidden = true;
+  const last = g.day.tries.at(-1);
+  const sim = simulate(g.level, g.board.wallList());
+  g.board.play(sim, { instant: true, onMove: (i) => { movesLeftEl.textContent = String(g.level.moveLimit - i); } });
+  updateCounters();
+  renderResult();
+  setStatus(live ? `Fenced in. ${shownScore(last, g.day.hint !== null)} out of 100.` : '');
+  if (live) ($('retry-btn') ?? $('submit-btn')).focus({ preventScroll: false });
+}
+
+function retry() {
+  const g = game;
+  if (!g || g.state !== 'review') return;
+  if (adoptStored()) return;
+  if (g.day.tries.length >= MAX_TRIES) return;
+  g.state = 'editing';
+  g.day.reviewing = false; // a reload from here reopens the editor with these fences
+  persist();
+  resultEl.hidden = true;
+  controlsEl.hidden = false;
+  g.board.resetRun();
+  g.board.setLocked(false);
+  movesLeftEl.textContent = String(g.level.moveLimit);
+  updateCounters();
+  setStatus(`Your fences stay. Change some and try again, ${plural(MAX_TRIES - g.day.tries.length, 'try')} left.`);
+  goBtn.focus({ preventScroll: true });
+}
+
+function submit() {
+  const g = game;
+  if (!g || g.state !== 'review') return;
+  if (adoptStored()) return;
+  g.day.done = true;
+  g.day.finishedOn = localDateString();
+  persist();
+  showDone({ live: true });
+}
+
 /* ---------- a finished day ---------- */
+
+/** The fences to show on a finished day: the best winning try's, else whatever was last on the board. */
+function finalWalls(day) {
+  let best = null;
+  for (const t of day.tries) if (t.won && t.walls && (!best || t.base > best.base)) best = t;
+  return best ? best.walls : day.walls;
+}
 
 /**
  * Lock the board in its final state and show the result. Used live and on reload.
@@ -417,38 +533,17 @@ function showDone({ live = false, redraw = false } = {}) {
   controlsEl.hidden = true;
   newDayEl.hidden = true;
   triesEl.hidden = false;
-  renderPips();
-  if (redraw) {
-    board.resetRun();
-    board.clearWalls({ all: true });
-  }
-
-  let walls = board.wallList();
-  if (day.won && walls.length === 0 && day.walls.length > 0) {
-    // Reloaded onto a won day: draw its final walls.
-    restoreWalls();
-    walls = board.wallList();
-  }
-  let sim;
-  if (day.won) {
-    sim = simulate(level, walls);
-    wallsUsedEl.textContent = `${walls.length} / ${level.wallBudget}`;
-    wallsLabelEl.textContent = 'Walls';
-    setStatus(live ? `Fenced in on try ${day.tries}, ${day.stars} ${day.stars === 1 ? 'star' : 'stars'}.` : '');
-    answerNoteEl.hidden = true;
-  } else {
-    // Lost: show one par answer in the hint style.
-    board.clearWalls({ all: true });
-    for (const w of level.answer) board.setWall(w, true, { hint: true });
-    sim = simulate(level, level.answer);
-    wallsLabelEl.textContent = 'Answer';
-    wallsUsedEl.textContent = `${level.answer.length} / ${level.wallBudget}`;
-    setStatus(live ? 'He made it home. Out of tries.' : '');
-    answerNoteEl.textContent = `One way to fence him in (par ${level.par}).`;
-    answerNoteEl.hidden = false;
-  }
+  board.resetRun();
+  board.clearWalls({ all: true });
+  restoreWalls(finalWalls(day));
+  const sim = simulate(level, board.wallList());
   board.play(sim, { instant: true, onMove: (i) => { movesLeftEl.textContent = String(level.moveLimit - i); } });
+  updateCounters();
   renderResult();
+  const score = dayScore(day);
+  if (live) setStatus(score > 0 ? `Day done. ${score} out of 100.` : 'He made it home. Out of tries.');
+  else if (redraw) setStatus('');
+  else setStatus('');
   if (live) $('share-btn').focus({ preventScroll: false });
 }
 
@@ -461,62 +556,93 @@ function actionButton(label, primary, handler) {
   return b;
 }
 
+/** The result panel: for a win still being decided (state 'review') or the finished day. */
 function renderResult() {
-  const { level, day, board } = game;
+  const { day, state } = game;
+  const final = state === 'done';
+  const score = dayScore(day);
   resultEl.hidden = false;
-  resultEl.dataset.result = day.won ? 'win' : 'lose';
+  resultEl.dataset.result = score > 0 ? 'win' : 'lose';
+  resultEl.dataset.state = final ? 'done' : 'review';
   resultEl.replaceChildren();
 
-  const heading = document.createElement('h2');
   const head = document.createElement('div');
   head.className = 'result-head';
   const pic = document.createElement('div');
   pic.className = 'picture';
   const titles = document.createElement('div');
   titles.className = 'titles';
-  const line = document.createElement('p');
-  line.className = 'win-line';
-  line.id = 'try-line';
-
-  const used = day.won ? board.wallList().length : null;
-  if (day.won) {
-    heading.textContent = 'Fenced in!';
+  const heading = document.createElement('h2');
+  if (score > 0) {
+    heading.textContent = final ? 'Day done' : 'Fenced in!';
     pic.appendChild(sprite('gnome-down-shrug', 'gnome-sprite'));
-    const starsEl = document.createElement('div');
-    starsEl.className = 'result-stars';
-    starsEl.setAttribute('role', 'img');
-    starsEl.setAttribute('aria-label', `${day.stars} of 3 stars`);
-    starsEl.dataset.stars = String(day.stars);
-    starsEl.innerHTML = starsMarkup(day.stars);
-    titles.append(heading, starsEl);
-    line.textContent = `Won on try ${day.tries} of ${MAX_TRIES}`;
   } else {
     heading.textContent = 'He made it home';
     pic.classList.add('house');
     pic.setAttribute('aria-hidden', 'true');
+  }
+  const big = document.createElement('p');
+  big.className = 'score-big';
+  big.id = 'result-score';
+  big.textContent = `${score} / 100`;
+  titles.append(heading, big);
+  head.append(pic, titles);
+  resultEl.appendChild(head);
+
+  if (score === 0) {
     const sub = document.createElement('p');
     sub.className = 'result-text';
     sub.textContent = isArchive ? 'Not this time. Try another day from the archive.' : 'Not today. A new gnome tomorrow.';
-    titles.append(heading, sub);
-    line.textContent = `Lost, all ${MAX_TRIES} tries used`;
+    resultEl.appendChild(sub);
   }
-  head.append(pic, titles);
-  resultEl.append(head, line);
 
-  if (day.won) {
-    const par = document.createElement('p');
-    par.className = 'par';
-    const strong = document.createElement('strong');
-    strong.textContent = `Par ${level.par}`;
-    par.append(strong, ` You used ${plural(used, 'fence')}.`);
-    resultEl.appendChild(par);
-  }
+  const list = document.createElement('ol');
+  list.className = 'try-list';
+  list.id = 'try-list';
+  list.setAttribute('aria-label', 'Your tries');
+  day.tries.forEach((t, i) => {
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = `Try ${i + 1}`;
+    const val = document.createElement('strong');
+    const shown = shownScore(t, day.hint !== null);
+    val.textContent = t.won ? String(shown) : 'He made it home';
+    li.append(name, val);
+    if (t.won && shown === score && score > 0) li.className = 'top';
+    list.appendChild(li);
+  });
+  resultEl.appendChild(list);
+
   if (day.hint !== null) {
     const hp = document.createElement('p');
     hp.className = 'hint-used';
     hp.id = 'hint-used';
-    hp.textContent = day.won ? 'Hint used, −1 star.' : 'Hint used.';
+    hp.textContent = score > 0 ? `Hint used, -${HINT_COST} points.` : 'Hint used.';
     resultEl.appendChild(hp);
+  }
+
+  if (!final) {
+    const left = MAX_TRIES - day.tries.length;
+    const top = score >= maxScore(day.hint !== null); // nothing can beat it: Submit is the only choice
+    if (!top) {
+      const note = document.createElement('p');
+      note.className = 'try-note';
+      note.id = 'try-note';
+      note.textContent = 'Fewer fences score higher.';
+      resultEl.appendChild(note);
+    }
+    const actions = document.createElement('div');
+    actions.className = 'result-actions choice';
+    if (!top) {
+      const retryBtn = actionButton(`Retry for a better score (${left} left)`, true, retry);
+      retryBtn.id = 'retry-btn';
+      actions.appendChild(retryBtn);
+    }
+    const submitBtn = actionButton('Submit', top, submit);
+    submitBtn.id = 'submit-btn';
+    actions.appendChild(submitBtn);
+    resultEl.appendChild(actions);
+    return;
   }
 
   const actions = document.createElement('div');
@@ -587,17 +713,15 @@ function clockTick() {
 /* ---------- share ---------- */
 
 function currentShareText() {
-  const { level, day, number } = game;
+  const { day, number } = game;
   return shareText({
     number,
-    url: pageUrl(location.href),
-    par: level.par,
-    walls: day.won ? day.walls.length : 0,
-    archive: isArchive,
+    mode,
+    url: pageUrl(location.href, mode),
+    score: dayScore(day),
     tries: day.tries,
-    won: day.won,
-    stars: day.stars,
     hint: day.hint !== null,
+    archive: isArchive,
   });
 }
 
