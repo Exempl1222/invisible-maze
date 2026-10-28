@@ -22,7 +22,7 @@ async function placeAll(page, list) {
 const ALL = [];
 const dump = async (page, label) => {
   const d = await page.evaluate(() => ({ ...window.__debug(), ls: localStorage.getItem('gnome-sweet-gnome:daily:v2'), fontsStatus: document.fonts.status, dpr: window.devicePixelRatio, vw: innerWidth }));
-  ALL.push(label + ' ' + JSON.stringify(d));
+  const c = { ...d }; delete c.ls; delete c.answer; delete c.dayWalls; ALL.push(label + ' ' + JSON.stringify(c));
   console.log(`DBG ${label} ${JSON.stringify(d)}`);
   test.info().annotations.push({ type: 'dbg-' + label, description: JSON.stringify(d).slice(0, 3000) });
   return d;
@@ -50,7 +50,12 @@ test('repro', async ({ context }) => {
   await page.waitForTimeout(500);
   await dump(page, 'post-try-500ms');
   await page.clock.runFor(1000);
-  await page.waitForTimeout(500);
-  const post = await dump(page, 'post-runFor');
-  throw new Error('DUMP\n' + ALL.map((a) => a.slice(0, 1500)).join('\n'));
+  await page.waitForTimeout(300);
+  await dump(page, 'runFor1000');
+  await page.clock.runFor(6000);
+  await page.waitForTimeout(300);
+  await dump(page, 'runFor6000');
+  const mm = await page.evaluate(() => [matchMedia('(prefers-reduced-motion: reduce)').matches, matchMedia('(prefers-reduced-motion: no-preference)').matches]);
+  ALL.push('mm ' + JSON.stringify(mm) + ' ua=' + (await page.evaluate(() => navigator.userAgent)));
+  throw new Error('DUMP\n' + ALL.join('\n'));
 });
