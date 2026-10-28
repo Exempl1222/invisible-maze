@@ -31,7 +31,8 @@ POST {STATS_URL}/result
 - **Re-checks the fences** with the game engine (`src/game/`): every fence buildable, no duplicates, side cap respected, at least one route left, and the result is a win. If any check fails, the result is rejected (400). It then computes the score itself with the v2 formula (par from the level, the hint taken from the request; the hint only lowers a score). `fences: null` scores 0.
 - Accepts a date only if it is today somewhere in the world (server UTC date minus 1 to plus 1 day), so old or future days can't be posted.
 - One row per (device, mode, date); a repeat post is ignored (200, `duplicate: true`), never an overwrite.
-- Stores no IP addresses or other personal data. Basic abuse limit: at most 30 posts per device per day.
+- Stores no IP addresses or other personal data. Abuse limit: the one-row-per-(device, mode, date) key; there is no separate 30-posts-a-day counter, because counting every post would spend D1's free write allowance (100k rows a day) faster than it protects it.
+- **Cheap reads:** an accepted result is inserted into `results` and bumps a pre-counted `counts(mode, date, score, n)` row in one batch; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
 - `GET {STATS_URL}/stats?mode=easy&date=YYYY-MM-DD` returns `{ players, bands: { "100": n, "80-99": n, "60-79": n, "30-59": n, "1-29": n, "0": n }, scores: { "<score>": n, ... } }`.
 - CORS: only `https://exempl1222.github.io` and `http://localhost:4173` (and the test port).
 

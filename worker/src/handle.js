@@ -13,7 +13,6 @@ export const ALLOWED_ORIGINS = [
   'http://127.0.0.1:4173', // the Playwright test server
 ];
 export const MODES = ['easy', 'hard'];
-export const MAX_POSTS_PER_DEVICE_PER_DAY = 30;
 export const MAX_TRIES = 3;
 const MAX_BODY = 8192;
 const MAX_FENCES = 400;
@@ -71,19 +70,13 @@ async function readJson(request) {
 }
 
 async function postResult(request, env, now, origin) {
-  const store = d1Store(env.DB);
   const body = await readJson(request);
   if (body.error) return fail(400, body.error, origin);
   const { device, mode, date, fences, hint, tries } = body.value;
 
   if (typeof device !== 'string' || !DEVICE.test(device)) return fail(400, 'bad device', origin);
 
-  // The abuse limit comes first, and counts every post, good or bad.
   const today = utcDay(now);
-  const count = await store.bumpRate(device, today);
-  if (count > MAX_POSTS_PER_DEVICE_PER_DAY) return fail(429, 'too many posts today', origin);
-  if (count === 1) await store.purgeRate(today); // once a day per device is plenty of tidying
-
   if (!MODES.includes(mode)) return fail(400, 'bad mode', origin);
   if (typeof date !== 'string' || parseDate(date) === null) return fail(400, 'bad date', origin);
   const away = dayIndex(date, today); // days from the posted date to the server's UTC date
@@ -100,7 +93,7 @@ async function postResult(request, env, now, origin) {
   const verdict = judgeFences(raw, fences, hint);
   if (!verdict.ok) return fail(400, verdict.error, origin);
 
-  const kept = await store.saveResult({ device, mode, date, score: verdict.score, tries, hint, received: today });
+  const kept = await d1Store(env.DB).saveResult({ device, mode, date, score: verdict.score, tries, hint, received: today });
   return json({ ok: true, duplicate: !kept, ...(kept ? { score: verdict.score } : {}) }, 200, origin);
 }
 

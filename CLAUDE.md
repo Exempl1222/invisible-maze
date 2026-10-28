@@ -24,6 +24,8 @@ tools/sprites.html     dev gallery of every sprite
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs
 assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
 assets/js/daily/      standalone daily: main, config (APP_LINK switch, modes), pure score/record (v2, merge, v1 migration)/streak (per-mode stats)/share/countdown/archive, store, dialogs
+assets/js/daily/judge.js, everyone.js  shared pure judge (page and server score identically), stats send/spread helpers
+worker/               stats Worker (Cloudflare + D1): src/handle.js pure handler, src/index.js entry, schema.sql, wrangler.toml, README.md (setup)
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
 assets/levels/        level packs (pack-01.json), the Hard daily batch (daily.json), the Easy 7x7 batch (daily-easy.json, `node tools/build-daily.js --size 7`) and the lab pack (lab.json, rules v4)
 assets/js/teaser.js   hero replay (canned, not game logic)

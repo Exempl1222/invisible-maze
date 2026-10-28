@@ -1,8 +1,10 @@
 // What the daily keeps on the device, as pure functions: clean up whatever was saved so a bad or
 // hand-edited value can never break the page or hand back a try. No DOM, no storage.
 //
-// Saved state: { easy: { date: record }, hard: { date: record }, lastMode, seenHowTo }.
-// A record: { tries: [{ fences, won, base, walls }], hint, walls, done, finishedOn, reviewing }.
+// Saved state: { easy: { date: record }, hard: { date: record }, lastMode, seenHowTo, v1Migrated, device }.
+// A record: { tries: [{ fences, won, base, walls }], hint, walls, done, finishedOn, reviewing, sent }.
+// `device` is a random id made once per browser for the stats server (nothing personal). `sent`: this day's
+// result reached the server (see stats.js); once true it stays true through every merge.
 // `base` is a try's score before the hint; the shown score is derived (see score.js shownScore), so a
 // hint used after a win can never be lost by a save or a merge. `reviewing`: the last try won and the
 // player has not pressed Retry yet (a reload shows the Retry or Submit choice, not the editor).
@@ -11,12 +13,16 @@ import { parseDate } from '../play/daily.js';
 import { scoreFor, HINT_COST } from './score.js';
 
 const LINE_KEY = /^\d+,\d+,[RD]$/;
+const DEVICE_ID = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** The device id if it is well formed, else null. */
+export const cleanDevice = (v) => (typeof v === 'string' && DEVICE_ID.test(v) ? v : null);
 
 /** A fresh day: nothing tried yet. */
-export const freshDay = () => ({ tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false });
+export const freshDay = () => ({ tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false, sent: false });
 
 /** The state with nothing saved. */
-export const emptySaved = () => ({ easy: {}, hard: {}, lastMode: null, seenHowTo: false, v1Migrated: false });
+export const emptySaved = () => ({ easy: {}, hard: {}, lastMode: null, seenHowTo: false, v1Migrated: false, device: null });
 
 /** "3,4,D" -> [3, 4, "D"], or null if it isn't a line key. */
 export function parseLineKey(key) {
@@ -61,7 +67,7 @@ export function cleanDay(d) {
   if (done && tries.length < 1) return freshDay(); // a finished day with no tries can't have happened
   const finishedOn = done && typeof d.finishedOn === 'string' && parseDate(d.finishedOn) !== null ? d.finishedOn : null;
   const reviewing = !done && tries.length > 0 && tries.at(-1).won && d.reviewing !== false; // unset on an older save: a win still being decided
-  return { tries, hint, walls: cleanKeys(d.walls), done, finishedOn, reviewing };
+  return { tries, hint, walls: cleanKeys(d.walls), done, finishedOn, reviewing, sent: done && d.sent === true };
 }
 
 /**
@@ -82,12 +88,13 @@ export function mergeDay(a, b) {
     done: x.done || y.done,
     finishedOn: x.finishedOn ?? y.finishedOn,
     reviewing: (x.tries.length === y.tries.length ? base : longer).reviewing, // the copy with more tries knows best where the player is
+    sent: x.sent || y.sent, // once the server has it, it stays sent
   });
 }
 
-/** Two saved states (`a` already saved, `b` newer) as one: per-mode, per-date mergeDay; seenHowTo if either; the newer lastMode. */
+/** Two saved states (`a` already saved, `b` newer) as one: per-mode, per-date mergeDay; seenHowTo if either; the newer lastMode; the device id already saved (a device never changes id). */
 export function mergeSaved(a, b) {
-  const out = { lastMode: b.lastMode ?? a.lastMode ?? null, seenHowTo: a.seenHowTo || b.seenHowTo, v1Migrated: a.v1Migrated === true || b.v1Migrated === true };
+  const out = { lastMode: b.lastMode ?? a.lastMode ?? null, seenHowTo: a.seenHowTo || b.seenHowTo, v1Migrated: a.v1Migrated === true || b.v1Migrated === true, device: cleanDevice(a.device) ?? cleanDevice(b.device) };
   for (const mode of MODES) {
     const days = { ...a[mode] };
     for (const [date, d] of Object.entries(b[mode] ?? {})) days[date] = mergeDay(days[date], d);
@@ -120,11 +127,12 @@ export function parseSaved(raw) {
   out.lastMode = MODES.includes(saved.lastMode) ? saved.lastMode : null;
   out.seenHowTo = saved.seenHowTo === true;
   out.v1Migrated = saved.v1Migrated === true;
+  out.device = cleanDevice(saved.device);
   return out;
 }
 
 export function serialize(state) {
-  return JSON.stringify({ v: 2, easy: state.easy, hard: state.hard, lastMode: state.lastMode ?? null, seenHowTo: state.seenHowTo === true, v1Migrated: state.v1Migrated === true });
+  return JSON.stringify({ v: 2, easy: state.easy, hard: state.hard, lastMode: state.lastMode ?? null, seenHowTo: state.seenHowTo === true, v1Migrated: state.v1Migrated === true, device: cleanDevice(state.device) });
 }
 
 /**

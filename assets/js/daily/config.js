@@ -17,3 +17,9 @@ export const MODES = ['easy', 'hard'];
 export const DEFAULT_MODE = 'easy';
 export const MODE_LABEL = { easy: 'Easy', hard: 'Hard' };
 export const LEVEL_URL = { easy: '../assets/levels/daily-easy.json', hard: '../assets/levels/daily.json' };
+
+/**
+ * The stats server (worker/), e.g. 'https://gnome-sweet-gnome-stats.<you>.workers.dev'. `null` turns everyone's scores off:
+ * nothing is sent and nothing is shown. Leave it null until the Worker is deployed (see worker/README.md).
+ */
+export const STATS_URL = null;

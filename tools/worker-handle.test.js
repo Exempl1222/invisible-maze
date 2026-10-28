@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseLevel, buildableLines, capViolation, cutsAllRoutes, simulate } from '../src/game/index.js';
-import { handle, summarize, ALLOWED_ORIGINS, MAX_POSTS_PER_DEVICE_PER_DAY } from '../worker/src/handle.js';
+import { handle, summarize, ALLOWED_ORIGINS } from '../worker/src/handle.js';
 import { scoreFor, shownScore } from '../assets/js/daily/score.js';
 import { judgeFences, levelWithoutLimit } from '../assets/js/daily/judge.js';
 import { fakeD1 } from './worker-fake-d1.js';
@@ -229,23 +229,50 @@ test('a repeat post for the same device, mode and date is ignored and never over
   assert.equal(db.results.size, 3);
 });
 
-test('a device may post 30 times a day, good or bad; the 31st is refused, and a new UTC day starts fresh', async () => {
+test('counts stay in step with results; a repeat post bumps nothing; rejected posts write nothing', async () => {
   const { post, db } = setup();
-  for (let i = 1; i <= MAX_POSTS_PER_DEVICE_PER_DAY; i++) {
-    const res = await post(payload({ mode: 'medium' })); // bad posts count too
-    assert.equal(res.status, 400, `post ${i}`);
-  }
-  const res = await post(payload());
-  assert.equal(res.status, 429);
-  assert.equal(db.results.size, 0);
-  assert.equal((await post(payload({ device: 'dev-other-01' }))).status, 200); // another device is unaffected
-  const next = await post(payload({ date: '2026-10-28', fences: raw('easy', 1).answer }), { now: at('2026-10-28') });
-  assert.equal(next.status, 200); // tomorrow is a new count
-  assert.ok(![...db.rate.keys()].some((k) => k.endsWith('|2026-10-27')), 'yesterday\'s count was tidied away');
+  const r = raw('easy');
+  const total = () => [...db.counts.values()].reduce((a, b) => a + b, 0);
+  await post(payload({ device: 'dev-count-01' })); // 100
+  await post(payload({ device: 'dev-count-02' })); // 100
+  await post(payload({ device: 'dev-count-03', fences: null })); // 0
+  await post(payload({ device: 'dev-count-04', fences: withExtras(r, 2) }));
+  assert.equal(db.results.size, 4);
+  assert.equal(total(), 4);
+  assert.equal(db.counts.get('easy|2026-10-27|100'), 2);
+  assert.equal(db.counts.get('easy|2026-10-27|0'), 1);
+  // repeat posts (even with a different score) change neither table
+  const dup = await bodyOf(await post(payload({ device: 'dev-count-01', fences: null })));
+  assert.equal(dup.duplicate, true);
+  assert.equal(db.results.size, 4);
+  assert.equal(total(), 4);
+  assert.equal(db.counts.get('easy|2026-10-27|100'), 2);
+  assert.equal(db.counts.get('easy|2026-10-27|0'), 1);
+  // rejected posts write nothing at all
+  await post(payload({ device: 'dev-count-05', fences: [] }));
+  await post(payload({ device: 'dev-count-05', mode: 'x' }));
+  assert.equal(db.results.size, 4);
+  assert.equal(total(), 4);
+  // every results row is represented in counts, per mode, date and score
+  const fromResults = new Map();
+  for (const row of db.results.values()) { const k = `${row.mode}|${row.date}|${row.score}`; fromResults.set(k, (fromResults.get(k) ?? 0) + 1); }
+  assert.deepEqual([...db.counts].sort(), [...fromResults].sort());
 });
 
-test('GET /stats gives players, the six bands and the score counts', async () => {
-  const { post, call } = setup();
+test('a failed batch leaves results and counts as they were', async () => {
+  const { post, db, env } = setup();
+  await post(payload({ device: 'dev-fail-001' }));
+  const realBatch = db.batch.bind(db);
+  db.batch = async (stmts) => realBatch([stmts[0], { sql: 'BROKEN', args: [] }]); // the count bump fails after the insert
+  const res = await post(payload({ device: 'dev-fail-002' }));
+  assert.equal(res.status, 500);
+  assert.equal(db.results.size, 1);
+  assert.equal(db.counts.get('easy|2026-10-27|100'), 1);
+  assert.ok(env);
+});
+
+test('GET /stats gives players, the six bands and the score counts, read from counts', async () => {
+  const { post, call, db } = setup();
   const r = raw('easy');
   const mk = (n, fences, extra = {}) => post(payload({ device: `dev-seed-${String(n).padStart(3, '0')}`, fences, ...extra }));
   await mk(1, r.answer); // 100
@@ -269,6 +296,8 @@ test('GET /stats gives players, the six bands and the score counts', async () =>
   assert.equal(stats.scores['85'], 1);
   assert.equal(stats.scores['0'], 1);
   assert.equal(Object.values(stats.scores).reduce((a, b) => a + b, 0), 6);
+  assert.ok(db.reads <= 101, 'stats read pre-counted rows only');
+  assert.equal(res.headers.get('cache-control'), 'public, max-age=60');
 
   const hard = await bodyOf(await call('/stats?mode=hard&date=2026-10-27'));
   assert.equal(hard.players, 1);

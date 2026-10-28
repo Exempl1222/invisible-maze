@@ -7,17 +7,20 @@ import { capMessage, lineKey } from '../play/lines.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
 import { preloadSprites, sprite } from '../sprites.js';
 import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
-import { scoreFor, shownScore, bestScore, maxScore, HINT_COST } from './score.js';
+import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './score.js';
+import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
 import { freshDay, parseLineKey, mergeDay } from './record.js';
 import { levelWithoutLimit } from './judge.js';
 
-import { loadStore, getDay, saveDay, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
+import { loadStore, getDay, saveDay, getDevice, markSent, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
 import { classifyDate, archiveRows } from './archive.js';
 import { shareText, pageUrl } from './share.js';
 import { nextGnome, msToNextMinute } from './countdown.js';
 import { setupHowTo, setupStats, setupArchive } from './dialogs.js';
 
 const STEP_MS = 220;
+/** The stats server, or null when everyone's scores are off (see config.js STATS_URL). */
+const STATS = statsUrl(location.search, location.hostname);
 
 const $ = (id) => document.getElementById(id);
 const titleEl = $('title');
@@ -65,6 +68,7 @@ let game = null; // { level, board, number, day, state: 'editing' | 'running' | 
 let stats = null;
 let clockTimer = 0;
 let countdownBox = null; // { box, text } once a day is done
+let sendingNow = new Map(); // 'mode|date' -> the POST in flight, so one result is never sent twice at once
 let playToken = 0; // bumps whenever the board replays, so a walk cut short by a toggle stops drawing
 
 /* ---------- page chrome ---------- */
@@ -262,6 +266,7 @@ async function boot() {
   else if (i === null || i < 0 || i >= data.levels.length) showBreak();
   else startDay(data.levels[i], i + 1);
   clockTick();
+  if (STATS) for (const p of pendingResults(allDays(), realToday)) sendResult(p.mode, p.date, p.day); // retries from earlier loads
 
   if (!seenHowTo()) howto.show($('help-btn'));
 }
@@ -269,7 +274,7 @@ async function boot() {
 function startDay(raw, number) {
   const level = levelWithoutLimit(raw);
   const day = getDay(mode, date) || freshDay();
-  game = { level, number, day, state: 'editing', board: null, solution: false };
+  game = { level, number, day, state: 'editing', board: null, solution: false, beat: null };
   titleEl.textContent = `Daily #${number}`;
   if (isArchive) {
     const tag = document.createElement('span');
@@ -669,6 +674,8 @@ function renderResult() {
     resultEl.appendChild(hp);
   }
 
+  if (final && STATS) resultEl.appendChild(everyoneBlock(score));
+
   if (!final) {
     const left = MAX_TRIES - day.tries.length;
     const top = score >= maxScore(day.hint !== null); // nothing can beat it: Submit is the only choice
@@ -735,6 +742,100 @@ function renderResult() {
   }
 }
 
+/* ---------- everyone's scores ---------- */
+
+/**
+ * POST one finished day's result (once; see everyone.js). Resolves true if the server has it now. On a network
+ * or server failure the day stays unsent and the next load tries again; a refusal for good is marked as settled.
+ */
+function sendResult(m, d, day) {
+  const key = `${m}|${d}`;
+  if (!STATS) return Promise.resolve(false);
+  if (sendingNow.has(key)) return sendingNow.get(key);
+  const body = resultBody({ device: getDevice(), mode: m, date: d, day });
+  if (!body) return Promise.resolve(false);
+  const p = (async () => {
+    try {
+      const res = await fetch(`${STATS}/result`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const outcome = postOutcome(res.status);
+      if (outcome !== 'retry') {
+        markSent(m, d);
+        if (game && m === mode && d === date) game.day.sent = true;
+      }
+      return outcome === 'sent';
+    } catch {
+      return false;
+    } finally {
+      sendingNow.delete(key);
+    }
+  })();
+  sendingNow.set(key, p);
+  return p;
+}
+
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+
+/** The "everyone's scores" block of the result panel; it fills in once the result is sent and the spread loads. */
+function everyoneBlock(score) {
+  const box = el('div', 'everyone');
+  box.setAttribute('role', 'group');
+  box.id = 'everyone';
+  box.setAttribute('aria-label', "Everyone's scores");
+  if (isArchive) {
+    box.append(el('p', 'everyone-note', "Player stats are kept for each day's own date only."));
+    return box;
+  }
+  const g = game;
+  const note = el('p', 'everyone-note', 'Loading player stats...');
+  note.setAttribute('role', 'status');
+  box.append(note);
+  (async () => {
+    let included = g.day.sent;
+    if (!g.day.sent) included = await sendResult(mode, date, g.day);
+    let stats;
+    try {
+      const res = await fetch(`${STATS}/stats?mode=${mode}&date=${date}`);
+      if (!res.ok) throw new Error(`${res.status}`);
+      stats = parseStats(await res.json());
+    } catch {
+      stats = null;
+    }
+    if (game !== g || !box.isConnected) return;
+    box.replaceChildren();
+    if (!stats) {
+      box.append(el('p', 'everyone-note', 'Player stats are taking a break.'));
+      return;
+    }
+    const mine = bandOf(score);
+    const rows = bandRows(stats);
+    const max = Math.max(1, ...rows.map((r) => r.n));
+    const list = el('ul', 'dist everyone-dist');
+    list.setAttribute('aria-label', "Everyone's scores");
+    for (const r of rows) {
+      const li = el('li', r.key === mine ? 'mine' : '');
+      li.dataset.band = r.key;
+      const bar = el('span', 'bar', String(r.n));
+      bar.style.width = `${Math.max(12, Math.round((r.n / max) * 100))}%`;
+      li.append(el('span', '', r.label), bar);
+      list.appendChild(li);
+    }
+    const count = el('p', 'everyone-count', `${plural(stats.players, 'player')} today`);
+    count.id = 'everyone-count';
+    box.append(el('p', 'dist-title', "Everyone's scores"), list, count);
+    const beat = beatPercent(stats, score, included);
+    g.beat = beat;
+    const line = el('p', beat === null ? 'everyone-note' : 'everyone-beat', beat === null ? `Only ${plural(stats.players, 'player')} so far. Check back later.` : `You beat ${beat}% of players`);
+    line.id = 'everyone-beat';
+    box.append(line);
+  })();
+  return box;
+}
+
 /* ---------- the clock ---------- */
 
 /**
@@ -770,6 +871,7 @@ function currentShareText() {
     tries: day.tries,
     hint: day.hint !== null,
     archive: isArchive,
+    beat: isArchive ? null : game.beat ?? null,
   });
 }
 

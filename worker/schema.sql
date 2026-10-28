@@ -14,10 +14,12 @@ CREATE TABLE IF NOT EXISTS results (
 
 CREATE INDEX IF NOT EXISTS results_by_day ON results (mode, date);
 
--- Posts per device per UTC day, for the abuse limit. Old rows are cleared as new posts arrive.
-CREATE TABLE IF NOT EXISTS rate (
-  device TEXT    NOT NULL,
-  day    TEXT    NOT NULL,
-  n      INTEGER NOT NULL,
-  PRIMARY KEY (device, day)
+-- Pre-counted scores, so GET /stats reads at most 101 rows however many players there are
+-- (D1's free tier caps rows read per day). Bumped in the same batch as the insert into results.
+CREATE TABLE IF NOT EXISTS counts (
+  mode  TEXT    NOT NULL,
+  date  TEXT    NOT NULL,
+  score INTEGER NOT NULL,
+  n     INTEGER NOT NULL,
+  PRIMARY KEY (mode, date, score)
 );

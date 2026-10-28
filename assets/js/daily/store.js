@@ -3,7 +3,7 @@
 // Two tabs can share the key, so every write first re-reads storage and merges (see mergeSaved)
 // and the `storage` event brings the other tab's changes in.
 import { STORAGE_KEY, V1_KEY } from './config.js';
-import { emptySaved, parseSaved, serialize, cleanDay, mergeSaved, migrateV1 } from './record.js';
+import { emptySaved, parseSaved, serialize, cleanDay, mergeSaved, migrateV1, cleanDevice } from './record.js';
 
 let state = emptySaved();
 const listeners = [];
@@ -63,6 +63,33 @@ export function getDay(mode, date) {
 export function saveDay(mode, date, day) {
   state = mergeSaved(state, { ...emptySaved(), lastMode: null, [mode]: { [date]: cleanDay(day) } });
   persist();
+}
+
+/** A random id for this browser: 16 random bytes as url-safe text. Nothing personal in it. */
+function newDeviceId() {
+  const bytes = new Uint8Array(16);
+  try {
+    crypto.getRandomValues(bytes);
+  } catch {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** This browser's device id, made and saved on first use. The one already saved always wins (another tab may have made it). */
+export function getDevice() {
+  if (!cleanDevice(state.device)) refresh();
+  if (!cleanDevice(state.device)) {
+    state.device = newDeviceId();
+    persist(); // re-reads storage and keeps an id another tab saved first
+  }
+  return state.device;
+}
+
+/** Remember that a finished day's result reached the server (or was refused for good). Safe to call twice. */
+export function markSent(mode, date) {
+  const cur = getDay(mode, date);
+  if (cur && cur.done && !cur.sent) saveDay(mode, date, { ...cur, sent: true });
 }
 
 /** Both modes' days: { easy: { date: record }, hard: { date: record } }. */

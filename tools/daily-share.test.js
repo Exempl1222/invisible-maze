@@ -47,3 +47,11 @@ test('pageUrl strips the query and hash, then adds the mode', () => {
   assert.equal(pageUrl('https://x.github.io/invisible-maze/daily/?mode=easy&date=2026-10-27', 'hard'), 'https://x.github.io/invisible-maze/daily/?mode=hard');
   assert.equal(pageUrl('https://x.github.io/invisible-maze/daily/?date=2026-10-27'), 'https://x.github.io/invisible-maze/daily/');
 });
+
+test('the beat line sits above the link, only when there is a whole-number percentage', () => {
+  const t = shareText({ ...base, beat: 64 });
+  assert.equal(t, ['Gnome Sweet Gnome #1 Hard 🍄', '82/100 💡', '🟥🟩🟩', 'Beat 64% of players', URL].join('\n'));
+  assert.equal(shareText({ ...base, beat: 0 }).split('\n')[3], 'Beat 0% of players');
+  for (const none of [null, undefined, NaN, 12.5, -1, 101, '64']) assert.equal(shareText({ ...base, beat: none }), shareText(base), String(none));
+  assert.equal(shareText({ ...base, archive: true, beat: 50 }).split('\n')[0], 'Gnome Sweet Gnome #1 (archive) Hard 🍄');
+});

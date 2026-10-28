@@ -2,14 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { bestScore } from '../assets/js/daily/score.js';
 import { MAX_TRIES } from '../assets/js/daily/config.js';
-import { freshDay, emptySaved, cleanDay, parseSaved, serialize, parseLineKey, mergeDay, mergeSaved, migrateV1 } from '../assets/js/daily/record.js';
+import { cleanDevice, freshDay, emptySaved, cleanDay, parseSaved, serialize, parseLineKey, mergeDay, mergeSaved, migrateV1 } from '../assets/js/daily/record.js';
 
 const W = (fences, base) => ({ fences, won: true, base });
 const L = (fences = 3) => ({ fences, won: false, base: 0 });
 
 test('freshDay is an empty, unfinished day; emptySaved has both modes', () => {
-  assert.deepEqual(freshDay(), { tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false });
-  assert.deepEqual(emptySaved(), { easy: {}, hard: {}, lastMode: null, seenHowTo: false, v1Migrated: false });
+  assert.deepEqual(freshDay(), { tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false, sent: false });
+  assert.deepEqual(emptySaved(), { easy: {}, hard: {}, lastMode: null, seenHowTo: false, v1Migrated: false, device: null });
 });
 
 test('parseSaved: empty, missing and corrupt data give an empty state', () => {
@@ -20,9 +20,10 @@ test('serialize then parseSaved round-trips, both modes, lastMode and seenHowTo'
   const state = {
     seenHowTo: true,
     v1Migrated: true,
+    device: 'device-abc123',
     lastMode: 'hard',
-    easy: { '2026-10-27': { tries: [L(2), W(4, 88)], hint: '1,3,D', walls: ['0,3,D', '1,3,D'], done: true, finishedOn: '2026-10-28', reviewing: false } },
-    hard: { '2026-10-28': { tries: [L(5)], hint: null, walls: ['2,2,R'], done: false, finishedOn: null, reviewing: false } },
+    easy: { '2026-10-27': { tries: [L(2), W(4, 88)], hint: '1,3,D', walls: ['0,3,D', '1,3,D'], done: true, finishedOn: '2026-10-28', reviewing: false, sent: true } },
+    hard: { '2026-10-28': { tries: [L(5)], hint: null, walls: ['2,2,R'], done: false, finishedOn: null, reviewing: false, sent: false } },
   };
   assert.deepEqual(parseSaved(serialize(state)), state);
   assert.equal(JSON.parse(serialize(state)).v, 2);
@@ -237,4 +238,39 @@ test('v1Migrated: starts false, round-trips, and stays true once either side has
   assert.equal(mergeSaved(s, emptySaved()).v1Migrated, true);
   assert.equal(mergeSaved(emptySaved(), s).v1Migrated, true);
   assert.equal(parseSaved('{"v":2,"v1Migrated":"yes"}').v1Migrated, false);
+});
+
+test('sent: false on a fresh day, kept only on a done day, round-trips, and an old save without it reads false', () => {
+  assert.equal(freshDay().sent, false);
+  const done = { tries: [W(3, 100)], done: true, finishedOn: '2026-10-27' };
+  assert.equal(cleanDay(done).sent, false);
+  assert.equal(cleanDay({ ...done, sent: true }).sent, true);
+  assert.equal(cleanDay({ ...done, sent: 'yes' }).sent, false);
+  assert.equal(cleanDay({ tries: [W(3, 100)], sent: true }).sent, false, 'a day still being played has not been sent');
+  const s = parseSaved(serialize({ ...emptySaved(), easy: { '2026-10-27': cleanDay({ ...done, sent: true }) } }));
+  assert.equal(s.easy['2026-10-27'].sent, true);
+});
+
+test('merging days: sent stays true from either copy, in either order, and a send never undoes a finished day', () => {
+  const done = { tries: [W(3, 100)], done: true, finishedOn: '2026-10-27' };
+  const sent = { ...done, sent: true };
+  assert.equal(mergeDay(sent, done).sent, true);
+  assert.equal(mergeDay(done, sent).sent, true);
+  assert.equal(mergeDay(done, done).sent, false);
+  assert.equal(mergeDay(sent, { tries: [W(3, 100)] }).sent, true, 'a stale unfinished copy does not hide the send');
+  const m = mergeSaved({ ...emptySaved(), easy: { '2026-10-27': cleanDay(sent) } }, { ...emptySaved(), easy: { '2026-10-27': cleanDay(done) } });
+  assert.equal(m.easy['2026-10-27'].sent, true);
+  assert.equal(m.easy['2026-10-27'].done, true);
+});
+
+test('device: well-formed ids only; round-trips; the one already saved wins a merge and never changes', () => {
+  assert.equal(cleanDevice('abcd1234-_XY'), 'abcd1234-_XY');
+  for (const bad of [null, undefined, 5, '', 'short', 'has space in it', 'x'.repeat(65), '../../etc/passwd']) assert.equal(cleanDevice(bad), null, String(bad));
+  const a = { ...emptySaved(), device: 'device-aaaaaa' };
+  const b = { ...emptySaved(), device: 'device-bbbbbb' };
+  assert.equal(parseSaved(serialize(a)).device, 'device-aaaaaa');
+  assert.equal(parseSaved('{"v":2,"device":"nope"}').device, null);
+  assert.equal(mergeSaved(a, b).device, 'device-aaaaaa', 'the saved id wins');
+  assert.equal(mergeSaved(emptySaved(), b).device, 'device-bbbbbb');
+  assert.equal(mergeSaved(a, emptySaved()).device, 'device-aaaaaa');
 });

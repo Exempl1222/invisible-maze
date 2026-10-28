@@ -5,54 +5,74 @@ import { SQL } from '../worker/src/store.js';
 
 export function fakeD1() {
   const results = new Map(); // "device|mode|date" -> row
-  const rate = new Map(); // "device|day" -> n
+  const counts = new Map(); // "mode|date|score" -> n
   const log = [];
+  let reads = 0; // rows handed back by SELECTs, to check /stats stays cheap
+  let lastChanges = 0;
 
   function run(sql, args) {
     log.push(sql);
     switch (sql) {
-      case SQL.bumpRate: {
-        const k = `${args[0]}|${args[1]}`;
-        const n = (rate.get(k) ?? 0) + 1;
-        rate.set(k, n);
-        return { first: { n }, all: [{ n }], changes: 1 };
-      }
-      case SQL.purgeRate: {
-        let changes = 0;
-        for (const k of [...rate.keys()]) if (k.split('|')[1] < args[0]) { rate.delete(k); changes++; }
-        return { first: null, all: [], changes };
-      }
       case SQL.saveResult: {
         const [device, mode, date, score, tries, hint, received] = args;
         const k = `${device}|${mode}|${date}`;
-        if (results.has(k)) return { first: null, all: [], changes: 0 }; // INSERT OR IGNORE
+        if (results.has(k)) return (lastChanges = 0), { all: [], changes: 0 }; // INSERT OR IGNORE
         results.set(k, { device, mode, date, score, tries, hint, received });
-        return { first: null, all: [], changes: 1 };
+        lastChanges = 1;
+        return { all: [], changes: 1 };
+      }
+      case SQL.bumpCount: {
+        if (lastChanges > 0) {
+          const k = args.join('|');
+          counts.set(k, (counts.get(k) ?? 0) + 1);
+        }
+        return { all: [], changes: lastChanges > 0 ? 1 : 0 };
       }
       case SQL.spread: {
-        const counts = new Map();
-        for (const r of results.values()) if (r.mode === args[0] && r.date === args[1]) counts.set(r.score, (counts.get(r.score) ?? 0) + 1);
-        const rows = [...counts].map(([score, n]) => ({ score, n }));
-        return { first: rows[0] ?? null, all: rows, changes: 0 };
+        const rows = [];
+        for (const [k, n] of counts) {
+          const [mode, date, score] = k.split('|');
+          if (mode === args[0] && date === args[1]) rows.push({ score: Number(score), n });
+        }
+        reads += rows.length;
+        return { all: rows, changes: 0 };
       }
       default:
         throw new Error(`fake D1 does not know this statement: ${sql}`);
     }
   }
 
-  return {
+  const db = {
     results,
-    rate,
+    counts,
     log,
+    get reads() { return reads; },
     prepare(sql) {
       let args = [];
       const stmt = {
+        sql,
+        get args() { return args; },
         bind(...a) { args = a; return stmt; },
-        async first() { return run(sql, args).first; },
+        async first() { return run(sql, args).all[0] ?? null; },
         async all() { return { results: run(sql, args).all }; },
         async run() { return { meta: { changes: run(sql, args).changes } }; },
       };
       return stmt;
     },
+    /** Statements run in order, all or nothing. A failure part-way rolls the results and counts back. */
+    async batch(stmts) {
+      const snap = [new Map(results), new Map(counts)];
+      try {
+        const out = [];
+        for (const st of stmts) { const r = run(st.sql, st.args); out.push({ results: r.all, meta: { changes: r.changes } }); }
+        return out;
+      } catch (err) {
+        results.clear(); counts.clear();
+        for (const [k, v] of snap[0]) results.set(k, v);
+        for (const [k, v] of snap[1]) counts.set(k, v);
+        throw err;
+      }
+    },
   };
+  return db;
 }
