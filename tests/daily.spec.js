@@ -82,12 +82,15 @@ async function setToday(page, date) {
  */
 async function pageAt(context, date) {
   const p = await context.newPage();
+  await p.emulateMedia({ reducedMotion: 'reduce' }); // see beforeEach
   await seedStorage(p);
   await p.clock.install({ time: NOON(date) });
   return p;
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, reducedMotion }) => {
+  // test.use alone wasn't applied on CI's Playwright 1.56, so set it on the page too (whatever this test asked for).
+  await page.emulateMedia({ reducedMotion });
   await seedStorage(page);
   await page.clock.install({ time: NOON('2026-10-27') });
 });
@@ -103,7 +106,9 @@ const settle = (page) => expect(page.locator('#board[aria-busy="false"], #result
 /** Press Try and wait for the try to settle before anything touches the board or reads the result. */
 async function tryNow(page) {
   await tryBtn(page).click();
-  await page.clock.runFor(1000); // CI's Playwright 1.56 can leave the faked timers stalled after setSystemTime; this lets the walk finish
+  // If reduced motion isn't applied (CI's Playwright 1.56 ignored test.use), the walk animates on the faked
+  // clock: a 9x9 win is about 20 steps x 220ms. Advance well past it so the walk always settles.
+  await page.clock.runFor(8000);
   await settle(page);
 }
 
@@ -183,6 +188,11 @@ test('page meta for link previews', async ({ page }) => {
   expect(await meta('meta[property="og:description"]')).toBe('Fence in the runaway gnome. One new puzzle a day.');
   expect(await meta('meta[property="og:url"]')).toBe('https://exempl1222.github.io/invisible-maze/daily/');
   expect(await meta('meta[name="twitter:card"]')).toBe('summary');
+});
+
+test('reduced motion is really on in the page (CI once ignored it, which made Hard walks outlast the test clock)', async ({ page }) => {
+  await openDay(page);
+  expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
 });
 
 test('first visit shows how to play once, with the v2 copy, and the ? button reopens it', async ({ page }) => {
@@ -1345,10 +1355,7 @@ test.describe('the archive', () => {
     await expect(statsCell(page, 'Best streak')).toHaveText('1');
   });
 
-  // Known: on CI only (Playwright 1.56 Chromium), today's Hard try right after an archive day on the same page
-  // loses with the stored answer and the walk never settles. Passes locally; under investigation (see ROADMAP 6d).
   test('catching up a missed day in the archive does not repair the streak', async ({ context }) => {
-    test.fixme(!!process.env.CI, 'CI-only: today after an archive day; under investigation');
     const day28 = await pageAt(context, '2026-10-28');
     await winDay(day28, 'hard', 1, url('hard')); // #2, won on the day
     await day28.close();
