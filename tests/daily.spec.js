@@ -103,7 +103,7 @@ const settle = (page) => expect(page.locator('#board[aria-busy="false"], #result
 /** Press Try and wait for the try to settle before anything touches the board or reads the result. */
 async function tryNow(page) {
   await tryBtn(page).click();
-  await page.clock.runFor(1000); // CI's Playwright 1.56 can leave the faked timers stalled after setSystemTime; this lets the walk finish
+  await page.clock.runFor(8000); // CI's Playwright 1.56 does not apply reducedMotion on the page, so the walk animates on the faked clock (a 9x9 win is ~20 steps x 220ms); advance past it
   await settle(page);
 }
 
@@ -1021,7 +1021,6 @@ test.describe('the archive', () => {
   // Known: on CI only (Playwright 1.56 Chromium), today's Hard try right after an archive day on the same page
   // loses with the stored answer and the walk never settles. Passes locally; under investigation (see ROADMAP 6d).
   test('catching up a missed day in the archive does not repair the streak', async ({ context }) => {
-    test.fixme(!!process.env.CI, 'CI-only: today after an archive day; under investigation');
     const day28 = await pageAt(context, '2026-10-28');
     await winDay(day28, 'hard', 1, url('hard')); // #2, won on the day
     await day28.close();

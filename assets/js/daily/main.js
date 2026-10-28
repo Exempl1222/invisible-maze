@@ -751,18 +751,4 @@ async function share(button, note, box) {
   box.select();
 }
 
-window.__debug = () => {
-  const g = game;
-  return {
-    realToday, date, mode, routeKind: route.kind, href: location.href, now: Date.now(), iso: new Date().toString(),
-    rm: reducedMotion(), rmNo: window.matchMedia('(prefers-reduced-motion: no-preference)').matches,
-    hasGame: !!g, state: g && g.state, number: g && g.number,
-    levelId: g && (g.level.id ?? g.level.name), par: g && g.level.par, moveLimit: g && g.level.moveLimit, size: g && g.level.size,
-    walls: g && g.board.wallList().map(lineKey),
-    sim: g && (() => { const r = simulate(g.level, g.board.wallList()); return { result: r.result, steps: r.steps && r.steps.length, keys: Object.keys(r) }; })(),
-    answer: g && g.level.answer && g.level.answer.map(lineKey),
-    tries: g && g.day.tries.map((t) => ({ won: t.won, f: t.fences })), dayWalls: g && g.day.walls, reviewing: g && g.day.reviewing,
-    busy: boardEl.getAttribute('aria-busy'), status: statusEl.textContent,
-  };
-};
 boot();

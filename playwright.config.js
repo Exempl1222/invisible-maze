@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests', testMatch: /zz-debug/,
+  testDir: './tests',
   outputDir: './test-results',
   reporter: process.env.CI ? 'github' : 'list',
   use: { baseURL: 'http://localhost:4173' },
@@ -11,6 +11,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
   },
   projects: [
+    { name: 'phone', use: { ...devices['iPhone 13'], browserName: 'chromium' } },
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
   ],
 });
