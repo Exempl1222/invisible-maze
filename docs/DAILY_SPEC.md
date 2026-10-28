@@ -2,6 +2,55 @@
 
 The daily as its own page, so it can ship alone with a link to the full game later. Decided by Eric, 27 Oct 2026. Rules of play are unchanged (`docs/GAME_SPEC.md`, rules v4); this spec covers only what is new around them.
 
+## v3: optimal solution and everyone's scores (Eric, 28 Oct)
+
+Adds to v2; nothing in v2 changes unless stated.
+
+### See the optimal solution
+- Shown only once the day is done (Submitted, or all 3 tries used). Never before.
+- Button `See the optimal solution` in the result panel, under the score. It toggles: `Hide the solution`. The changing label alone announces the state (no `aria-pressed`).
+- Showing it scrolls the board into view (smoothly, or at once with reduced motion), draws the stored par answer on the board in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk with those fences (respecting reduced motion). Hiding it puts the player's own final fences back.
+- This is where par is revealed, and only here. Still never shown during play.
+- Seeing it changes nothing saved: score, share, streaks and stats stay as they were. A reload shows the player's fences, with the button.
+- Works the same on archive days.
+
+### Everyone's scores
+A small server (a Cloudflare Worker with a D1 database) collects one result per device per mode per day and serves the spread.
+
+**What the page sends** (once, when the day is done, only for a day finished on its own date; archive plays are never sent):
+```
+POST {STATS_URL}/result
+{ "device": "<random id>", "mode": "easy|hard", "date": "YYYY-MM-DD", "fences": [[x,y,"D"], ...] | null, "hint": true|false, "tries": 1..3 }
+```
+- `device` is a random id made once per browser and kept in the v2 save (`device`). It is not tied to anything personal.
+- `fences` is the best winning try's fences, or `null` for a day with no win.
+- If the send fails (offline, server down), the page keeps a `sent: false` flag on the record and retries on the next load. Never more than one result per device, mode and date.
+
+**What the server does**
+- Loads the day's level from its own bundled copy of `daily.json` / `daily-easy.json` (the same files the site serves), so the client can't send a different level.
+- **Re-checks the fences** with the game engine (`src/game/`): every fence buildable, no duplicates, side cap respected, at least one route left, and the result is a win. If any check fails, the result is rejected (400). It then computes the score itself with the v2 formula (par from the level, the hint taken from the request; the hint only lowers a score). `fences: null` scores 0.
+- Accepts a date only if it is today somewhere in the world (server UTC date minus 1 to plus 1 day), so old or future days can't be posted.
+- One row per (device, mode, date); a repeat post is ignored (200, `duplicate: true`), never an overwrite.
+- Stores no IP addresses or other personal data. Abuse limits: the one-row-per-(device, mode, date) key, a body cap (413 above 8 KB), and a Workers Rate Limiting binding on `POST /result` (10 a minute per caller address, answered 429). The IP is used only for that in-memory limit and is never stored or logged. There is no stored posts-a-day counter, because counting every post would spend D1's free write allowance (100k rows a day) faster than it protects it. With no binding (tests, local runs) there is no limit.
+- `fences: null` (a day with no win) is accepted only with `tries: 3`.
+- **Accepted limitations:** the `hint` flag is the client's word, so a player could drop it for +15; `tries` can't be verified; a determined script using many IPs and device ids can still add rows. The stats are for fun, not a leaderboard with prizes.
+- **Page side:** only a 400 marks a result as settled (refused for good); 403, 404, 413, 429 and 5xx retry on a later load. An unsent day is retried only while its date is still within the server's window (UTC date minus 1 to plus 1). "You beat X%" counts the player as included only when the send succeeded, and `/stats` is fetched with `cache: 'no-cache'` right after a send.
+- **Cheap reads:** an accepted result is one `INSERT OR IGNORE` into `results`, and an AFTER INSERT trigger bumps a pre-counted `counts(mode, date, score, n)` row in the same statement; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
+- `GET {STATS_URL}/stats?mode=easy&date=YYYY-MM-DD` returns `{ players, bands: { "100": n, "80-99": n, "60-79": n, "30-59": n, "1-29": n, "0": n }, scores: { "<score>": n, ... } }`.
+- CORS: only `https://exempl1222.github.io` and `http://localhost:4173` (and the test port).
+
+**What the page shows** in the result panel, once the day is done (today only; archive days show `Player stats are kept for each day's own date only.`):
+- **Score spread:** six bars (same bands as personal stats), the player's band highlighted, with `N players today`.
+- **`You beat X% of players`**, where X = share of other players with a lower score, rounded down. Shown only when at least 10 players have posted; below that, `Only N players so far. Check back later.`
+- The share text gains a line `Beat X% of players` when X is shown.
+- If stats can't load: `Player stats are taking a break.` The rest of the page is unaffected.
+- **Switch:** `STATS_URL` in `assets/js/daily/config.js`. `null` turns the feature off entirely (nothing sent, nothing shown). It stays `null` until the Worker is deployed.
+
+**Where the server lives**
+- `worker/` in this repo: `worker/src/index.js` (handler), `worker/schema.sql`, `worker/wrangler.toml`. It imports the engine from `src/game/` and the two level files, so the server and the site always agree.
+- Unit tests in `tools/worker-*.test.js` run the handler against an in-memory fake of D1 (no network).
+- Deployed by a `worker` job in the GitHub workflow on pushes to `main` that change `worker/`, `src/game/` or `assets/levels/`, using repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The job is skipped when the secrets aren't set.
+
 ## v2: Easy and Hard, scored out of 100 (Eric, 27 Oct)
 
 **This section supersedes the rest of the spec wherever they disagree** (tries as lives, wall budget, stars, par shown, answer reveal, one shared streak). Everything not mentioned here (archive, countdown, how-to-play, app link, cross-tab merge, storage safety, date handling) stays as written below.
@@ -150,4 +199,4 @@ https://exempl1222.github.io/invisible-maze/daily/
 
 ## Not in this pass
 
-Preview image, server-side stats or leaderboards, retiring `/play/?daily`.
+Preview image, named leaderboards, retiring `/play/?daily`.

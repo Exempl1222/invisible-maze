@@ -3,6 +3,8 @@
 // skipped (reduced motion) so tests stay fast; the animation itself is covered by play.spec.js.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { handle } from '../worker/src/handle.js';
+import { fakeD1 } from '../tools/worker-fake-d1.js';
 import { parseLevel, buildableLines, capViolation, cutsAllRoutes } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -942,6 +944,363 @@ test('no par text anywhere on the page: loaded, mid-game, win choice, finished, 
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'How to play' }).click();
   await expectNoPar(page);
+});
+
+/* ---------- the optimal solution (v3) ---------- */
+
+test.describe('the optimal solution toggle', () => {
+  const solBtn = (page) => page.locator('#solution-btn');
+  const rawSaved = (page) => page.evaluate((k) => localStorage.getItem(k), KEY);
+  /** Win with one fence more than par (so the player's fences differ from the answer) and Submit. */
+  async function submitOneOver(page, mode = 'easy', i = 0, path = url(mode)) {
+    const lv = level(mode, i);
+    const extra = extraFences(lv, 1);
+    await openDay(page, path);
+    await placeAll(page, [...lv.answer, ...extra]);
+    await tryNow(page);
+    await expect(result(page)).toHaveAttribute('data-state', 'review');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    return lv;
+  }
+
+  test('it is not on the page during play or on the Retry/Submit screen, and the page text has no par', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await expect(solBtn(page)).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText('optimal');
+    await placeAll(page, [...lv.answer, ...extraFences(lv, 1)]);
+    await tryNow(page);
+    await expect(result(page)).toHaveAttribute('data-state', 'review');
+    await expect(page.getByRole('button', { name: /Retry/ })).toBeVisible();
+    await expect(solBtn(page)).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText('optimal');
+    await expectNoPar(page);
+  });
+
+  test('after Submit it shows the answer in hint style with the par line; Hide puts the player\'s fences back; nothing saved changes; a reload shows the player\'s fences', async ({ page }) => {
+    const lv = await submitOneOver(page);
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await expectNoPar(page); // the day is done, but the answer is not revealed until asked for
+    const mine = await bars(page).count();
+    expect(mine).toBe(lv.answer.length + 1);
+    await expect(hintBars(page)).toHaveCount(0);
+    const before = await rawSaved(page);
+    const scoreBefore = await score(page).textContent();
+
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    await expect(solBtn(page)).not.toHaveAttribute('aria-pressed', /.*/); // the changing label alone announces the state
+    await expect(page.locator('#board')).toBeInViewport(); // showing the solution scrolls the board into view
+    await expect(page.locator('#solution-note')).toHaveText(`Par ${lv.par}: one way to fence him in with ${lv.par} fences.`);
+    expect(lv.par).toBe(lv.answer.length);
+    await expect(bars(page)).toHaveCount(lv.answer.length);
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    for (const w of lv.answer) await expect(page.locator(`#board .wall-bar[data-hint="1"][data-line="${w.join(',')}"]`)).toHaveCount(1);
+    await expect(page.locator('#board .cell.reached')).toHaveCount(0); // fenced in: he does not reach the house
+    if (process.env.SHOTS) { await page.setViewportSize({ width: 390, height: 844 }); await solBtn(page).scrollIntoViewIfNeeded(); await page.screenshot({ path: `${process.env.SHOTS}/solution.png`, fullPage: true }); }
+    await expect(score(page)).toHaveText(scoreBefore);
+    expect(await rawSaved(page)).toBe(before);
+
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await expect(page.locator('#solution-note')).toHaveText('');
+    await expect(bars(page)).toHaveCount(mine);
+    await expect(hintBars(page)).toHaveCount(0);
+    expect(await rawSaved(page)).toBe(before);
+
+    await solBtn(page).click(); // shown again, then a reload while it is showing
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await page.reload();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    await expect(bars(page)).toHaveCount(mine);
+    await expect(hintBars(page)).toHaveCount(0);
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await expect(page.locator('body')).not.toContainText('Par');
+    expect(await rawSaved(page)).toBe(before);
+  });
+
+  test('after three losses it shows the answer and hides it again', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await loseOnce(page, 'Try');
+    await loseOnce(page, 'Try again (2 left)');
+    await expect(solBtn(page)).toHaveCount(0);
+    await loseOnce(page, 'Try again (1 left)');
+    await expect(result(page)).toHaveAttribute('data-result', 'lose');
+    await expect(solBtn(page)).toBeVisible();
+    await expect(bars(page)).toHaveCount(0);
+    await expectNoPar(page);
+    const before = await rawSaved(page);
+    await solBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await expect(page.locator('#solution-note')).toContainText(`Par ${lv.par}:`);
+    expect(await rawSaved(page)).toBe(before);
+    await solBtn(page).click();
+    await expect(bars(page)).toHaveCount(0);
+    expect(await rawSaved(page)).toBe(before);
+    expect((await saved(page)).easy['2026-10-27'].walls).toEqual([]);
+  });
+
+  test('it works the same on a Hard archive day', async ({ page }) => {
+    await setToday(page, '2026-10-30');
+    const lv = await submitOneOver(page, 'hard', 1, url('hard', '2026-10-28'));
+    await expect(page.locator('h1 .tag')).toHaveText('Archive');
+    const mine = await bars(page).count();
+    const before = await rawSaved(page);
+    await solBtn(page).click();
+    await expect(page.locator('#solution-note')).toHaveText(`Par ${lv.par}: one way to fence him in with ${lv.par} fences.`);
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await solBtn(page).click();
+    await expect(bars(page)).toHaveCount(mine);
+    expect(await rawSaved(page)).toBe(before);
+  });
+
+  test('a hint used on the day stays the hint fence after Hide', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await placeAll(page, lv.answer.slice(0, 1));
+    await hintBtn(page).click();
+    const hintLine = await hintBars(page).getAttribute('data-line');
+    await page.locator('#clear').click();
+    await placeAll(page, lv.answer.filter((w) => w.join(',') !== hintLine));
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await solBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    await solBtn(page).click();
+    await expect(bars(page)).toHaveCount(lv.answer.length);
+    await expect(hintBars(page)).toHaveCount(1);
+  });
+});
+
+/* ---------- everyone's scores (v3) ---------- */
+
+// The page only talks to a stats server when config.js STATS_URL is set. Tests turn it on with the localhost-only
+// hook `?stats=<url>` (see assets/js/daily/everyone.js statsUrl) and point it at a same-origin path that page.route stubs.
+test.describe('everyone\'s scores', () => {
+  const STATS = '/__stats';
+  const sUrl = (mode, date) => `${url(mode, date)}&stats=${STATS}`;
+  const bandsOf = (counts) => ({ '100': counts[0], '80-99': counts[1], '60-79': counts[2], '30-59': counts[3], '1-29': counts[4], '0': counts[5] });
+  /** A server reply of 14 players: 5 at 100, 3 at 88, 2 at 70, 2 at 40, 1 at 20, 1 at 0. */
+  const BIG = { players: 14, bands: bandsOf([5, 3, 2, 2, 1, 1]), scores: { 100: 5, 88: 3, 70: 2, 40: 2, 20: 1, 0: 1 } };
+  const SMALL = { players: 3, bands: bandsOf([1, 1, 0, 0, 0, 1]), scores: { 100: 1, 88: 1, 0: 1 } };
+
+  /** Stub the stats server. `opts.postStatus` / `opts.statsStatus` can be changed while the page is up. */
+  async function stubServer(page, reply = BIG) {
+    const srv = { posts: [], gets: [], postStatus: 200, statsStatus: 200, reply };
+    await page.route(`**${STATS}/**`, async (route) => {
+      const req = route.request();
+      const u = new URL(req.url());
+      if (req.method() === 'POST' && u.pathname === `${STATS}/result`) {
+        srv.posts.push(JSON.parse(req.postData()));
+        await route.fulfill({ status: srv.postStatus, contentType: 'application/json', body: JSON.stringify({ ok: srv.postStatus === 200, duplicate: false }) });
+      } else if (req.method() === 'GET' && u.pathname === `${STATS}/stats`) {
+        srv.gets.push(u.search);
+        await route.fulfill({ status: srv.statsStatus, contentType: 'application/json', body: JSON.stringify(srv.reply) });
+      } else {
+        await route.fulfill({ status: 404, body: '' });
+      }
+    });
+    return srv;
+  }
+  const noStatsTraffic = (page) => {
+    const hits = [];
+    page.on('request', (r) => { if (/\/(result|stats)(\?|$)/.test(new URL(r.url()).pathname)) hits.push(r.url()); });
+    return hits;
+  };
+  const sameFences = (a, b) => expect([...a].map((w) => w.join(',')).sort()).toEqual([...b].map((w) => w.join(',')).sort());
+
+  test('the real Worker handler accepts what the page posts, and its score is the score the page shows', async ({ page }) => {
+    const db = fakeD1();
+    const env = { DB: db, LEVELS: data };
+    const NOW = NOON('2026-10-27').getTime();
+    const seen = [];
+    await page.route(`**${STATS}/**`, async (route) => {
+      const req = route.request();
+      const u = new URL(req.url());
+      const real = new Request(`https://stats.example${u.pathname.slice(STATS.length)}${u.search}`, {
+        method: req.method(),
+        headers: req.headers(),
+        body: req.method() === 'POST' ? req.postData() : undefined,
+      });
+      const res = await handle(real, env, NOW);
+      seen.push(`${req.method()} ${res.status}`);
+      await route.fulfill({ status: res.status, contentType: 'application/json', body: await res.text() });
+    });
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(seen).toEqual(['POST 200', 'GET 200']);
+    expect(db.results.size).toBe(1);
+    const row = [...db.results.values()][0];
+    expect(row).toMatchObject({ mode: 'easy', date: '2026-10-27', tries: 1, hint: 0 });
+    await expect(score(page)).toHaveText(`${row.score} / 100`);
+    await expect(page.locator('#everyone-count')).toHaveText('1 player today');
+    expect((await saved(page)).easy['2026-10-27'].sent).toBe(true);
+  });
+
+  test('a finished day posts once with the right body, and a reload does not post again', async ({ page }) => {
+    const srv = await stubServer(page);
+    const lv = level('easy');
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(srv.posts).toHaveLength(1);
+    const body = srv.posts[0];
+    expect(Object.keys(body).sort()).toEqual(['date', 'device', 'fences', 'hint', 'mode', 'tries']);
+    expect(body).toMatchObject({ mode: 'easy', date: '2026-10-27', hint: false, tries: 1 });
+    expect(body.device).toMatch(/^[0-9a-f]{32}$/);
+    sameFences(body.fences, lv.answer);
+    const s1 = await saved(page);
+    expect(s1.device).toBe(body.device);
+    expect(s1.easy['2026-10-27'].sent).toBe(true);
+    expect(srv.gets[0]).toBe('?mode=easy&date=2026-10-27');
+
+    await page.reload();
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(srv.posts).toHaveLength(1);
+    expect((await saved(page)).device).toBe(body.device);
+  });
+
+  test('the hint and the tries used are sent; a day with no win sends null fences', async ({ page }) => {
+    const srv = await stubServer(page);
+    const lv = level('easy');
+    await openDay(page, sUrl('easy'));
+    await placeAll(page, lv.answer.slice(0, 1));
+    await hintBtn(page).click();
+    const hintLine = await hintBars(page).getAttribute('data-line');
+    await page.locator('#clear').click();
+    await placeAll(page, lv.answer.filter((w) => w.join(',') !== hintLine));
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(srv.posts[0]).toMatchObject({ hint: true, tries: 1, mode: 'easy' });
+    sameFences(srv.posts[0].fences, lv.answer);
+
+    await openDay(page, sUrl('hard'));
+    await loseOnce(page, 'Try');
+    await loseOnce(page, 'Try again (2 left)');
+    await loseOnce(page, 'Try again (1 left)');
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(srv.posts).toHaveLength(2);
+    expect(srv.posts[1]).toMatchObject({ mode: 'hard', date: '2026-10-27', fences: null, hint: false, tries: 3 });
+    expect(srv.posts[1].device).toBe(srv.posts[0].device); // one id for the browser
+  });
+
+  test('a failed post leaves the day unsent and retries on the next load, then stops', async ({ page }) => {
+    const srv = await stubServer(page);
+    srv.postStatus = 503;
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    await expect(page.locator('#everyone-count')).toBeVisible(); // the spread still shows
+    expect(srv.posts).toHaveLength(1);
+    expect((await saved(page)).easy['2026-10-27'].sent).toBe(false);
+
+    srv.postStatus = 200;
+    await page.reload();
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(srv.posts).toHaveLength(2);
+    expect(srv.posts[1]).toEqual(srv.posts[0]);
+    expect((await saved(page)).easy['2026-10-27'].sent).toBe(true);
+
+    await page.reload();
+    await expect(page.locator('#everyone-count')).toBeVisible();
+    expect(srv.posts).toHaveLength(2);
+  });
+
+  test('the spread shows six bars, the player\'s band highlighted, the player count, and "You beat X%"', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await stubShare(page, 'share');
+    const srv = await stubServer(page);
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    const box = page.locator('#everyone');
+    await expect(box.locator('.dist li')).toHaveCount(6);
+    await expect(box.locator('.dist li span:first-child')).toHaveText(['100', '80 to 99', '60 to 79', '30 to 59', '1 to 29', '0']);
+    await expect(box.locator('.dist li .bar')).toHaveText(['5', '3', '2', '2', '1', '1']);
+    await expect(box.locator('.dist li.mine')).toHaveCount(1);
+    await expect(box.locator('.dist li.mine')).toHaveAttribute('data-band', '100');
+    await expect(page.locator('#everyone-count')).toHaveText('14 players today');
+    // 100 beats 9 of the 13 other players (the player is one of the 14 and was sent)
+    const x = Math.floor((9 * 100) / 13);
+    expect(x).toBe(69);
+    await expect(page.locator('#everyone-beat')).toHaveText(`You beat ${x}% of players`);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    await box.scrollIntoViewIfNeeded();
+    if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/stats-block.png` });
+
+    await page.getByRole('button', { name: 'Share' }).click();
+    const shared = await page.evaluate(() => window.__shared);
+    expect(shared[0].text).toBe(['Gnome Sweet Gnome #1 Easy 🍄', '100/100', '🟩', `Beat ${x}% of players`, shareUrl(page, 'easy')].join('\n'));
+    expect(srv.posts).toHaveLength(1);
+  });
+
+  test('fewer than 10 players: no percentage, the "Only N players" line, and no Beat line in the share text', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await stubShare(page, 'share');
+    await stubServer(page, SMALL);
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    await expect(page.locator('#everyone-count')).toHaveText('3 players today');
+    await expect(page.locator('#everyone-beat')).toHaveText('Only 3 players so far. Check back later.');
+    await expect(page.locator('#everyone')).not.toContainText('You beat');
+    await page.locator('#everyone').scrollIntoViewIfNeeded();
+    if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/stats-few.png` });
+    await page.getByRole('button', { name: 'Share' }).click();
+    const shared = await page.evaluate(() => window.__shared);
+    expect(shared[0].text).toBe(['Gnome Sweet Gnome #1 Easy 🍄', '100/100', '🟩', shareUrl(page, 'easy')].join('\n'));
+  });
+
+  test('a day with no win highlights the 0 band', async ({ page }) => {
+    await stubServer(page);
+    await openDay(page, sUrl('easy'));
+    await loseOnce(page, 'Try');
+    await loseOnce(page, 'Try again (2 left)');
+    await loseOnce(page, 'Try again (1 left)');
+    await expect(page.locator('#everyone .dist li.mine')).toHaveAttribute('data-band', '0');
+    await expect(page.locator('#everyone-beat')).toHaveText('You beat 0% of players');
+  });
+
+  test('archive days show the archive message and send and fetch nothing', async ({ page }) => {
+    await setToday(page, '2026-10-30');
+    const srv = await stubServer(page);
+    await winDay(page, 'easy', 1, sUrl('easy', '2026-10-28'));
+    await expect(page.locator('#everyone')).toHaveText("Player stats are kept for each day's own date only.");
+    await page.reload();
+    await expect(page.locator('#everyone')).toContainText('kept for each day');
+    expect(srv.posts).toHaveLength(0);
+    expect(srv.gets).toHaveLength(0);
+    expect((await saved(page)).easy['2026-10-28'].sent).toBe(false);
+  });
+
+  test('with STATS_URL null (no hook) nothing is sent, fetched or shown', async ({ page }) => {
+    const hits = noStatsTraffic(page);
+    await winDay(page, 'easy', 0, url('easy'));
+    await page.reload();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    await expect(page.locator('#everyone')).toHaveCount(0);
+    await expect(result(page)).not.toContainText('players');
+    expect(hits).toEqual([]);
+    const s = await saved(page);
+    expect(s.easy['2026-10-27'].sent).toBe(false);
+    expect(s.device ?? null).toBeNull(); // not even an id is made
+  });
+
+  test('if the stats cannot load, the break line shows and the rest of the page works', async ({ page }) => {
+    await stubShare(page, 'share');
+    const srv = await stubServer(page);
+    srv.statsStatus = 500;
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    await expect(page.locator('#everyone')).toHaveText('Player stats are taking a break.');
+    await expect(page.getByRole('button', { name: 'Share' })).toBeEnabled();
+    await expect(score(page)).toHaveText('100 / 100');
+    await page.getByRole('button', { name: 'Share' }).click();
+    expect((await page.evaluate(() => window.__shared))[0].text).not.toContain('Beat');
+    await expect(page.locator('#solution-btn')).toBeVisible();
+  });
+
+  test('a stats reply of the wrong shape is treated as a break', async ({ page }) => {
+    const srv = await stubServer(page, { players: 'lots' });
+    await winDay(page, 'easy', 0, sUrl('easy'));
+    await expect(page.locator('#everyone')).toHaveText('Player stats are taking a break.');
+    expect(srv.posts).toHaveLength(1);
+  });
 });
 
 /* ---------- the archive ---------- */
