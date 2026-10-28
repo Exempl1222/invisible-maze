@@ -1,7 +1,7 @@
 // The standalone daily page: two puzzles a day (Easy 7x7 and Hard 9x9), three tries, a score out
 // of 100, one hint, a share button. Reuses the engine, the board and the sprites. It does not
 // import the full game's main.js or storage.
-import { parseLevel, buildableLines, simulate, cutsAllRoutes, wouldBreakCap } from '../../../src/game/index.js';
+import { simulate, cutsAllRoutes, wouldBreakCap } from '../../../src/game/index.js';
 import { createBoard } from '../play/board.js';
 import { capMessage, lineKey } from '../play/lines.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
@@ -9,6 +9,7 @@ import { preloadSprites, sprite } from '../sprites.js';
 import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
 import { scoreFor, shownScore, bestScore, maxScore, HINT_COST } from './score.js';
 import { freshDay, parseLineKey, mergeDay } from './record.js';
+import { levelWithoutLimit } from './judge.js';
 
 import { loadStore, getDay, saveDay, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
 import { classifyDate, archiveRows } from './archive.js';
@@ -263,12 +264,6 @@ async function boot() {
   clockTick();
 
   if (!seenHowTo()) howto.show($('help-btn'));
-}
-
-/** The level as the page plays it: no fence limit, so the engine's budget is every buildable line. */
-function levelWithoutLimit(raw) {
-  const n = buildableLines(parseLevel(raw)).length;
-  return parseLevel({ ...raw, wallBudget: n });
 }
 
 function startDay(raw, number) {

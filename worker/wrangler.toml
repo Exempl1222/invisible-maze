@@ -1,0 +1,9 @@
+name = "gnome-sweet-gnome-stats"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# One free D1 database. Create it once (see worker/README.md) and paste its id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "gnome-stats"
+database_id = "REPLACE_WITH_D1_ID"
