@@ -117,7 +117,7 @@
 /* The border under the board. His hands overlap the board's bottom edge by about 8% of his height;
    pointer-events none keeps every line on the board tappable. */
 .villain {
-  /* fit() in play/board.js sets --villain-h (at most 170px, at least 40px, shorter on a short window) and --board-size. */
+  /* fit() in play/board.js sets --villain-h (at most 190px; on desktop at least 40px) and --board-size. */
   grid-area: villain;
   position: relative;
   z-index: 3; /* over the tiles and fences; the gnome (.robot, z-index 4) walks over his hands */

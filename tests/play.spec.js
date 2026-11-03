@@ -459,8 +459,8 @@ for (const [w, h, label] of [[390, 844, 'phone 390x844'], [1366, 625, 'laptop 13
     // Tiles are big enough to press.
     const box = await tile(page, 0, 0).boundingBox();
     expect(box.width).toBeGreaterThanOrEqual(30);
-    // Go is reachable too on a phone.
-    if (w < 880) await expect(go(page)).toBeInViewport();
+    // Go is reachable on a phone: Sir Croakwell frames the board full width (owner decision), so it may be below the fold, one short scroll away.
+    if (w < 880) { await go(page).scrollIntoViewIfNeeded(); await expect(go(page)).toBeInViewport(); }
   });
 }
 

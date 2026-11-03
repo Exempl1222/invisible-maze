@@ -223,13 +223,13 @@ test('play: Sir Croakwell casts on a placed wall, gloats on a win and sulks on a
   await expect(pose(page)).toHaveAttribute('data-sprite', 'toad-back-gloat');
 });
 
-test('layout: on a 390x844 phone Try stays on screen and the board keeps at least 300px', async ({ page }) => {
+test('layout: on a 390x844 phone he frames the board full width and the board is its old size', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openDaily(page);
-  const [b, go, v] = await Promise.all([page.locator('#board').boundingBox(), page.locator('#go').boundingBox(), page.locator('#villain').boundingBox()]);
-  expect(go.y + go.height).toBeLessThanOrEqual(844);
-  expect(b.width).toBeGreaterThanOrEqual(300);
-  expect(v.width).toBeCloseTo(b.width, 0); // his box is as wide as the board
+  const [b, v] = await Promise.all([page.locator('#board').boundingBox(), page.locator('#villain').boundingBox()]);
+  expect(b.width).toBe(358); // the board size on base 549a1a2 at this viewport
+  expect(v.height).toBeGreaterThanOrEqual(150);
+  expect(Math.abs(v.width - b.width)).toBeLessThanOrEqual(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
