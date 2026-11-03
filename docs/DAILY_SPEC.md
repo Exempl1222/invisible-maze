@@ -2,6 +2,37 @@
 
 The daily as its own page, so it can ship alone with a link to the full game later. Decided by Eric, 27 Oct 2026. Rules of play are unchanged (`docs/GAME_SPEC.md`, rules v4); this spec covers only what is new around them.
 
+## v3.3: "Can you beat it?" landing from a shared link (Eric, 3 Nov)
+
+Adds to v3.2. A friend's shared link opens today's puzzle with their score as the challenge. No server, no names, nothing sent anywhere.
+
+### The link
+- The share text's link carries the sharer's day and score: `https://gnomesweetgnome.app/daily/?mode=hard&n=8&s=82`. `n` = day number, `s` = day score (0 to 100). Built by `pageUrl` / `shareText` (pure, unit tested).
+- **Archive shares carry neither** (`?mode=` only, as now): the link opens today's puzzle, and an old day's score is no challenge for it.
+- The score card image does not change.
+
+### Reading it
+- Pure, unit-tested `readChallenge(search, todayNumber)` in `assets/js/daily/challenge.js` returns `{ number, score }` or `null`. It is `null` unless `n` and `s` are whole numbers, `s` is 0 to 100, and `n` equals the day number the page opens for **this** player today (a friend a time zone ahead may be a day out; then nothing shows).
+- On load the page remembers a valid challenge in `sessionStorage` under `gnome-sweet-gnome:daily:challenge`, keyed by mode and date, then removes `n` and `s` from the address bar with `history.replaceState` (keeps `mode`). A reload in the same tab keeps the banner; the player's own Share never carries the friend's score (it always rebuilds the link from their own result).
+- It never touches saved records, streaks, stats or the stats server.
+
+### The banner
+- One line in a soft panel under the Easy | Hard tabs, above the board, with a small `toad-front-point.svg` at the left. A close button (`×`, `aria-label="Dismiss"`, 44px) hides it for the rest of the session for that day and mode.
+- **Before the day is done:** `Your friend scored 82 on today's Hard. Can you beat it?`
+  - Friend scored 0: `Your friend couldn't fence him in on today's Hard. Can you?`
+- **Once the day is done** (live or on reload), the same banner shows the result:
+  - Player higher: `You 90, your friend 82. You win this one!`
+  - Equal: `You 82, your friend 82. Dead heat.`
+  - Player lower: `You 65, your friend 82. Croakwell is laughing.`
+  - The day-done line waits for the gnome's walk to end, like the score (`test/score-after-walk`).
+- First visit: the how-to-play card still opens first; the banner is on the page behind it.
+- Archive days (`?date=`) never show a banner.
+- Not a live region on load. When it switches to the result, `#status` already announces the day; the banner just updates.
+
+### Tests
+- Unit: `readChallenge` (valid; `n` mismatch; `s` out of range, decimals, junk; missing either) and the new share URL for today vs archive.
+- e2e: open `?mode=easy&n=<today>&s=82`: banner text, URL cleaned to `?mode=easy`, reload keeps it, dismiss hides it, finish the day → result line, own Share link has the player's own `s`, not 82. Mismatched `n` shows nothing. Archive date shows nothing.
+
 ## v3.2: score card share and the custom domain (Eric, 3 Nov)
 
 Adds to v3; the share text format does not change.
