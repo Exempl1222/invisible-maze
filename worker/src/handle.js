@@ -5,6 +5,7 @@
 import { parseDate, dayIndex } from '../../assets/js/play/daily.js';
 import { judgeFences } from '../../assets/js/daily/judge.js';
 import { BANDS } from '../../assets/js/daily/score.js';
+import { MAX_TRIES, LEGACY_MAX_TRIES } from '../../assets/js/daily/config.js';
 import { d1Store } from './store.js';
 
 export const ALLOWED_ORIGINS = [
@@ -15,9 +16,9 @@ export const ALLOWED_ORIGINS = [
   'http://127.0.0.1:4173',
 ];
 export const MODES = ['easy', 'hard'];
-export const MAX_TRIES = 3;
+export { MAX_TRIES };
 const MAX_BODY = 8192;
-const NO_RESULT = 'a day with no win takes all 3 tries';
+const NO_RESULT = `a day with no win takes all ${MAX_TRIES} tries`;
 const MAX_FENCES = 400;
 const DEVICE = /^[A-Za-z0-9_-]{8,64}$/;
 
@@ -94,7 +95,8 @@ async function postResult(request, env, now, origin) {
   if (away === null || Math.abs(away) > 1) return fail(400, 'that day is not open for results', origin);
   if (typeof hint !== 'boolean') return fail(400, 'bad hint', origin);
   if (!Number.isInteger(tries) || tries < 1 || tries > MAX_TRIES) return fail(400, 'bad tries', origin);
-  if (fences === null && tries !== MAX_TRIES) return fail(400, NO_RESULT, origin);
+  if (fences === null && tries !== MAX_TRIES && tries !== LEGACY_MAX_TRIES) // a day lost under the old 3-try cap is still valid
+    return fail(400, NO_RESULT, origin);
   if (fences !== null && (!Array.isArray(fences) || fences.length > MAX_FENCES)) return fail(400, 'bad fences', origin);
 
   const batch = env.LEVELS?.[mode];
