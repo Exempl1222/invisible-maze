@@ -188,8 +188,12 @@ test('page meta for link previews', async ({ page }) => {
   const meta = (sel) => page.locator(sel).getAttribute('content');
   expect(await meta('meta[property="og:title"]')).toBe('Gnome Sweet Gnome: daily puzzle');
   expect(await meta('meta[property="og:description"]')).toBe('Fence in the runaway gnome. One new puzzle a day.');
-  expect(await meta('meta[property="og:url"]')).toBe('https://exempl1222.github.io/invisible-maze/daily/');
-  expect(await meta('meta[name="twitter:card"]')).toBe('summary');
+  expect(await meta('meta[property="og:url"]')).toBe('https://gnomesweetgnome.app/daily/');
+  expect(await meta('meta[property="og:image"]')).toBe('https://gnomesweetgnome.app/assets/og/daily.png');
+  expect(await meta('meta[property="og:image:width"]')).toBe('1200');
+  expect(await meta('meta[property="og:image:height"]')).toBe('630');
+  expect(await meta('meta[property="og:image:alt"]')).toBe('Sir Croakwell the toad and a runaway gnome');
+  expect(await meta('meta[name="twitter:card"]')).toBe('summary_large_image');
 });
 
 test('reduced motion is really on in the page (CI once ignored it, which made Hard walks outlast the test clock)', async ({ page }) => {
@@ -573,6 +577,7 @@ const stubShare = (page, mode) => page.addInitScript((m) => {
   window.__shared = [];
   window.__copied = [];
   const nav = (name, value) => Object.defineProperty(navigator, name, { value, configurable: true });
+  nav('canShare', undefined); // headless Chromium may or may not ship it; these tests are about the text
   nav('share', m === 'share' ? async (d) => { window.__shared.push(d); }
     : m === 'abort' ? async () => { throw new DOMException('closed', 'AbortError'); } : undefined);
   nav('clipboard', m === 'fail' ? { writeText: async () => { throw new Error('no'); } } : { writeText: async (t) => { window.__copied.push(t); } });
@@ -1543,3 +1548,80 @@ for (const how of ['methods throw', 'the localStorage getter throws']) {
     expect(errors).toEqual([]);
   });
 }
+
+/* ---------- the score card (docs/DAILY_SPEC.md, "v3.2") ---------- */
+
+/** Finish Easy on its answer in one try and Submit: a 100/100 day, ready to share. */
+async function finishPerfectEasy(page) {
+  await openDay(page);
+  await placeAll(page, level('easy').answer);
+  await tryNow(page);
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(result(page)).toHaveAttribute('data-state', 'done');
+}
+const CARD_TEXT = (page) => ['Gnome Sweet Gnome #1 Easy 🍄', '100/100', '🟩', shareUrl(page, 'easy')].join('\n');
+
+test('Share with file sharing: one 1080x1080 PNG with the text, named per day and mode', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__shared = [];
+    window.__files = [];
+    window.__canShareArgs = [];
+    const nav = (name, value) => Object.defineProperty(navigator, name, { value, configurable: true });
+    nav('canShare', (d) => { window.__canShareArgs.push(Object.keys(d || {})); return Boolean(d && d.files && d.files.length === 1 && d.files[0].type === 'image/png'); });
+    nav('share', async (d) => { window.__shared.push({ text: d.text, files: (d.files || []).map((f) => ({ name: f.name, type: f.type, isFile: f instanceof File })) }); window.__files.push(...(d.files || [])); });
+    nav('clipboard', { writeText: async (t) => { window.__copied = t; } });
+  });
+  await finishPerfectEasy(page);
+  await expect(result(page)).toHaveAttribute('data-card', 'ready'); // drawn before any tap
+  await page.getByRole('button', { name: 'Share' }).click();
+  const shared = await page.evaluate(() => window.__shared);
+  expect(shared).toHaveLength(1);
+  expect(shared[0].files).toEqual([{ name: 'gnome-sweet-gnome-1-easy.png', type: 'image/png', isFile: true }]);
+  expect(shared[0].text).toBe(CARD_TEXT(page));
+  const size = await page.evaluate(async () => {
+    const bmp = await createImageBitmap(window.__files[0]);
+    return [bmp.width, bmp.height];
+  });
+  expect(size).toEqual([1080, 1080]);
+  await expect(page.locator('#save-image-btn')).toHaveCount(0); // phones with file sharing never see it
+  await expect(page.locator('#share-note')).toHaveText('');
+  expect(await page.evaluate(() => window.__copied)).toBeUndefined();
+});
+
+test('Share without navigator.share copies the text, says Copied and offers Save image', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nav = (name, value) => Object.defineProperty(navigator, name, { value, configurable: true });
+    nav('share', undefined);
+    nav('canShare', undefined);
+    window.__copied = [];
+    nav('clipboard', { writeText: async (t) => { window.__copied.push(t); } });
+  });
+  await finishPerfectEasy(page);
+  await expect(result(page)).toHaveAttribute('data-card', 'ready');
+  await page.getByRole('button', { name: 'Share' }).click();
+  await expect(page.locator('#share-note')).toHaveText('Copied');
+  expect(await page.evaluate(() => window.__copied)).toEqual([CARD_TEXT(page)]);
+  const save = page.getByRole('button', { name: 'Save image' });
+  await expect(save).toBeVisible();
+  const [download] = await Promise.all([page.waitForEvent('download'), save.click()]);
+  expect(download.suggestedFilename()).toBe('gnome-sweet-gnome-1-easy.png');
+});
+
+test('Share where canShare refuses files: text-only share and no Save image', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__shared = [];
+    window.__canShareCalls = 0;
+    const nav = (name, value) => Object.defineProperty(navigator, name, { value, configurable: true });
+    nav('canShare', () => { window.__canShareCalls++; return false; });
+    nav('share', async (d) => { window.__shared.push({ text: d.text, keys: Object.keys(d) }); });
+    nav('clipboard', { writeText: async () => { throw new Error('should not copy'); } });
+  });
+  await finishPerfectEasy(page);
+  await expect(result(page)).toHaveAttribute('data-card', 'ready');
+  await page.getByRole('button', { name: 'Share' }).click();
+  const shared = await page.evaluate(() => window.__shared);
+  expect(shared).toEqual([{ text: CARD_TEXT(page), keys: ['text'] }]);
+  expect(await page.evaluate(() => window.__canShareCalls)).toBe(1);
+  await expect(page.getByRole('button', { name: 'Save image' })).toHaveCount(0);
+  await expect(page.locator('#share-note')).toHaveText('');
+});
