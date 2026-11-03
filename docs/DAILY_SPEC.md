@@ -7,7 +7,7 @@ The daily as its own page, so it can ship alone with a link to the full game lat
 Adds to v2; nothing in v2 changes unless stated.
 
 ### See the optimal solution
-- Shown only once the day is done (Submitted, or all 3 tries used). Never before.
+- Shown only once the day is done (Submitted, or all 5 tries used). Never before.
 - Button `See the optimal solution` in the result panel, under the score. It toggles: `Hide the solution`. The changing label alone announces the state (no `aria-pressed`).
 - Showing it scrolls the board into view (smoothly, or at once with reduced motion), draws the stored par answer on the board in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk with those fences (respecting reduced motion). Hiding it puts the player's own final fences back.
 - This is where par is revealed, and only here. Still never shown during play.
@@ -20,7 +20,7 @@ A small server (a Cloudflare Worker with a D1 database) collects one result per 
 **What the page sends** (once, when the day is done, only for a day finished on its own date; archive plays are never sent):
 ```
 POST {STATS_URL}/result
-{ "device": "<random id>", "mode": "easy|hard", "date": "YYYY-MM-DD", "fences": [[x,y,"D"], ...] | null, "hint": true|false, "tries": 1..3 }
+{ "device": "<random id>", "mode": "easy|hard", "date": "YYYY-MM-DD", "fences": [[x,y,"D"], ...] | null, "hint": true|false, "tries": 1..5 }
 ```
 - `device` is a random id made once per browser and kept in the v2 save (`device`). It is not tied to anything personal.
 - `fences` is the best winning try's fences, or `null` for a day with no win.
@@ -32,7 +32,7 @@ POST {STATS_URL}/result
 - Accepts a date only if it is today somewhere in the world (server UTC date minus 1 to plus 1 day), so old or future days can't be posted.
 - One row per (device, mode, date); a repeat post is ignored (200, `duplicate: true`), never an overwrite.
 - Stores no IP addresses or other personal data. Abuse limits: the one-row-per-(device, mode, date) key, a body cap (413 above 8 KB), and a Workers Rate Limiting binding on `POST /result` (10 a minute per caller address, answered 429). The IP is used only for that in-memory limit and is never stored or logged. There is no stored posts-a-day counter, because counting every post would spend D1's free write allowance (100k rows a day) faster than it protects it. With no binding (tests, local runs) there is no limit.
-- `fences: null` (a day with no win) is accepted only with `tries: 3`.
+- `fences: null` (a day with no win) is accepted only with `tries: 5`, or `tries: 3` for a day lost before v3.1 (see the v3.1 note).
 - **Accepted limitations:** the `hint` flag is the client's word, so a player could drop it for +15; `tries` can't be verified; a determined script using many IPs and device ids can still add rows. The stats are for fun, not a leaderboard with prizes.
 - **Page side:** only a 400 marks a result as settled (refused for good); 403, 404, 413, 429 and 5xx retry on a later load. An unsent day is retried only while its date is still within the server's window (UTC date minus 1 to plus 1). "You beat X%" counts the player as included only when the send succeeded, and `/stats` is fetched with `cache: 'no-cache'` right after a send.
 - **Cheap reads:** an accepted result is one `INSERT OR IGNORE` into `results`, and an AFTER INSERT trigger bumps a pre-counted `counts(mode, date, score, n)` row in the same statement; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
@@ -53,6 +53,8 @@ POST {STATS_URL}/result
 
 ## v2: Easy and Hard, scored out of 100 (Eric, 27 Oct)
 
+**v3.1: 5 tries.** The daily (Easy and Hard) gives 5 tries a day instead of 3 (`MAX_TRIES` in `assets/js/daily/config.js`, the one source for the page, the saved-record cap and the Worker). Nothing else changes: every Try spends one, best try counts, score out of 100, hint -15, all tries lost = 0, Retry/Submit after a win. Existing saves: a day marked `done` stays done (a 3-lost-try day stays 3 tries, score 0); an unfinished day keeps the tries it spent and simply has more left (2 used = 3 left). A v1 day with 3 spent tries still migrates as finished. The Worker accepts `tries` 1 to 5, and `fences: null` with `tries: 5` or the legacy `tries: 3`, so a lost day finished before the change still sends. Where the text below says 3 tries, read 5.
+
 **This section supersedes the rest of the spec wherever they disagree** (tries as lives, wall budget, stars, par shown, answer reveal, one shared streak). Everything not mentioned here (archive, countdown, how-to-play, app link, cross-tab merge, storage safety, date handling) stays as written below.
 
 ### Two dailies
@@ -65,7 +67,7 @@ POST {STATS_URL}/result
 - **No fence limit.** The player can place as many fences as they like. Still refused: cutting every route, more than 2 sides of the gnome or of his house (rules v4), unbuildable lines. In code the page gives the engine a budget equal to the number of buildable lines; the engine and the level files don't change.
 - Shown: `Fences` (count only), `Move limit`, `Moves left`, `Best` (best score so far today, `-` before a win). **Par is never shown**, and nothing reveals the answer, including on a lost day.
 - Buttons: **Try** (sends the gnome), **Reset** (removes the player's fences; a hint fence stays), **Hint**.
-- **3 tries a day.** Every Try spends one, win or lose.
+- **5 tries a day** (v3.1; was 3). Every Try spends one, win or lose.
   - Win: the try's score shows. Buttons `Retry for a better score (N left)` (keeps the fences) and `Submit`. Submit ends the day.
   - Loss: `He made it home`; with tries left, `Try again (N left)`, fences stay.
   - After try 3 the day ends on its own.
@@ -111,7 +113,7 @@ POST {STATS_URL}/result
 ## The day
 
 - **Daily number:** `#N`, where N is the day's index in `daily.json` plus 1 (27 Oct 2026 is #1).
-- **3 tries a day.** A try is spent when the player presses Go.
+- **5 tries a day** (v3.1; was 3). A try is spent when the player presses Go.
   - Win on any try: the day is done, won on try N.
   - Lose with tries left: walls stay, the button reads `Try again (2 left)` / `(1 left)`.
   - Lose on try 3: the day is done, lost. The board shows one par answer in the hint (gold ribbon) style with the note `One way to fence him in (par N).`
@@ -131,7 +133,7 @@ POST {STATS_URL}/result
 ## Archive
 
 - A calendar button in the header opens an **Archive** dialog: the last 30 days, newest first (today at the top, marked `Today`), each row showing `#N`, the date and its result (stars, `Lost`, `In progress` or `Not played`). Days before the batch start are left out. Tapping a row goes to that day.
-- An archive day plays exactly like today (3 tries, 1 hint, locked when done) and is saved under its own date.
+- An archive day plays exactly like today (5 tries, 1 hint, locked when done) and is saved under its own date.
 - The title line says `Daily #N` plus an `Archive` tag on past days, with a `Today's gnome` link back.
 - **Archive plays don't count toward the streak** (only a day finished on its own date does). They do count in played, win % and the star bars. Each record stores `finishedOn` (local date the day was finished) to tell them apart.
 - Share text for an archive day is the same, with `(archive)` after the number.
@@ -171,14 +173,14 @@ https://exempl1222.github.io/invisible-maze/daily/
 - Three short steps, each with a small sprite:
   1. The gnome walks the shortest way home.
   2. Tap the lines between tiles to build fences. You can't cut off every way through.
-  3. Make his walk longer than his move limit. Fewer fences, more stars. 3 tries a day.
+  3. Make his walk longer than his move limit. Fewer fences, more stars. 5 tries a day.
 - Button: `Let's go`. Closing it sets `seenHowTo`.
 
 ## Page
 
 - Mobile first, 390px wide, same art, fonts and colour tokens as the game. Touch targets at least 44px. Dialogs are `<dialog>` with focus kept inside and Escape to close.
 - Header: wordmark (not a link while the app link is off), `?` (how to play) and a stats button.
-- Title line: `Daily #1` with the date `Tue 27 Oct` under it. Stats row (walls, par, move limit, moves left) and controls as in the game, plus a tries indicator (three pips).
+- Title line: `Daily #1` with the date `Tue 27 Oct` under it. Stats row (walls, par, move limit, moves left) and controls as in the game, plus a tries indicator (five pips).
 - Result panel when done: heading, stars, `Won on try 2 of 3` (or lost), walls vs par, Share (primary), Stats, countdown.
 - Meta for link previews: `og:title` `Gnome Sweet Gnome: daily puzzle`, `og:description` `Fence in the runaway gnome. One new puzzle a day.`, `og:url`, `twitter:card` `summary`. A preview image comes later.
 
