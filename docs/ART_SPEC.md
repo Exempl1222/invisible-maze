@@ -5,7 +5,7 @@ Source of truth for the game's art. Pairs with `docs/GAME_SPEC.md` (rules). If t
 ## What's in the pack
 
 ```
-assets/sprites/            29 SVGs + manifest.json (generated, don't hand-edit)
+assets/sprites/            36 SVGs (35 sprites and icon-gnome.svg) + manifest.json (generated, don't hand-edit)
 assets/js/sprites.js       loader: preload, inline copies, gnome state swap, one-shot helper
 assets/css/sprites.css     tile backgrounds, wall placement, gnome placement, teleport and goal animations
 tools/build-sprites.mjs    builds every sprite from one file. `node tools/build-sprites.mjs`
@@ -20,6 +20,8 @@ docs/ART_SPEC.md           this file
 | Gnome | `gnome-{up,right,down,left}-{idle,walk,shrug}.svg` (12) | 140 x 140 | Feet anchor at (70, 131). Loops: idle 4.8s, walk 0.6s, shrug 2.2s. Left is right mirrored, baked into the file |
 | Walls | `wall-h.svg`, `wall-v.svg`, `wall-h-hint.svg`, `wall-v-hint.svg` | 64 x 32 and 24 x 72 | Build plays once on load (0.8 to 1.15s). Hint walls add a gold ribbon and sparkle |
 | Teleporters | `stump-a.svg`, `stump-b.svg`, `stump-c.svg` | 64 x 64 | Teal, violet, gold. Hollow centre at (32, 26). Glow loops forever |
+| Sir Croakwell (back) | `toad-back-{idle,cast,gloat,sulk}.svg` (4) | 390 x 200 | Board border, seen from behind. `overflow: visible`: the cast pose reaches about 40px above the canvas. Loops: idle breathe 3.2s and a fly, gloat bounce 0.5s. Inline from `assets/js/villain.js` |
+| Sir Croakwell (front) | `toad-front-{smug,point}.svg` (2) | 390 x 460 | Home hero (`smug`, wink) and the How to play dialog (`point`). Fly orbit and blink; finger spark |
 | Tiles | `tile-grass-{1,2,3}`, `tile-rock`, `tile-bush`, `tile-river`, `tile-bridge-h`, `tile-bridge-v`, `tile-house`, `tile-start` | 64 x 64 | Full bleed. River is seamless in every direction |
 
 `manifest.json` lists every file with its size, anchor and timing, so code never hard-codes a path it can't check.
@@ -44,6 +46,7 @@ Replaces rule 6 in `CLAUDE.md` once the gnome lands.
 | Timber | `#c48a52` | A wall the player placed |
 | Gold | `#e9b949` | A hint wall (ribbon) |
 | Teal / violet / amber glow | `#5ff0d8` / `#c79bff` / `#ffcf5a` | Teleporter pairs 1, 2, 3. Glow only ever means magic |
+| Lime glow / spark core | `#d8f26a` / `#f4ffc4` | Croakwell's fence magic. Only he and the fences he conjures glow lime. He never wears hat red (his acorn button is gold) |
 | Water | `#5aa9d6` | River |
 | Log brown | `#a0703f` | Bridge |
 | Stone grey, bush green | `#9aa3a6`, `#3f7a34` | Pre-built, permanent |

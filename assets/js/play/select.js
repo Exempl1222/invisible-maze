@@ -16,15 +16,17 @@ export function modeTabs(current, onPick) {
   const nav = document.createElement('nav');
   nav.className = 'mode-tabs';
   nav.setAttribute('aria-label', 'Mode');
-  for (const [id, label, href] of [['levels', 'Levels', './'], ['daily', 'Daily', './?daily'], ['lab', 'Lab', './?lab']]) {
+  for (const [id, label, href] of [['levels', 'Levels', './'], ['daily', 'Daily', '../daily/'], ['lab', 'Lab', './?lab']]) {
     const a = document.createElement('a');
     a.href = href;
     a.textContent = label;
     if (id === current) a.setAttribute('aria-current', 'page');
-    a.addEventListener('click', (e) => {
-      e.preventDefault();
-      onPick(id);
-    });
+    if (id !== 'daily') { // Daily is its own page now (Easy and Hard); the old in-page daily stays reachable by deep link
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        onPick(id);
+      });
+    }
     nav.appendChild(a);
   }
   return nav;

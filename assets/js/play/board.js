@@ -14,6 +14,9 @@ const GAP = 3;
 const SIDE_MARGIN = 16; // keeps clear of iOS edge swipes
 const MAX_BOARD = 560;
 const SIDE_COLUMN = 260 + 36; // stats column plus the gap, in the wide layout
+const TOAD_MAX = 190; // Sir Croakwell's tallest height, in px
+const TOAD_MIN = 40; // and the shortest he shrinks to before the board gives up more room
+const TOAD_OVERLAP = 0.08; // his hands overlap the board's bottom edge by this share of his height
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isPortal = (c) => c >= 'a' && c <= 'z';
@@ -123,8 +126,26 @@ export function createBoard(root, level, { onLine, onHelp }) {
     const availW = Math.min(MAX_BOARD, vw - 2 * SIDE_MARGIN - (wide ? SIDE_COLUMN : 0));
     const top = root.getBoundingClientRect().top + window.scrollY;
     const availH = window.innerHeight - top - 12;
-    const px = Math.floor(Math.max(200, Math.min(availW, availH)));
-    (root.parentElement || root).style.setProperty('--board-size', `${px}px`);
+    const host = root.parentElement || root;
+    let px;
+    if (host.querySelector(':scope > .villain')) {
+      const seen = 1 - TOAD_OVERLAP;
+      if (!wide) {
+        // Phones: the board is sized as it always was; Sir Croakwell frames it full width (a short scroll to Try is fine).
+        px = Math.floor(Math.max(200, Math.min(availW, availH)));
+        host.style.setProperty('--villain-h', `${Math.floor(Math.min(TOAD_MAX, (px * 200) / 390))}px`);
+      } else {
+        // Desktop: his visible height (height less the overlap) comes out of the window height so he is fully visible.
+        const uncapped = availH / (1 + (seen * 200) / 390);
+        px = Math.min(availW, (uncapped * 200) / 390 <= TOAD_MAX ? uncapped : availH - seen * TOAD_MAX);
+        px = Math.floor(Math.max(200, Math.min(availW, px)));
+        const toad = Math.max(TOAD_MIN, Math.min((px * 200) / 390, TOAD_MAX, (availH - px) / seen));
+        host.style.setProperty('--villain-h', `${Math.floor(toad)}px`);
+      }
+    } else {
+      px = Math.floor(Math.max(200, Math.min(availW, availH)));
+    }
+    host.style.setProperty('--board-size', `${px}px`);
     layout();
   }
 
@@ -338,6 +359,16 @@ export function createBoard(root, level, { onLine, onHelp }) {
     setTimeout(() => c.classList.remove(cls), 600);
   };
 
+  /** The one-shot spell on a fresh fence: a `.magic` class (lime glow) and four confetti bits, gone after 600ms. */
+  function castMagic(bar) {
+    const fx = el('magic-fx');
+    fx.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 4; i++) fx.appendChild(el('bit'));
+    bar.classList.add('magic');
+    bar.appendChild(fx);
+    setTimeout(() => { bar.classList.remove('magic'); fx.remove(); }, 600);
+  }
+
   /* ---------- public ---------- */
 
   const api = {
@@ -348,8 +379,11 @@ export function createBoard(root, level, { onLine, onHelp }) {
     /** True if the wall on this line was placed by a hint (it can't be taken back). */
     isHintWall: (line) => walls.get(lineKey(line))?.hint === true,
     hintLines: () => [...walls.values()].filter((w) => w.hint).map((w) => w.line),
-    /** Place or remove a wall. `hint: true` draws it in the hint style; hint walls are only removed with force. */
-    setWall(line, on, { hint: isHint = false, force = false } = {}) {
+    /**
+     * Place or remove a wall. `hint: true` draws it in the hint style; hint walls are only removed with force.
+     * `magic: true` is for a fence the player just placed: Sir Croakwell's lime glow and confetti, once (600ms).
+     */
+    setWall(line, on, { hint: isHint = false, force = false, magic = false } = {}) {
       const k = lineKey(line);
       if (!on && walls.get(k)?.hint && !force) return;
       if (on && !walls.has(k)) {
@@ -364,6 +398,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
         const w = { line, bar, hint: isHint };
         walls.set(k, w);
         placeWallBar(w);
+        if (magic) castMagic(bar);
       } else if (!on && walls.has(k)) {
         walls.get(k).bar.remove();
         walls.delete(k);

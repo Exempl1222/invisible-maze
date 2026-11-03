@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How to play</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f4a22}a:hover{color:#1d3014}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #eaf2dc; font-family: Fredoka, system-ui, sans-serif; color: #2f4a22">
+<div style="position: absolute; top: 14px; left: 16px; right: 12px; display: flex; justify-content: space-between; align-items: center">
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">How to play</h1>
+<a href="TitleScreen.dc.html" aria-label="Close" style="width: 44px; height: 44px; border-radius: 22px; background: #f6f1df; display: flex; align-items: center; justify-content: center; color: #2f4a22"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3 L15 15 M15 3 L3 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path></svg></a>
+</div>
+
+<div style="position: absolute; left: -14px; top: 54px; width: 390px; height: 460px; transform: scale(0.6); transform-origin: top left; pointer-events: none">
+<dc-import name="ToadFront" pose="point" look="right" hint-size="390px,460px"></dc-import>
+</div>
+
+<div style="position: absolute; left: 214px; top: 84px; width: 160px; background: #fffaf0; border: 2px solid #2f4a22; border-radius: 18px; padding: 12px 14px; box-sizing: border-box; font-size: 17px; font-weight: 600; line-height: 1.25">Ahem. Listen up, apprentice.</div>
+<svg style="position: absolute; left: 198px; top: 128px" width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><path d="M18 2 L2 14 L18 18" fill="#fffaf0" stroke="#2f4a22" stroke-width="2" stroke-linejoin="round"></path><rect x="16" y="0" width="5" height="20" fill="#fffaf0"></rect></svg>
+
+<div style="position: absolute; left: 16px; right: 16px; top: 322px; background: #fffaf0; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box">
+
+<div style="display: flex; gap: 12px; align-items: center">
+<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Gnome walking the shortest path to his mushroom home" style="flex-shrink: 0">
+<rect width="64" height="64" rx="12" fill="#d7e8bd"></rect>
+<path d="M18 40 C28 30 38 30 46 38" fill="none" stroke="#8b6a3e" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round"></path>
+<g transform="translate(14 48)"><rect x="-5" y="-12" width="10" height="9" rx="3" fill="#3a6ea5"></rect><circle cx="0" cy="-14" r="4" fill="#f2c7a5"></circle><path d="M0 -28 L-7 -15 L7 -15 Z" fill="#c8402f"></path><path d="M-4 -13 Q0 -5 4 -13 Z" fill="#fbfbf7"></path></g>
+<g transform="translate(50 48)"><rect x="-5" y="-10" width="10" height="10" rx="2" fill="#f4e8cf"></rect><path d="M-12 -9 C-12 -22 12 -22 12 -9 Z" fill="#c8402f"></path><circle cx="-4" cy="-15" r="1.8" fill="#fff6e6"></circle><circle cx="4" cy="-16" r="1.5" fill="#fff6e6"></circle></g>
+</svg>
+<p style="margin: 0; font-size: 15px; line-height: 1.3">See that gnome? He's running home, always the <strong>shortest way</strong>.</p>
+</div>
+
+<div style="display: flex; gap: 12px; align-items: center">
+<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="A fence growing on the line between two tiles" style="flex-shrink: 0">
+<rect width="64" height="64" rx="12" fill="#d7e8bd"></rect>
+<rect x="8" y="8" width="23" height="23" rx="4" fill="#a3cf78"></rect><rect x="33" y="8" width="23" height="23" rx="4" fill="#a3cf78"></rect>
+<rect x="8" y="33" width="23" height="23" rx="4" fill="#a3cf78"></rect><rect x="33" y="33" width="23" height="23" rx="4" fill="#a3cf78"></rect>
+<rect x="27" y="4" width="10" height="31" rx="5" fill="#c9a6ff" opacity="0.55"></rect>
+<rect x="30" y="8" width="4" height="23" rx="2" fill="#9b6a3a"></rect>
+<rect x="28.5" y="6" width="7" height="6" rx="1.5" fill="#6e4524"></rect><rect x="28.5" y="26" width="7" height="6" rx="1.5" fill="#6e4524"></rect>
+</svg>
+<p style="margin: 0; font-size: 15px; line-height: 1.3">Tap a <strong>line between two tiles</strong>. I'll grow a fence there.</p>
+</div>
+
+<div style="display: flex; gap: 12px; align-items: center">
+<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="A gnome fully boxed in by fences is not allowed" style="flex-shrink: 0">
+<rect width="64" height="64" rx="12" fill="#d7e8bd"></rect>
+<rect x="20" y="20" width="24" height="24" rx="4" fill="#a3cf78"></rect>
+<g fill="#9b6a3a"><rect x="18" y="16" width="28" height="4" rx="2"></rect><rect x="18" y="44" width="28" height="4" rx="2"></rect><rect x="16" y="18" width="4" height="28" rx="2"></rect><rect x="44" y="18" width="4" height="28" rx="2"></rect></g>
+<g transform="translate(32 41) scale(0.8)"><rect x="-5" y="-12" width="10" height="9" rx="3" fill="#3a6ea5"></rect><circle cx="0" cy="-14" r="4" fill="#f2c7a5"></circle><path d="M0 -28 L-7 -15 L7 -15 Z" fill="#c8402f"></path></g>
+<path d="M10 10 L54 54 M54 10 L10 54" stroke="#b5372a" stroke-width="4" stroke-linecap="round" opacity="0.85"></path>
+</svg>
+<p style="margin: 0; font-size: 15px; line-height: 1.3">Garden rules: he must always have <strong>a way home</strong>. No boxing him in.</p>
+</div>
+
+<div style="display: flex; gap: 12px; align-items: center">
+<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Two hollow stumps linked as a tunnel, and a bridge over a river" style="flex-shrink: 0">
+<rect width="64" height="64" rx="12" fill="#d7e8bd"></rect>
+<rect x="38" y="6" width="16" height="52" rx="4" fill="#74b6dc"></rect>
+<rect x="34" y="26" width="24" height="12" rx="2" fill="#8b5e34"></rect>
+<g stroke="#5d3b1d" stroke-width="1.5"><line x1="40" y1="26" x2="40" y2="38"></line><line x1="46" y1="26" x2="46" y2="38"></line><line x1="52" y1="26" x2="52" y2="38"></line></g>
+<g transform="translate(18 18)"><ellipse rx="10" ry="8" fill="#8b5e34"></ellipse><ellipse cy="-1" rx="7" ry="5" fill="#c79a63"></ellipse><ellipse cy="-1" rx="4" ry="3" fill="#3b2614"></ellipse></g>
+<g transform="translate(18 48)"><ellipse rx="10" ry="8" fill="#8b5e34"></ellipse><ellipse cy="-1" rx="7" ry="5" fill="#c79a63"></ellipse><ellipse cy="-1" rx="4" ry="3" fill="#3b2614"></ellipse></g>
+<path d="M18 27 L18 38" stroke="#2f4a22" stroke-width="1.5" stroke-dasharray="2 3"></path>
+</svg>
+<p style="margin: 0; font-size: 15px; line-height: 1.3">Hollow stumps are <strong>tunnels</strong>. Bridges <strong>can't be fenced</strong>.</p>
+</div>
+
+<div style="border-top: 2px dashed #d7e8bd; padding-top: 10px; font-size: 14px; line-height: 1.35; color: #4a6a38">Trap him in <strong style="color: #2f4a22">par fences for 100 points</strong>. You get 3 tries a day and your best one counts.</div>
+</div>
+
+<div style="position: absolute; left: 16px; right: 16px; bottom: 22px">
+<a href="TitleScreen.dc.html" style="min-height: 56px; border-radius: 16px; background: #b5372a; color: #ffffff; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-decoration: none">Let's trap him</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

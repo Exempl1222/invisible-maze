@@ -5,7 +5,8 @@ import { loadProgress, recordWin, loadHints, hintCount, spendHint, earnDailyHint
 import { renderSelect, renderLab } from './select.js';
 import { capMessage } from './lines.js';
 import { starsMarkup } from './icons.js';
-import { preloadSprites, sprite } from '../sprites.js';
+import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
+import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from './daily.js';
 
 const PACK_URL = '../assets/levels/pack-01.json';
@@ -38,6 +39,8 @@ let labFailed = false;
 let daily = null; // { start, levels } once daily.json has loaded
 let game = null; // { kind: 'level' | 'daily', index, level, board, state: 'editing' | 'running' | 'result', token }
 
+let villain = null; // Sir Croakwell under the board: { setMood, cast }, or null if his sprites did not load
+const mood = (m) => villain?.setMood(m);
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -176,6 +179,7 @@ function startGame({ kind, index, level, title }) {
 
   game.board = createBoard(boardEl, level, { onLine, onHelp });
   game.board.fit();
+  mood('idle');
   parEl.textContent = String(level.par);
   limitEl.textContent = String(level.moveLimit);
   movesLeftEl.textContent = String(level.moveLimit);
@@ -222,6 +226,7 @@ function onLine(target) {
     refused('That wall is a hint, so it stays. Hints cannot be taken back.');
   } else if (board.hasWall(line)) {
     board.setWall(line, false);
+    mood('idle');
     setStatus('Wall removed.');
   } else if (board.wallList().length >= level.wallBudget) {
     board.refuse(target);
@@ -238,7 +243,9 @@ function onLine(target) {
     board.refuse(target);
     refused('The gnome needs at least one way through.');
   } else {
-    board.setWall(line, true);
+    board.setWall(line, true, { magic: true });
+    mood('idle');
+    villain?.cast();
     const used = board.wallList().length;
     setStatus(used === level.wallBudget ? 'All walls placed. Press Go.' : `Wall placed. ${used} of ${level.wallBudget} used.`);
   }
@@ -294,6 +301,7 @@ function finish(sim, walls) {
   resultEl.hidden = false;
   resultEl.dataset.result = sim.result;
   resultEl.innerHTML = '';
+  mood(sim.result === 'win' ? 'gloat' : 'sulk'); // the walk is over: trapped, he gloats; home, he sulks
 
   const heading = document.createElement('h2');
   const text = document.createElement('p');
@@ -370,6 +378,7 @@ function retry() {
   const g = game;
   g.state = 'editing';
   g.token++;
+  mood('idle');
   g.board.resetRun();
   g.board.setLocked(false);
   movesLeftEl.textContent = String(g.level.moveLimit);
@@ -394,6 +403,7 @@ goBtn.addEventListener('click', run);
 clearBtn.addEventListener('click', () => {
   if (!game || game.state !== 'editing') return;
   game.board.clearWalls();
+  mood('idle');
   updateCounters();
   const kept = game.board.hintLines().length;
   setStatus(kept ? 'Your walls are cleared. Hint walls stay.' : 'Walls cleared.');
@@ -442,7 +452,9 @@ function useHint() {
     return;
   }
   if (!spendHint()) return;
-  board.setWall(line, true, { hint: true });
+  board.setWall(line, true, { hint: true, magic: true });
+  mood('idle');
+  villain?.cast();
   const used = board.wallList().length;
   setStatus(`Hint placed: one wall of a par answer. ${used} of ${level.wallBudget} walls used. It costs 1 star on this level.`);
   updateCounters();
@@ -459,6 +471,9 @@ window.addEventListener('popstate', () => render());
 
 async function boot() {
   const loading = $('loading');
+  // Start the art (Sir Croakwell's too) now, so it loads beside the level files, not after them.
+  const art = preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...VILLAIN_SPRITES]);
+  art.catch(() => {}); // handled where it is awaited below
   try {
     const res = await fetch(PACK_URL);
     if (!res.ok) throw new Error(`${res.status}`);
@@ -484,7 +499,7 @@ async function boot() {
     labFailed = true; // the Lab tab says so; the rest of the game still works
   }
   try {
-    await preloadSprites();
+    await art;
   } catch {
     loading.textContent = '';
     const p = document.createElement('p');
@@ -496,6 +511,11 @@ async function boot() {
     retryBtn.addEventListener('click', () => location.reload());
     loading.append(p, retryBtn);
     return;
+  }
+  try {
+    villain = await mountVillain($('villain'));
+  } catch {
+    villain = null; // he is decoration: the game plays without him
   }
   loading.hidden = true;
   loadProgress();

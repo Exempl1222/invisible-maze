@@ -334,6 +334,264 @@ function wallV(hint) {
       <path class="spark" style="${delay(1)}" d="M20 6 l1 2.2 l2.2 1 l-2.2 1 l-1 2.2 l-1 -2.2 l-2.2 -1 l2.2 -1 Z" fill="#fff" ${O(.8)}/>` : '');
 }
 
+/* ---------- Sir Croakwell, the toad wizard (docs/VILLAIN_SPEC.md) ---------- */
+// Ported from docs/mockups/croakwell. No hat red anywhere on him; his magic is lime.
+const K = {
+  skin: '#6f8c3c', skinHi: '#a3c25c', skinLo: '#435d20', bulgeHi: '#b3cf6a', bulgeLo: '#5c7830',
+  arm: '#56712c', palm: '#5f7a32', web: '#7a9a40', pad: '#c9dc8a', freckle: '#b3cf6a', belly: '#e6dca0', bellyLine: '#cbbf80',
+  eyeHi: '#ffe08a', eye: '#e8b63c', eyeLo: '#b07a18', pupil: '#1f1a14', lid: '#6a8738', lidBack: '#5c7830',
+  hatHi: '#7a58b8', hatLo: '#3b2768', brim: '#2f1f55', spring: '#4f3585', cloakHi: '#5e4396', cloakLo: '#36245e', collar: '#4a3478',
+  orange: '#ff9a3c', gold: '#ffd96b', goldD: '#d9a22b', acorn: '#a8761a', lilac: '#8f6fcc', card: '#fffaf0',
+  pink: '#ff7fa6', pinkHi: '#ffd0de', cheek: '#ff8fa3', tongue: '#e0687c', mouth: '#5a1f2a', cream: '#fff6e0',
+  lime: '#d8f26a', limeCore: '#f4ffc4', fly: '#2a2a24', sac: '#f1e2a0', snail: '#d98c5f', snailFoot: '#c9b38e',
+  wood: '#9b6a3a', cloud: '#7b8494', rain: '#9fb4c8', smoke: '#9aa0a8',
+};
+const CONFETTI = [K.orange, K.pink, K.lime, K.cream];
+const f1 = (n) => +n.toFixed(1);
+const ell = (cx, cy, rx, ry) => `M${f1(cx - rx)} ${cy} a${rx} ${ry} 0 1 0 ${2 * rx} 0 a${rx} ${ry} 0 1 0 ${-2 * rx} 0 Z`;
+const rr = (x, y, w, h, r = 0) => r
+  ? `M${x + r} ${y} H${x + w - r} Q${x + w} ${y} ${x + w} ${y + r} V${y + h - r} Q${x + w} ${y + h} ${x + w - r} ${y + h} H${x + r} Q${x} ${y + h} ${x} ${y + h - r} V${y + r} Q${x} ${y} ${x + r} ${y} Z`
+  : `M${x} ${y} H${x + w} V${y + h} H${x} Z`;
+const star4 = (cx, cy, s) => `M${cx} ${cy - s} l${f1(s * .38)} ${f1(s * .62)} l${f1(s * .62)} ${f1(s * .38)} l${f1(-s * .62)} ${f1(s * .38)} l${f1(-s * .38)} ${f1(s * .62)} l${f1(-s * .38)} ${f1(-s * .62)} l${f1(-s * .62)} ${f1(-s * .38)} l${f1(s * .62)} ${f1(-s * .38)} Z`;
+/** A line with an ink edge: ink stroke underneath, coloured stroke on top. */
+const inkLine = (d, color, w, edge = 3, extra = '') =>
+  `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="${f1(w + edge * 2)}" stroke-linecap="round" stroke-linejoin="round" ${extra}/><path d="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" ${extra}/>`;
+/** A small confetti bit: [x, y, rotation, colour index]. */
+const bit = ([x, y, rot, c], w = 7, h = 4, cls = '', style = '') => {
+  const r = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1" fill="${CONFETTI[c % 4]}" stroke="${C.ink}" stroke-width=".9" transform="rotate(${rot} ${x + w / 2} ${y + h / 2})"/>`;
+  return cls ? `<g class="${cls}" style="${style}">${r}</g>` : r;
+};
+/** Overlapping blobs as one outlined shape: ink under all of them, fills on top. */
+const blob = (ds, fill, w) => ds.map((d) => `<path d="${d}" fill="${C.ink}" stroke="${C.ink}" stroke-width="${w * 2}" stroke-linejoin="round"/>`).join('') + ds.map((d) => `<path d="${d}" fill="${fill}"/>`).join('');
+/** Keyframes for a small elliptical orbit (CSS can't follow an ellipse without offset-path). */
+function orbitFrames(name, cx, cy, rx, ry, n = 12) {
+  const pts = Array.from({ length: n + 1 }, (_, i) => {
+    const a = (i / n) * Math.PI * 2;
+    return `${f1((i / n) * 100)}%{transform:translate(${f1(cx + rx * Math.cos(a))}px,${f1(cy + ry * Math.sin(a))}px)}`;
+  });
+  return `@keyframes ${name}{${pts.join('')}}`;
+}
+const fly = (cls, s = 1) => `<g class="${cls}"><g transform="scale(${s})">
+  <ellipse cx="-3" cy="-5" rx="5.5" ry="3.3" fill="#fff" ${O(1)} opacity=".9"/><ellipse cx="3" cy="-5" rx="4.6" ry="2.8" fill="#fff" ${O(1)} opacity=".9"/>
+  <ellipse cx="0" cy="0" rx="5" ry="3.6" fill="${K.fly}" ${O(1.2)}/><circle cx="-4" cy="-.5" r="1.2" fill="#fff"/></g></g>`;
+
+/** The webbed four-finger hand, fingers up, palm at the origin. `fist` curls the fingers. */
+function hand({ w = 3, glow = false, fist = false } = {}) {
+  const tips = [[-18, -26], [-6, -32], [6, -32], [18, -26]];
+  const roots = [[-10, -4], [-4, -8], [4, -8], [10, -4]];
+  if (fist) {
+    return part(ell(0, 0, 18, 13), K.palm, null, null, w) +
+      [[-11, -9], [-4, -13], [4, -13], [11, -9]].map(([x, y]) => part(ell(x, y, 6.5, 6), K.palm, null, null, w)).join('') +
+      [[-11, -10], [-4, -14], [4, -14], [11, -10]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.3" fill="${K.pad}"/>`).join('') +
+      part(ell(15, 4, 5.5, 5), K.palm, null, null, w);
+  }
+  return part('M-18 -24 Q-12 -12 -6 -30 Q0 -16 6 -30 Q12 -12 18 -24 L13 -2 L-13 -2 Z', K.web, null, null, w) +
+    roots.map(([x, y], i) => `<line x1="${x}" y1="${y}" x2="${tips[i][0]}" y2="${tips[i][1]}" stroke="${C.ink}" stroke-width="${7 + w * 2}" stroke-linecap="round"/>`).join('') +
+    roots.map(([x, y], i) => `<line x1="${x}" y1="${y}" x2="${tips[i][0]}" y2="${tips[i][1]}" stroke="${K.palm}" stroke-width="7" stroke-linecap="round"/>`).join('') +
+    part(ell(0, 0, 17, 12), K.palm, null, null, w) +
+    tips.map(([x, y]) => part(ell(x, y - 1, 5, 5), K.pad, null, null, w * .8)).join('') +
+    (glow ? `<g class="pulse">${tips.map(([x, y]) => `<circle cx="${x}" cy="${y - 1}" r="9" fill="${K.lime}" opacity=".45"/>`).join('')}
+      <circle cx="-6" cy="-33" r="3.2" fill="${K.limeCore}"/><circle cx="6" cy="-33" r="3.2" fill="${K.limeCore}"/></g>` : '');
+}
+
+/** The wizard hat in back-mockup coordinates (brim at y 542). `tip` is the transform of the spring tip. */
+function hat(w, tip) {
+  const snailShell = 'M236 532 m-1 0 a2 2 0 1 1 3 1 a4 4 0 1 1 -6 -3';
+  return part(ell(195, 542, 54, 12), K.brim, null, null, w) +
+    part('M163 540 C171 504 187 474 200 454 L214 458 C219 488 225 514 229 540 Z', `url(#${PFX}hat)`, null, null, w) +
+    `<g transform="${tip}">` +
+    inkLine('M207 456 c6 -14 20 -14 20 -2 c0 10 -12 10 -10 0 c2 -12 18 -14 22 -2 c3 9 -8 11 -8 2 c0 -10 14 -14 22 -6', K.spring, 6, w * .6) +
+    part(ell(257, 446, 9, 9), K.orange, null, null, w) +
+    `<path d="M250 443 Q257 438 264 443 M249 449 Q257 454 265 449" fill="none" stroke="${K.gold}" stroke-width="2" stroke-linecap="round"/></g>` +
+    part('M166 528 Q196 538 227 528 L229 538 Q196 548 164 538 Z', K.orange, null, null, w) +
+    [[176, 535], [190, 538], [204, 538], [218, 535]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2" fill="${K.gold}"/>`).join('') +
+    `<g transform="rotate(-18 172 518)">${part(rr(165, 506, 14, 20, 2), K.card, null, null, w * .7)}<path d="M172 511 l4 5 l-4 5 l-4 -5 Z" fill="${K.orange}" stroke="${C.ink}" stroke-width=".8"/></g>` +
+    `<g transform="rotate(-10 192 495)">${part(rr(185, 488, 15, 14, 1.5), K.lilac, null, null, w * .7)}<rect x="187" y="490" width="11" height="10" fill="none" stroke="${K.cream}" stroke-width="1.2" stroke-dasharray="2 2"/></g>` +
+    part('M214 500 l2.5 5.5 l6 0.6 l-4.5 4 l1.3 6 l-5.3 -3 l-5.3 3 l1.3 -6 l-4.5 -4 l6 -0.6 Z', K.gold, null, null, w * .7) +
+    part('M226 540 Q232 534 248 538 L250 542 Q236 544 226 542 Z', K.snailFoot, null, null, w * .6) +
+    `<path d="M248 538 L252 528 M245 538 L246 527" stroke="${C.ink}" stroke-width="1.5" stroke-linecap="round"/>` +
+    part(ell(236, 532, 8, 8), K.snail, null, null, w * .6) + `<path d="${snailShell}" fill="none" stroke="${C.ink}" stroke-width="1.2"/>`;
+}
+
+/** The gold acorn button on the cloak (replaces the mockup's toadstool clasp). Centre (cx, cy), about 22 tall. */
+const acorn = (cx, cy, w) =>
+  part(`M${cx - 8} ${cy - 2} C${cx - 8} ${cy + 8} ${cx - 3} ${cy + 12} ${cx} ${cy + 12} C${cx + 3} ${cy + 12} ${cx + 8} ${cy + 8} ${cx + 8} ${cy - 2} Z`, K.gold, `M${cx + 2} ${cy - 4} H${cx + 10} V${cy + 14} H${cx + 1} Z`, K.goldD, w) +
+  part(`M${cx - 10} ${cy - 1} C${cx - 10} ${cy - 11} ${cx + 10} ${cy - 11} ${cx + 10} ${cy - 1} Z`, K.acorn, null, null, w) +
+  `<path d="M${cx} ${cy - 10} V${cy - 14}" stroke="${C.ink}" stroke-width="${w + 1}" stroke-linecap="round"/><path d="M${cx - 3} ${cy + 4} Q${cx - 4} ${cy + 8} ${cx - 2} ${cy + 9}" fill="none" stroke="${K.cream}" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>`;
+
+const toadDefs = (back) => `<defs>
+  <radialGradient id="${PFX}skin" cx="45%" cy="${back ? 20 : 25}%" r="80%"><stop offset="0" stop-color="${K.skinHi}"/><stop offset="${back ? .5 : .55}" stop-color="${K.skin}"/><stop offset="1" stop-color="${K.skinLo}"/></radialGradient>
+  <radialGradient id="${PFX}bulge" cx="45%" cy="30%" r="70%"><stop offset="0" stop-color="${K.bulgeHi}"/><stop offset="1" stop-color="${K.bulgeLo}"/></radialGradient>
+  <radialGradient id="${PFX}eye" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="${K.eyeHi}"/><stop offset=".6" stop-color="${K.eye}"/><stop offset="1" stop-color="${K.eyeLo}"/></radialGradient>
+  <linearGradient id="${PFX}hat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${K.hatHi}"/><stop offset="1" stop-color="${K.hatLo}"/></linearGradient>
+  <linearGradient id="${PFX}cloak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${K.cloakHi}"/><stop offset="1" stop-color="${K.cloakLo}"/></linearGradient>
+  <filter id="${PFX}glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs>`;
+
+/* ----- back view: a 390 x 200 band. Mockup coordinates are mapped with k = .62; hands and arms live in band coordinates ----- */
+const TB = { k: 0.62, tx: 74.1, ty: -234.4 }; // x' = tx + k x, y' = ty + k y  (dome top of the idle pose lands at y 70)
+const TOAD_CSS = `
+.breathe{transform-box:fill-box;transform-origin:50% 100%;animation:toadBreathe 3.2s ease-in-out infinite}
+@keyframes toadBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+.bounce{animation:toadBounce .5s ease-in-out infinite}
+@keyframes toadBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.snap{transform-box:fill-box;transform-origin:0% 100%;animation:toadSnap 1.5s ease-in-out infinite}
+@keyframes toadSnap{0%,55%,100%{transform:scale(.55)}65%,80%{transform:scale(1)}}
+.pulse{animation:toadPulse 1.2s ease-in-out infinite}
+@keyframes toadPulse{0%,100%{opacity:.55}50%{opacity:1}}
+.twinkle{transform-box:fill-box;transform-origin:center;animation:toadTwinkle 1.6s ease-in-out infinite}
+@keyframes toadTwinkle{0%,100%{opacity:.35;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
+.drip{animation:toadDrip 1.1s linear infinite}
+@keyframes toadDrip{0%{transform:translateY(-3px);opacity:0}25%{opacity:1}100%{transform:translateY(12px);opacity:0}}
+.blink{animation:toadBlink 4s infinite}
+@keyframes toadBlink{0%,93%,100%{opacity:0}96%{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}`;
+
+/** Pose numbers: from the mockup's renderVals(), hands re-placed into the band. */
+const BACK = {
+  idle: { dy: 0, hat: 'rotate(-6 195 540)', tip: 'rotate(0 207 456)', L: [118, 26, -6], R: [272, 26, 6], glow: false, sac: [0, 0], lid: false },
+  cast: { dy: -8, hat: 'translate(0 -10) rotate(5 195 540)', tip: 'rotate(-25 207 456)', L: [92, -10, -32], R: [298, -10, 32], glow: true, sac: [14, 10], lid: false },
+  gloat: { dy: -16, hat: 'translate(0 -14) rotate(-16 195 540)', tip: 'rotate(-40 207 456)', L: [86, -8, -14], R: [300, 24, 10], glow: false, sac: [24, 18], lid: false, fist: 'L' },
+  sulk: { dy: 34, hat: 'translate(0 16) rotate(12 195 540)', tip: 'rotate(85 207 456)', L: [112, 238, 190], R: [278, 238, 170], glow: false, sac: [0, 0], lid: true },
+};
+function toadBackSvg(mood) {
+  cid = 0;
+  PFX = `gsg-tb-${mood}-`;
+  const m = BACK[mood];
+  const HS = 0.85; // hand scale
+  const hw = 2.4 / HS; // hand outline width in hand units
+  const bw = 2.4 / TB.k; // body outline width in mockup units
+  const shY = 125 + TB.k * m.dy;
+  const arm = (sx, [hx, hy], side) => `M${sx} ${f1(shY)} Q${f1((sx + hx) / 2 + side * 22)} ${f1((shY + hy) / 2)} ${hx} ${hy}`;
+  const armSvg = (sx, h, side) => inkLine(arm(sx, h, side), K.arm, 20, 2.4) + `<path d="${arm(sx, h, side)}" fill="none" stroke="${K.skinHi}" stroke-width="5" stroke-linecap="round" opacity=".45" transform="translate(${-side * 2} -2)"/>`;
+  const handSvg = ([x, y, rot], mirror, fist) => `<g transform="translate(${x} ${y}) rotate(${rot})${mirror ? ' scale(-1 1)' : ''} scale(${HS})">${hand({ w: hw, glow: m.glow, fist })}</g>`;
+  const tipOf = ([x, y, rot]) => { const r = rot * Math.PI / 180; return [x + 26 * Math.sin(r), y - 26 * Math.cos(r)]; };
+
+  // Magic: the conjured fence plank above the hands, lime trails from the fingertips, sparkles, confetti.
+  const [fl, fr] = [tipOf(m.L), tipOf(m.R)];
+  const trail = (f, tx, ty) => `M${f1(f[0])} ${f1(f[1])} Q${f1((f[0] + tx) / 2)} ${f1(Math.min(f[1], ty) - 30)} ${tx} ${ty}`;
+  const castFx = mood === 'cast' ? `<g>
+    <rect x="168" y="-40" width="62" height="22" rx="11" fill="${K.lime}" opacity=".6" filter="url(#${PFX}glow)"/>
+    ${part(rr(179, -33, 32, 6, 3), C.stake, null, null, 1.4)}${part(rr(173, -35, 10, 11, 2), C.stake2, null, null, 1.4)}
+    <rect x="211" y="-33" width="16" height="6" rx="3" fill="none" stroke="${K.lime}" stroke-width="1.6" stroke-dasharray="3 3"/>
+    <path d="${trail(fl, 180, -26)}" fill="none" stroke="${K.lime}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 8" class="pulse"/>
+    <path d="${trail(fr, 222, -26)}" fill="none" stroke="${K.lime}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 8" class="pulse"/>
+    ${[[132, -26, 5], [288, -24, 5], [200, -14, 4]].map(([x, y, s], i) => `<path class="twinkle" style="animation-delay:${i * .4}s" d="${star4(x, y, s)}" fill="${K.lime}" ${O(.8)}/>`).join('')}
+    ${[[60, -14], [338, -16], [104, -34], [300, -34]].map(([x, y], i) => `<circle class="twinkle" style="animation-delay:${i * .3}s" cx="${x}" cy="${y}" r="2.4" fill="${K.limeCore}"/>`).join('')}
+    ${[[150, -20, 30, 0], [258, -12, -25, 1], [118, -30, 60, 2], [322, -30, 15, 3], [236, -38, 50, 1], [86, -30, -40, 0]].map((b, i) => bit(b, 7, 4, 'twinkle', `animation-delay:${i * .25}s`)).join('')}</g>` : '';
+
+  const gloatFx = mood === 'gloat' ? `<g>
+    <text x="14" y="66" transform="rotate(-10 14 66)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="25" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="5" paint-order="stroke" stroke-linejoin="round">Hehehe!</text>
+    ${[[34, 8, 30, 0], [150, -4, -30, 1], [112, -16, 55, 2], [240, -6, 10, 3], [196, 6, -50, 0], [330, 18, 25, 1], [298, -14, -35, 2]].map((b, i) => bit(b, 7, 4, 'twinkle', `animation-delay:${i * .2}s`)).join('')}
+    <path d="M62 116 q-9 -4 -12 -14 M334 116 q9 -4 12 -14 M56 132 q-8 -2 -12 -9" fill="none" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/></g>` : '';
+
+  const sulkFx = mood === 'sulk' ? `<g>
+    ${blob([ell(300, 44, 14, 11), ell(320, 36, 18, 14), ell(342, 44, 13, 10), rr(290, 44, 64, 12, 6)], K.cloud, 2)}
+    ${[[304, 64], [320, 64], [336, 64]].map(([x, y], i) => `<path class="drip" style="animation-delay:${i * .35}s" d="M${x} ${y} l-3 9" stroke="${K.rain}" stroke-width="2.6" stroke-linecap="round"/>`).join('')}
+    <text x="38" y="92" transform="rotate(-6 38 92)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="21" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="4.5" paint-order="stroke" stroke-linejoin="round">Rats.</text>
+    ${part('M268 190 Q296 181 322 192 Q296 199 268 190 Z', K.pink, null, null, 1.8)}${part(rr(320, 188, 11, 7, 2.5), K.pink, null, null, 1.8)}
+    <text x="272" y="177" transform="rotate(-6 272 177)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="13" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">pfffft...</text>
+    <path d="M112 120 q-6 -8 0 -14 q6 -6 0 -12" fill="none" stroke="${K.smoke}" stroke-width="2" stroke-linecap="round" opacity=".8"/></g>` : '';
+
+  const eyeRim = (cx) => inkLine(`M${cx - 28} 542 A31 31 0 0 1 ${cx + 28} 542`, K.gold, 5, bw * .8) + `<path d="M${cx - 13} 538 A20 20 0 0 1 ${cx + 5} 532" fill="none" stroke="${K.cream}" stroke-width="2" stroke-linecap="round"/>`;
+  const lid = (cx) => m.lid ? part(`M${cx - 31} 550 A31 31 0 0 1 ${cx + 31} 550 Z`, K.lidBack, null, null, bw) : '';
+  const hum = `<g fill="${K.freckle}" opacity=".7">${[[120, 612, 5], [132, 624, 3], [270, 612, 5], [258, 624, 3], [195, 640, 4], [150, 664, 3.5], [240, 664, 3.5]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`;
+  const sacs = m.sac[0] ? [62, 328].map((x) => part(ell(x, 604, m.sac[0], m.sac[1]), K.sac, null, null, bw)).join('') : '';
+  const tongue = mood === 'gloat' ? `<g class="snap">${inkLine('M300 592 Q352 566 352 500', K.tongue, 9, bw * .8)}${part(ell(352, 498, 7, 7), K.tongue, null, null, bw * .8)}
+    <g transform="translate(354 488) scale(1.5)">${fly('flyStill', 1)}</g></g>` : '';
+  const hemPath = 'M28 800 L28 694 Q58 678 88 694 Q118 678 148 694 Q178 678 208 694 Q238 678 268 694 Q298 678 328 694 Q346 684 362 694 L362 800 Z';
+  const diamonds = [[58, 700, 6], [118, 700, 6], [150, 704, 5], [240, 704, 5], [272, 700, 6], [332, 700, 6]]
+    .map(([x, y, s]) => part(`M${x} ${y} l${s} 8 l${-s} 8 l${-s} -8 Z`, K.orange, null, null, bw * .55)).join('');
+  const slingshot = inkLine('M84 724 L84 702 M84 702 L74 682 M84 702 L94 682', '#8b5e34', 5, bw * .6) + inkLine('M74 684 Q84 696 94 684', K.tongue, 2.5, bw * .45);
+  const cushion = mood === 'sulk' ? '' : part(ell(318, 700, 24, 15), K.pink, null, null, bw * .8) + part(rr(336, 694, 12, 9, 3), K.pink, null, null, bw * .8) +
+      `<path d="M304 694 Q312 690 320 694" fill="none" stroke="${K.pinkHi}" stroke-width="2.5" stroke-linecap="round"/>`;
+
+  const inner = `
+    ${tongue}${sacs}
+    ${part('M28 800 L28 700 C30 640 62 584 112 556 C142 540 170 534 195 534 C220 534 248 540 278 556 C328 584 360 640 362 700 L362 800 Z', `url(#${PFX}skin)`, null, null, bw)}
+    <path d="M60 640 C80 600 120 576 150 570" fill="none" stroke="${K.skinHi}" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    ${hum}
+    ${part(ell(145, 554, 33, 33), `url(#${PFX}bulge)`, null, null, bw)}${part(ell(245, 554, 33, 33), `url(#${PFX}bulge)`, null, null, bw)}
+    ${eyeRim(145)}${eyeRim(245)}${lid(145)}${lid(245)}
+    <g transform="${m.hat}">${hat(bw * .7, m.tip)}</g>
+    ${part(hemPath, `url(#${PFX}cloak)`, null, null, bw)}
+    ${acorn(195, 690, bw * .7)}${diamonds}${slingshot}${cushion}`;
+
+  // Nothing of him may hang below the band (the cloak path runs long); the top and sides stay open for the spell.
+  const body = `${toadDefs(true)}<clipPath id="${PFX}band"><rect x="-80" y="-300" width="550" height="500"/></clipPath><g clip-path="url(#${PFX}band)">
+    ${mood === 'idle' ? `<g transform="translate(${TB.tx} ${TB.ty}) scale(${TB.k})">${fly('flyOrbit', 1.3)}</g>` : ''}
+    ${armSvg(138.6, m.L, -1)}${armSvg(251.4, m.R, 1)}
+    ${handSvg(m.L, false, m.fist === 'L')}${handSvg(m.R, true, m.fist === 'R')}
+    <g transform="translate(${TB.tx} ${TB.ty}) scale(${TB.k})"><g transform="translate(0 ${m.dy - 30})"><g class="${mood === 'idle' ? 'breathe' : mood === 'gloat' ? 'bounce' : ''}">${inner}</g></g></g>
+    ${castFx}${gloatFx}${sulkFx}</g>`;
+  const css = TOAD_CSS + (mood === 'idle' ? orbitFrames('toadOrbit', 258, 414, 30, 11) + '.flyOrbit{animation:toadOrbit 2.4s linear infinite}' : '');
+  const label = { idle: 'Sir Croakwell, a toad wizard, watching from behind', cast: 'Sir Croakwell casting a fence spell', gloat: 'Sir Croakwell gloating', sulk: 'Sir Croakwell sulking' }[mood];
+  return svgDoc(390, 200, css, body, label, 'gsg-toad').replace('<svg ', '<svg style="overflow:visible" ');
+}
+
+/* ----- face-on view: 390 x 460, mockup coordinates as drawn ----- */
+function toadFrontSvg(pose) {
+  cid = 0;
+  PFX = `gsg-tf-${pose}-`;
+  const smug = pose === 'smug';
+  const w = 2.4;
+  const lidPath = (cx, a1, a2) => {
+    const p = (a) => [f1(cx + 40 * Math.cos(a * Math.PI / 180)), f1(186 + 40 * Math.sin(a * Math.PI / 180))];
+    const [p1, p2] = [p(a1), p(a2)];
+    return `M${p1[0]} ${p1[1]} A40 40 0 ${((a2 - a1) % 360 + 360) % 360 > 180 ? 1 : 0} 1 ${p2[0]} ${p2[1]} Z`;
+  };
+  const lidL = smug ? ell(128, 186, 40, 40) : lidPath(128, 222, 318);
+  const lidR = smug ? lidPath(262, 212, 328) : lidPath(262, 222, 318);
+  const px = smug ? 9 : 9, py = 5; // looking to his right (the viewer's right), like the title mock
+  const handFx = hand({ w: 3 });
+  const cushion = smug ? `${part(ell(195, 424, 44, 26), K.pink, null, null, w)}${part(rr(236, 416, 16, 12, 4), K.pink, null, null, w)}
+    <path d="M168 414 Q182 406 196 412" fill="none" stroke="${K.pinkHi}" stroke-width="3" stroke-linecap="round"/>
+    ${inkLine('M128 354 Q112 404 166 398', K.arm, 24, w)}${inkLine('M262 354 Q278 404 224 398', K.arm, 24, w)}
+    <g transform="translate(168 396) rotate(35)">${handFx}</g><g transform="translate(222 396) rotate(-35) scale(-1 1)">${handFx}</g>` :
+    `${inkLine('M128 354 Q112 410 160 414', K.arm, 24, w)}
+    <g transform="translate(162 414) rotate(70)">${part(ell(0, 0, 17, 12), K.palm, null, null, 3)}${[[-14, -14], [-4, -18], [6, -18], [15, -12]].map(([x, y]) => part(ell(x, y, 5, 5), K.pad, null, null, 2.4)).join('')}</g>
+    ${inkLine('M262 352 Q330 340 338 280', K.arm, 24, w)}
+    <g transform="translate(340 272) rotate(28)">${part(ell(0, 0, 15, 13), K.palm, null, null, 3)}
+      ${[[-9, -6, 6], [9, -6, 6], [12, 3, 5]].map(([x, y, r]) => part(ell(x, y, r, r), K.web, null, null, 2.4)).join('')}
+      ${inkLine('M-3 -8 L-3 -42', K.palm, 8, 2.4)}${part(ell(-3, -44, 6, 6), K.pad, null, null, 2.4)}
+      <g class="pulse"><circle cx="-3" cy="-48" r="14" fill="${K.lime}" opacity=".4"/></g>
+      <path class="twinkle" d="${star4(-3, -66, 9)}" fill="${K.lime}" ${O(1)}/></g>`;
+  const mouth = smug
+    ? part('M158 286 Q195 316 236 282 Q224 300 196 302 Q172 302 158 286 Z', K.mouth, null, null, 3) + part(rr(188, 292, 10, 8, 2.5), K.card, null, null, 1.6) +
+      `<g transform="rotate(30 230 294)">${part(ell(230, 294, 7, 5), K.tongue, null, null, 1.6)}</g>` +
+      `<path d="M98 196 Q128 172 158 196" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/><path d="M92 176 l-9 -5 M102 166 l-5 -8" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`
+    : part('M156 284 Q195 330 238 282 Q196 300 156 284 Z', K.mouth, null, null, 3) + `<ellipse cx="198" cy="302" rx="14" ry="5" fill="${K.tongue}"/>`;
+  const flyG = smug ? `<ellipse cx="318" cy="96" rx="22" ry="9" fill="none" stroke="${C.ink}" stroke-width="1.2" stroke-dasharray="2 4" opacity=".45"/><g class="flyF">${fly('', 1.3)}</g>` : '';
+  const body = `${toadDefs(false)}
+    ${part('M36 470 C38 392 80 342 132 322 L258 322 C310 342 352 392 354 470 Z', `url(#${PFX}skin)`, null, null, w)}
+    ${part(ell(195, 432, 74, 78), K.belly, null, null, w)}
+    <g stroke="${K.bellyLine}" stroke-width="2" fill="none" stroke-linecap="round"><path d="M150 400 Q195 412 240 400"/><path d="M144 430 Q195 444 246 430"/><path d="M150 460 Q195 472 240 460"/></g>
+    ${part('M36 470 C38 392 80 346 130 334 Q156 386 140 470 Z', `url(#${PFX}cloak)`, null, null, w)}
+    ${part('M354 470 C352 392 310 346 260 334 Q234 386 250 470 Z', `url(#${PFX}cloak)`, null, null, w)}
+    ${part('M120 338 Q132 326 146 336 Q160 326 172 340 L170 350 Q158 340 146 348 Q132 340 122 348 Z', K.collar, null, null, w)}
+    ${part('M270 338 Q258 326 244 336 Q230 326 218 340 L220 350 Q232 340 244 348 Q258 340 268 348 Z', K.collar, null, null, w)}
+    ${cushion}
+    ${part('M68 268 C58 206 100 156 195 154 C290 156 332 206 322 268 C314 318 262 346 195 346 C128 346 76 318 68 268 Z', `url(#${PFX}skin)`, null, null, w)}
+    <path d="M108 310 Q195 362 282 310 Q262 342 195 350 Q128 342 108 310 Z" fill="${K.belly}" stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"/>
+    <path d="M92 232 C100 200 128 184 160 182" fill="none" stroke="${K.skinHi}" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    <g fill="${K.freckle}" opacity=".7"><circle cx="84" cy="250" r="4"/><circle cx="96" cy="240" r="2.5"/><circle cx="306" cy="250" r="4"/><circle cx="294" cy="240" r="2.5"/><circle cx="195" cy="232" r="3"/></g>
+    ${part(ell(128, 180, 50, 50), `url(#${PFX}bulge)`, null, null, w)}${part(ell(262, 180, 50, 50), `url(#${PFX}bulge)`, null, null, w)}
+    ${part(ell(128, 186, 38, 38), `url(#${PFX}eye)`, null, null, w)}${part(ell(262, 186, 38, 38), `url(#${PFX}eye)`, null, null, w)}
+    <ellipse cx="${128 + px}" cy="${188 + py}" rx="17" ry="15" fill="${K.pupil}"/><ellipse cx="${262 + px}" cy="${188 + py}" rx="17" ry="15" fill="${K.pupil}"/>
+    <circle cx="${120 + px}" cy="${179 + py}" r="7" fill="#fff"/><circle cx="${254 + px}" cy="${179 + py}" r="7" fill="#fff"/>
+    <circle cx="${137 + px}" cy="${196 + py}" r="3" fill="#fff" opacity=".9"/><circle cx="${271 + px}" cy="${196 + py}" r="3" fill="#fff" opacity=".9"/>
+    ${part(lidL, K.lid, null, null, 3.2)}${part(lidR, K.lid, null, null, 3.2)}
+    ${smug ? `<g class="blink">${part(ell(262, 186, 40, 40), K.lid, null, null, 3.2)}</g>` : ''}
+    <circle cx="183" cy="258" r="3.2" fill="${C.ink}"/><circle cx="207" cy="258" r="3.2" fill="${C.ink}"/>
+    <ellipse cx="100" cy="262" rx="22" ry="12" fill="${K.cheek}" opacity=".6"/><ellipse cx="290" cy="262" rx="22" ry="12" fill="${K.cheek}" opacity=".6"/>
+    ${mouth}
+    <g transform="rotate(-8 195 146)"><g transform="translate(195 146) scale(1.12) translate(-195 -542)">${hat(2.2 / 1.12, 'rotate(0 207 456)')}</g></g>
+    ${acorn(195, 338, 1.8)}
+    ${flyG}`;
+  const orbit = smug ? orbitFrames('toadOrbitF', 318, 96, 22, 9) + '.flyF{animation:toadOrbitF 2.4s linear infinite}' : '';
+  const css = TOAD_CSS + orbit;
+  return svgDoc(390, 460, css, body, smug ? 'Sir Croakwell the toad wizard, winking' : 'Sir Croakwell the toad wizard, one finger up', 'gsg-toad').replace('<svg ', '<svg style="overflow:visible" ');
+}
+
 /* ---------- writer ---------- */
 /** Prefix every selector with the sprite's root class and every keyframe name with gsg-. */
 function scope(css, root) {
@@ -359,7 +617,7 @@ function svgDoc(w, h, css, body, label, root = '') {
   return `<svg xmlns="http://www.w3.org/2000/svg"${cls} viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${label}">` +
     (css ? `<style>${scope(css.replace(/\s*\n\s*/g, ''), '.' + root)}</style>` : '') + body.replace(/\n\s*/g, '') + `</svg>\n`;
 }
-const manifest = { version: 1, generatedBy: 'tools/build-sprites.mjs', gnome: {}, tiles: {}, teleporter: {}, wall: {}, icon: {} };
+const manifest = { version: 1, generatedBy: 'tools/build-sprites.mjs', gnome: {}, tiles: {}, teleporter: {}, wall: {}, villain: {}, icon: {} };
 function write(name, svg, meta, group) {
   writeFileSync(join(OUT, name), svg);
   manifest[group][name.replace('.svg', '')] = { file: `assets/sprites/${name}`, ...meta };
@@ -395,6 +653,14 @@ for (const hint of [false, true]) {
   write(`wall-v${sfx}.svg`, svgDoc(24, 72, WALL_CSS, wallV(hint), hint ? 'Wooden wall from a hint' : 'Wooden wall', 'gsg-wall'),
     { size: [24, 72], centreLine: 12, once: true, buildSeconds: hint ? 1.15 : 0.8 }, 'wall');
 }
+// Sir Croakwell (docs/VILLAIN_SPEC.md): four back-view moods for the board border, two face-on poses.
+for (const mood of ['idle', 'cast', 'gloat', 'sulk']) {
+  write(`toad-back-${mood}.svg`, toadBackSvg(mood),
+    { size: [390, 200], loop: mood === 'idle' || mood === 'gloat', cycleSeconds: { idle: 3.2, cast: 1.6, gloat: 0.5, sulk: 1.1 }[mood], ...(mood === 'cast' ? { overflowTop: 42 } : {}) }, 'villain');
+}
+for (const pose of ['smug', 'point']) {
+  write(`toad-front-${pose}.svg`, toadFrontSvg(pose), { size: [390, 460], loop: true, cycleSeconds: pose === 'smug' ? 4 : 1.6 }, 'villain');
+}
 // The wordmark icon and favicon: the down-facing gnome's head, hat to beard, on a grass tile. Static.
 cid = 0; PFX = 'gsg-icon-';
 {
@@ -405,5 +671,5 @@ cid = 0; PFX = 'gsg-icon-';
 }
 manifest.palette = { glow: GLOW, wood: C.stake, hat: C.hat, water: C.water, grass: C.grass, outline: C.ink };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-const count = ['gnome', 'tiles', 'teleporter', 'wall', 'icon'].reduce((n, g) => n + Object.keys(manifest[g]).length, 0);
+const count = ['gnome', 'tiles', 'teleporter', 'wall', 'villain', 'icon'].reduce((n, g) => n + Object.keys(manifest[g]).length, 0);
 console.log(`wrote ${count} sprites and manifest.json to assets/sprites`);

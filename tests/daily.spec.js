@@ -213,7 +213,7 @@ test('first visit shows how to play once, with the v2 copy, and the ? button reo
   await expect(dlg).toContainText('Hard');
   await expect(dlg).not.toContainText('star');
   await expect(dlg.locator('.howto-art svg').first()).toBeVisible(); // the sprites are drawn
-  await dlg.getByRole('button', { name: "Let's go" }).click();
+  await dlg.getByRole('button', { name: "Let's trap him" }).click();
   await expect(dlg).toBeHidden();
   await expect.poll(async () => (await saved(page))?.seenHowTo).toBe(true);
   await page.reload();

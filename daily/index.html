@@ -73,6 +73,7 @@
       </div>
 
       <div class="board play-board" id="board"></div>
+      <div class="villain" id="villain" aria-hidden="true"></div>
       <p class="sr-only" id="board-help">Arrow keys move between tiles. Shift plus an arrow key places or removes a wall on that side of the tile.</p>
 
       <div class="side">
@@ -99,13 +100,17 @@
   <dialog class="dlg" id="howto-dlg" aria-labelledby="howto-title">
     <div class="dlg-body">
       <h2 id="howto-title">How to play</h2>
+      <div class="howto-coach">
+        <span class="howto-toad" id="howto-toad" aria-hidden="true"></span>
+        <p class="bubble">Ahem. Listen up, apprentice.</p>
+      </div>
       <ol class="howto">
         <li><span class="howto-art" id="howto-art-1"></span><p>The gnome walks the shortest way home.</p></li>
         <li><span class="howto-art" id="howto-art-2"></span><p>Tap the lines between tiles to build fences. Place as many as you like, but you can't cut off every way through.</p></li>
         <li><span class="howto-art howto-house" aria-hidden="true"></span><p>Make his walk longer than his move limit. The fewer fences you use, the higher your score out of 100.</p></li>
         <li><span class="howto-art howto-score" aria-hidden="true">100</span><p>You get 3 tries a day and your best one counts. Easy is a small board, Hard is a bigger one.</p></li>
       </ol>
-      <button type="button" class="btn" id="howto-close">Let's go</button>
+      <button type="button" class="btn" id="howto-close">Let's trap him</button>
     </div>
   </dialog>
 

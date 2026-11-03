@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Croakwell idle</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f4a22}a:hover{color:#1d3014}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #d7e8bd; font-family: Fredoka, system-ui, sans-serif; color: #2f4a22">
+<div style="position: absolute; top: 0; left: 0; right: 0; padding: 18px 16px 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">Gnome Sweet Gnome</h1>
+<span style="font-size: 13px; font-weight: 600; background: #f6f1df; padding: 6px 10px; border-radius: 999px">Daily · Easy</span>
+</div>
+<div style="display: flex; gap: 8px; align-items: center">
+<span style="font-size: 14px; font-weight: 600; background: #f6f1df; padding: 10px 12px; border-radius: 12px">Fences 3</span>
+<button style="font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #f6f1df; color: #2f4a22">Hint</button>
+<button style="font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #f6f1df; color: #2f4a22">Reset</button>
+<button style="font: inherit; font-size: 14px; font-weight: 700; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: #b5372a; color: #ffffff; flex-grow: 1">Let him walk</button>
+</div>
+</div>
+<div style="position: absolute; left: 28px; top: 128px; width: 334px; height: 334px">
+<dc-import name="Board" hint-size="334px,334px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 120px; width: 390px; height: 724px; pointer-events: none">
+<dc-import name="ToadVillain" mood="idle" magic="#c9a6ff" hint-size="390px,724px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

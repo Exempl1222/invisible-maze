@@ -383,8 +383,10 @@ test('daily: the first day of the batch is level 0, and Levels | Daily tabs reac
   await page.goto('/play/');
   const tabs = page.getByRole('navigation', { name: 'Mode' });
   await expect(tabs.getByRole('link', { name: 'Levels' })).toHaveAttribute('aria-current', 'page');
+  // The Daily tab is the standalone daily page now (Easy and Hard), not the old in-page daily.
+  await expect(tabs.getByRole('link', { name: 'Daily' })).toHaveAttribute('href', '../daily/');
   await tabs.getByRole('link', { name: 'Daily' }).click();
-  await expect(page).toHaveURL(/\?daily/);
+  await expect(page).toHaveURL(/\/daily\/$/);
   // Whatever today is, the page doesn't error: it shows a level or the break message.
   await expect(page.locator('h1')).toHaveText(/^Daily/);
   await page.goto('/play/?daily&date=2026-10-27');
@@ -457,8 +459,8 @@ for (const [w, h, label] of [[390, 844, 'phone 390x844'], [1366, 625, 'laptop 13
     // Tiles are big enough to press.
     const box = await tile(page, 0, 0).boundingBox();
     expect(box.width).toBeGreaterThanOrEqual(30);
-    // Go is reachable too on a phone.
-    if (w < 880) await expect(go(page)).toBeInViewport();
+    // Go is reachable on a phone: Sir Croakwell frames the board full width (owner decision), so it may be below the fold, one short scroll away.
+    if (w < 880) { await go(page).scrollIntoViewIfNeeded(); await expect(go(page)).toBeInViewport(); }
   });
 }
 
