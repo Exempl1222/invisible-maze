@@ -188,7 +188,7 @@ test('page meta for link previews', async ({ page }) => {
   const meta = (sel) => page.locator(sel).getAttribute('content');
   expect(await meta('meta[property="og:title"]')).toBe('Gnome Sweet Gnome: daily puzzle');
   expect(await meta('meta[property="og:description"]')).toBe('Fence in the runaway gnome. One new puzzle a day.');
-  expect(await meta('meta[property="og:url"]')).toBe('https://exempl1222.github.io/invisible-maze/daily/');
+  expect(await meta('meta[property="og:url"]')).toBe('https://gnomesweetgnome.app/daily/');
   expect(await meta('meta[name="twitter:card"]')).toBe('summary');
 });
 
