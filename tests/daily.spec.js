@@ -1625,3 +1625,104 @@ test('Share where canShare refuses files: text-only share and no Save image', as
   await expect(page.getByRole('button', { name: 'Save image' })).toHaveCount(0);
   await expect(page.locator('#share-note')).toHaveText('');
 });
+
+/* ---------- the score card: edge cases ---------- */
+
+/** A share stub for file sharing. `fileError` is thrown by share() when files are passed; `textError` when they are not. */
+const stubFileShare = (page, { fileError = null, textError = null } = {}) => page.addInitScript(({ fileError, textError }) => {
+  window.__calls = [];
+  window.__copied = [];
+  window.__files = [];
+  const nav = (name, value) => Object.defineProperty(navigator, name, { value, configurable: true });
+  const err = (n) => (n === 'AbortError' ? new DOMException('closed', 'AbortError') : new Error(n));
+  nav('canShare', (d) => Boolean(d && d.files && d.files.length === 1));
+  nav('share', async (d) => {
+    window.__calls.push({ files: (d.files || []).length, text: d.text, active: navigator.userActivation ? navigator.userActivation.isActive : null });
+    if (d.files) window.__files.push(...d.files);
+    const e = d.files ? fileError : textError;
+    if (e) throw err(e);
+  });
+  nav('clipboard', { writeText: async (t) => { window.__copied.push(t); } });
+}, { fileError, textError });
+
+test('closing the sheet on a file share (AbortError) does nothing after: no text share, no copy', async ({ page }) => {
+  await stubFileShare(page, { fileError: 'AbortError' });
+  await finishPerfectEasy(page);
+  await expect(result(page)).toHaveAttribute('data-card', 'ready');
+  await page.getByRole('button', { name: 'Share' }).click();
+  await page.waitForTimeout(150);
+  const calls = await page.evaluate(() => window.__calls);
+  expect(calls).toHaveLength(1);
+  expect(calls[0].files).toBe(1);
+  expect(await page.evaluate(() => window.__copied)).toEqual([]);
+  await expect(page.getByRole('button', { name: 'Save image' })).toHaveCount(0);
+  await expect(page.locator('#share-note')).toHaveText('');
+});
+
+test('another error on a file share falls through to share({ text })', async ({ page }) => {
+  await stubFileShare(page, { fileError: 'boom' });
+  await finishPerfectEasy(page);
+  await expect(result(page)).toHaveAttribute('data-card', 'ready');
+  await page.getByRole('button', { name: 'Share' }).click();
+  await expect.poll(() => page.evaluate(() => window.__calls.length)).toBe(2);
+  const calls = await page.evaluate(() => window.__calls);
+  expect(calls.map((c) => c.files)).toEqual([1, 0]);
+  expect(calls[1].text).toBe(CARD_TEXT(page));
+  expect(await page.evaluate(() => window.__copied)).toEqual([]);
+});
+
+test('the tap still has user activation when navigator.share is called', async ({ page }) => {
+  await stubFileShare(page);
+  await finishPerfectEasy(page);
+  await expect(result(page)).toHaveAttribute('data-card', 'ready');
+  await page.getByRole('button', { name: 'Share' }).click();
+  const calls = await page.evaluate(() => window.__calls);
+  expect(calls).toHaveLength(1);
+  expect(calls[0].active).toBe(true);
+});
+
+test('an archive day: file named for the day and mode, and no streak line on the card or in the text', async ({ page }) => {
+  // Today is 28 Oct for this page, so 27 Oct is an archive day.
+  const p = await page.context().newPage();
+  await p.emulateMedia({ reducedMotion: 'reduce' });
+  await seedStorage(p);
+  await p.clock.install({ time: NOON('2026-10-28') });
+  await stubFileShare(p);
+  await p.goto(url('easy', '2026-10-27'));
+  await expect(p.locator('#board .cell').first()).toBeVisible();
+  await placeAll(p, level('easy').answer);
+  await tryNow(p);
+  await p.getByRole('button', { name: 'Submit' }).click();
+  await expect(p.locator('#result')).toHaveAttribute('data-card', 'ready');
+  await expect(p.locator('#result')).toHaveAttribute('data-card-key', /"title":"#1 \(archive\) Easy"/);
+  await expect(p.locator('#result')).toHaveAttribute('data-card-key', /"streak":null/);
+  await p.getByRole('button', { name: 'Share' }).click();
+  expect(await p.evaluate(() => window.__files[0].name)).toBe('gnome-sweet-gnome-1-easy.png');
+  const calls = await p.evaluate(() => window.__calls);
+  expect(calls[0].text).toContain('#1 (archive) Easy');
+  expect(calls[0].text).not.toMatch(/streak/i);
+});
+
+test('when the beat line arrives after the first draw, a second card is drawn and text and card agree', async ({ page }) => {
+  await stubFileShare(page);
+  // 12 other players all with lower scores: "You beat 100% of players".
+  await page.route('**/stats?*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    headers: { 'access-control-allow-origin': '*' },
+    body: JSON.stringify({ players: 12, bands: { '100': 1, '80-99': 0, '60-79': 0, '30-59': 0, '1-29': 0, '0': 11 }, scores: { '100': 1, '0': 11 } }),
+  }));
+  await page.route('**/result', (route) => route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{}' }));
+  await openDay(page, `${url('easy')}&stats=${encodeURIComponent('http://localhost:4173')}`);
+  await placeAll(page, level('easy').answer);
+  await tryNow(page);
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.locator('#everyone-beat')).toBeVisible();
+  await expect(result(page)).toHaveAttribute('data-card', 'ready');
+  await expect(result(page)).toHaveAttribute('data-card-key', /"beat":"Beat \d+% of players"/);
+  await page.getByRole('button', { name: 'Share' }).click();
+  const calls = await page.evaluate(() => window.__calls);
+  expect(calls).toHaveLength(1);
+  const beat = (await result(page).getAttribute('data-card-key')).match(/Beat (\d+)% of players/)[0];
+  expect(calls[0].text).toContain(beat);
+});

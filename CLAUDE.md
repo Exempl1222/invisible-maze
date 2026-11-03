@@ -47,7 +47,7 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 2. **Tests before code** in `src/game/`. Write the failing test, then the code. `npm run test:unit` must pass.
 3. **Engine stays pure.** Nothing in `src/game/` touches the DOM, `window` or timers. Randomness takes a seed.
 4. **Mobile first.** Design at 390px wide. No horizontal scroll. Touch targets at least 44px.
-5. **Relative paths only.** The site is served from `/invisible-maze/`, so `/assets/...` breaks. Use `assets/...` or `../assets/...`.
+5. **Relative paths only.** The site is served from the domain root (`gnomesweetgnome.app`) and may still be reached at `/invisible-maze/` on github.io, so `/assets/...` breaks on one of them. Use `assets/...` or `../assets/...`.
 6. **Colour means something** (the palette doubles as a legend, see `docs/ART_SPEC.md`). Don't reuse these for decoration:
    - Hat red `#c94a32`: the gnome, and the toadstool house he's heading for
    - Timber `#c48a52`: a wall the player placed

@@ -77,6 +77,7 @@ let sendingNow = new Map(); // 'mode|date' -> the POST in flight, so one result 
 let villain = null; // Sir Croakwell under the board: { setMood, cast }, or null if his sprites did not load
 let cardBlob = null; // the latest score card PNG, ready before the player taps Share
 let cardKey = ''; // what the card in cardBlob (or being drawn) was made from
+let cardBlobInfo = null; // { key, beat }: what cardBlob was drawn from, so the shared text always matches the image
 let playToken = 0; // bumps whenever the board replays, so a walk cut short by a toggle stops drawing
 
 /* ---------- page chrome ---------- */
@@ -889,7 +890,7 @@ function clockTick() {
 
 /* ---------- share ---------- */
 
-function currentShareText() {
+function currentShareText(beat = game.beat ?? null) {
   const { day, number } = game;
   return shareText({
     number,
@@ -899,7 +900,7 @@ function currentShareText() {
     tries: day.tries,
     hint: day.hint !== null,
     archive: isArchive,
-    beat: isArchive ? null : game.beat ?? null,
+    beat: isArchive ? null : beat,
   });
 }
 
@@ -928,11 +929,15 @@ function refreshCard() {
   const key = JSON.stringify(model);
   if (key === cardKey) return;
   cardKey = key;
+  delete resultEl.dataset.card; // not ready until the latest draw lands
   const g = game;
+  const beat = isArchive ? null : g.beat ?? null;
   drawCard(model).then((blob) => {
     if (cardKey !== key || game !== g) return; // a newer draw, or another day, wins
     cardBlob = blob;
+    cardBlobInfo = { key, beat };
     resultEl.dataset.card = 'ready'; // for the tests: the card can be shared now
+    resultEl.dataset.cardKey = key; // for the tests: which model the card was drawn from
   }).catch(() => {
     if (cardKey === key) cardKey = ''; // no card: Share falls back to text, a later change tries again
   });
@@ -946,8 +951,9 @@ const abortedShare = (err) => Boolean(err) && err.name === 'AbortError'; // the 
  * activation is still live; the card was drawn ahead of time (refreshCard). No card yet means text share.
  */
 async function share(button, note, box) {
-  const text = currentShareText();
+  // The text follows the card: if the card in hand was drawn before `beat` arrived, the text has no beat line either.
   const blob = cardBlob;
+  const text = blob && cardBlobInfo ? currentShareText(cardBlobInfo.beat) : currentShareText();
   const fileName = cardFileName(game.number, mode);
   note.textContent = '';
   box.hidden = true;
@@ -966,6 +972,8 @@ async function share(button, note, box) {
         }
       }
     }
+    // After a failed file share this call follows an await, so the tap's user activation may be spent. On iOS it
+    // will usually throw NotAllowedError and fall through to copy below; that is intended.
     try {
       await navigator.share({ text });
       return;
@@ -977,7 +985,6 @@ async function share(button, note, box) {
   if (blob) {
     const save = actionButton('Save image', false, () => downloadBlob(blob, fileName));
     save.id = 'save-image-btn';
-    save.classList.add('save-image');
     note.after(save);
   }
   try {

@@ -13,7 +13,7 @@ const C = {
   outline: '#3b2618',
   gold: '#e9b949', // the hint colour, for the bulb
   flame: '#e8833a', // the streak flame; not one of the meaning colours
-  flameCore: '#f6c453',
+  flameCore: '#f4a640',
 };
 const DISPLAY = '"Grandstander", "Trebuchet MS", system-ui, sans-serif';
 const BODY = '"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif';
@@ -65,7 +65,7 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.roundRect(x, y, w, h, r);
 }
 
-/** The hint bulb, drawn (not an emoji): a gold glass with a timber-dark base. Box is `s` wide, top-left at x, y. */
+/** The hint bulb, drawn (not an emoji): a gold glass on a cream base, outlined. Drawn in a 100-unit box scaled to `s`, top-left at x, y; about 0.92 * s tall. */
 function drawBulb(ctx, x, y, s) {
   const k = s / 100;
   ctx.save();
@@ -158,7 +158,7 @@ export async function drawCard(model) {
   ctx.fillText(model.title, LEFT, 262);
 
   // 3. The score, large, with the hint bulb beside it
-  const bulb = model.hint ? 104 : 0;
+  const bulb = model.hint ? 140 : 0;
   const gap = model.hint ? 28 : 0;
   const size = fit(ctx, model.score, 800, DISPLAY, 210, CARD_SIZE - 2 * LEFT - bulb - gap);
   ctx.fillStyle = C.chalk;

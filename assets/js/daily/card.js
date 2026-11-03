@@ -20,7 +20,7 @@ export function cardModel({ number, mode, score, tries, hint, archive = false, b
   const showStreak = !archive && Number.isInteger(streak) && streak >= 2;
   return {
     wordmark: 'Gnome Sweet Gnome',
-    title: `#${number} ${MODE_LABEL[mode] ?? mode}${archive ? ' (archive)' : ''}`,
+    title: `#${number}${archive ? ' (archive)' : ''} ${MODE_LABEL[mode] ?? mode}`,
     score: `${score}/100`,
     hint: Boolean(hint),
     squares: tries.map((t) => ({ won: Boolean(t.won), color: t.won ? WIN_COLOR : LOSS_COLOR })),

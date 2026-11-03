@@ -48,7 +48,7 @@ test('caption boundaries: 1 and 99 are Fenced in, not perfect', () => {
 
 test('archive days add (archive) and never show a streak', () => {
   const m = cardModel({ ...base, archive: true, streak: 9 });
-  assert.equal(m.title, '#7 Hard (archive)');
+  assert.equal(m.title, '#7 (archive) Hard');
   assert.equal(m.streak, null);
 });
 
