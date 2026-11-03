@@ -16,9 +16,10 @@ assets/css/site.css   site styles; colour tokens on :root
 assets/css/play.css   game page styles (uses the site tokens)
 assets/css/daily.css  daily page extras (header buttons, tries, dialogs); loads after play.css
 assets/js/sprites.js   loads the sprites; inline gnome and walls, one-shot animations
+assets/js/villain.js   Sir Croakwell under the board: `mountVillain(host)` returns `{ setMood, cast }` (docs/VILLAIN_SPEC.md)
 assets/js/tiles.js     which art variant each tile gets (shared by game and home replay)
 assets/css/sprites.css tile, wall and gnome art placement
-assets/sprites/        generated art (29 sprites, icon-gnome.svg, manifest.json). Never hand-edit
+assets/sprites/        generated art (35 sprites incl. 6 Sir Croakwell toads, icon-gnome.svg, manifest.json). Never hand-edit
 tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mjs`
 tools/sprites.html     dev gallery of every sprite
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs
@@ -51,6 +52,7 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
    - Teal `#5ff0d8`, violet `#c79bff`, amber `#ffcf5a`: teleporter pairs 1, 2, 3. Glow only ever means magic
    - Water `#5aa9d6`: river. Log brown `#a0703f`: bridge
    - Stone grey `#9aa3a6`, bush green `#3f7a34`: pre-built, permanent
+   - Lime `#d8f26a` (core `#f4ffc4`): Croakwell's fence magic. Nothing else glows lime; he never wears hat red
    - Outline `#3b2618`: every shape. Never black
 7. **Verify before claiming done.** Run `npm test`, and for UI changes run the maze-playtest skill and look at the screenshots.
 8. **Art is generated.** Change `tools/build-sprites.mjs` and rebuild, never hand-edit `assets/sprites/`.

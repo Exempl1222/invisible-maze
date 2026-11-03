@@ -383,8 +383,10 @@ test('daily: the first day of the batch is level 0, and Levels | Daily tabs reac
   await page.goto('/play/');
   const tabs = page.getByRole('navigation', { name: 'Mode' });
   await expect(tabs.getByRole('link', { name: 'Levels' })).toHaveAttribute('aria-current', 'page');
+  // The Daily tab is the standalone daily page now (Easy and Hard), not the old in-page daily.
+  await expect(tabs.getByRole('link', { name: 'Daily' })).toHaveAttribute('href', '../daily/');
   await tabs.getByRole('link', { name: 'Daily' }).click();
-  await expect(page).toHaveURL(/\?daily/);
+  await expect(page).toHaveURL(/\/daily\/$/);
   // Whatever today is, the page doesn't error: it shows a level or the break message.
   await expect(page.locator('h1')).toHaveText(/^Daily/);
   await page.goto('/play/?daily&date=2026-10-27');
