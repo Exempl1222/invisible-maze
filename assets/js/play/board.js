@@ -444,83 +444,83 @@ export function createBoard(root, level, { onLine, onHelp }) {
   };
 
   async function replay(sim, { stepMs = 300, instant = false, onMove, cancelled = () => false }) {
-      api.resetRun();
-      const last = sim.steps.length - 1;
-      const mark = (pos) => {
-        if (pos[0] === level.beacon[0] && pos[1] === level.beacon[1]) return;
-        cellAt(pos[0], pos[1]).classList.add('trail');
-      };
-      let lastDir = 'down';
-      const face = (from, to) => {
-        const dx = to[0] - from[0];
-        const dy = to[1] - from[1];
-        const d = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'R' : dx < 0 ? 'L' : null) : (dy > 0 ? 'D' : 'U');
-        if (d) lastDir = DIR_OF_STEP[d];
-        return lastDir;
-      };
-      const verdict = () => {
-        if (sim.result === 'lose') {
-          cellAt(level.beacon[0], level.beacon[1]).classList.add('reached');
-          playOnce(robot, 'home', 600, { keep: true }); // runs while the tail sleep below counts down
-        } else {
-          setGnome(robot, lastDir, 'shrug'); // out of moves: the gnome stops short of the house
-        }
-      };
-      if (instant) {
-        for (let i = 0; i <= last; i++) {
-          mark(sim.steps[i]);
-          if (sim.via[i]) mark(sim.via[i]);
-        }
-        for (let i = 1; i <= last; i++) face(sim.steps[i - 1], sim.via[i] || sim.steps[i]); // a jump faces the stump he walked onto
-        setGnome(robot, lastDir, 'idle');
-        moveRobot(sim.steps[last], { instant: true });
-        if (onMove) onMove(last);
-        if (sim.result === 'lose') {
-          cellAt(level.beacon[0], level.beacon[1]).classList.add('reached');
-          robot.classList.add('home');
-        } else setGnome(robot, lastDir, 'shrug');
-        return true;
+    api.resetRun();
+    const last = sim.steps.length - 1;
+    const mark = (pos) => {
+      if (pos[0] === level.beacon[0] && pos[1] === level.beacon[1]) return;
+      cellAt(pos[0], pos[1]).classList.add('trail');
+    };
+    let lastDir = 'down';
+    const face = (from, to) => {
+      const dx = to[0] - from[0];
+      const dy = to[1] - from[1];
+      const d = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'R' : dx < 0 ? 'L' : null) : (dy > 0 ? 'D' : 'U');
+      if (d) lastDir = DIR_OF_STEP[d];
+      return lastDir;
+    };
+    const verdict = () => {
+      if (sim.result === 'lose') {
+        cellAt(level.beacon[0], level.beacon[1]).classList.add('reached');
+        playOnce(robot, 'home', 600, { keep: true }); // runs while the tail sleep below counts down
+      } else {
+        setGnome(robot, lastDir, 'shrug'); // out of moves: the gnome stops short of the house
       }
-      await sleep(250);
-      for (let i = 1; i <= last; i++) {
-        if (cancelled()) return false;
-        mark(sim.steps[i - 1]);
-        if (onMove) onMove(i);
-        const via = sim.via[i];
-        if (via) {
-          // Step onto the stump, hop on and sink in, then pop out of its twin.
-          setGnome(robot, face(sim.steps[i - 1], via), 'walk');
-          moveRobot(via, { ms: stepMs * 0.45 });
-          await sleep(stepMs * 0.45);
-          if (cancelled()) return false;
-          mark(via);
-          // Dive and pop scale with the step time, so speeding up the replay speeds up teleports too.
-          const diveMs = Math.round(stepMs * 2.55);
-          const popMs = Math.round(stepMs * 2.36);
-          robot.style.setProperty('--dive-ms', `${diveMs}ms`);
-          robot.style.setProperty('--pop-ms', `${popMs}ms`);
-          await playOnce(robot, 'dive', diveMs, { keep: true });
-          if (cancelled()) { robot.classList.remove('dive'); return false; }
-          pulse(via, 'flash');
-          pulse(sim.steps[i], 'flash');
-          const link = drawLink(via, sim.steps[i], 'jump');
-          moveRobot(sim.steps[i], { instant: true });
-          robot.classList.remove('dive');
-          await playOnce(robot, 'pop', popMs);
-          removeLink(link);
-          if (cancelled()) return false;
-        } else {
-          setGnome(robot, face(sim.steps[i - 1], sim.steps[i]), 'walk');
-          moveRobot(sim.steps[i], { ms: stepMs * 0.75 });
-          await sleep(stepMs);
-        }
+    };
+    if (instant) {
+      for (let i = 0; i <= last; i++) {
+        mark(sim.steps[i]);
+        if (sim.via[i]) mark(sim.via[i]);
       }
+      for (let i = 1; i <= last; i++) face(sim.steps[i - 1], sim.via[i] || sim.steps[i]); // a jump faces the stump he walked onto
+      setGnome(robot, lastDir, 'idle');
+      moveRobot(sim.steps[last], { instant: true });
+      if (onMove) onMove(last);
+      if (sim.result === 'lose') {
+        cellAt(level.beacon[0], level.beacon[1]).classList.add('reached');
+        robot.classList.add('home');
+      } else setGnome(robot, lastDir, 'shrug');
+      return true;
+    }
+    await sleep(250);
+    for (let i = 1; i <= last; i++) {
       if (cancelled()) return false;
-      mark(sim.steps[last]);
-      if (sim.result === 'lose') setGnome(robot, lastDir, 'idle');
-      verdict();
-      await sleep(sim.result === 'lose' ? 500 : 450);
-      return !cancelled();
+      mark(sim.steps[i - 1]);
+      if (onMove) onMove(i);
+      const via = sim.via[i];
+      if (via) {
+        // Step onto the stump, hop on and sink in, then pop out of its twin.
+        setGnome(robot, face(sim.steps[i - 1], via), 'walk');
+        moveRobot(via, { ms: stepMs * 0.45 });
+        await sleep(stepMs * 0.45);
+        if (cancelled()) return false;
+        mark(via);
+        // Dive and pop scale with the step time, so speeding up the replay speeds up teleports too.
+        const diveMs = Math.round(stepMs * 2.55);
+        const popMs = Math.round(stepMs * 2.36);
+        robot.style.setProperty('--dive-ms', `${diveMs}ms`);
+        robot.style.setProperty('--pop-ms', `${popMs}ms`);
+        await playOnce(robot, 'dive', diveMs, { keep: true });
+        if (cancelled()) { robot.classList.remove('dive'); return false; }
+        pulse(via, 'flash');
+        pulse(sim.steps[i], 'flash');
+        const link = drawLink(via, sim.steps[i], 'jump');
+        moveRobot(sim.steps[i], { instant: true });
+        robot.classList.remove('dive');
+        await playOnce(robot, 'pop', popMs);
+        removeLink(link);
+        if (cancelled()) return false;
+      } else {
+        setGnome(robot, face(sim.steps[i - 1], sim.steps[i]), 'walk');
+        moveRobot(sim.steps[i], { ms: stepMs * 0.75 });
+        await sleep(stepMs);
+      }
+    }
+    if (cancelled()) return false;
+    mark(sim.steps[last]);
+    if (sim.result === 'lose') setGnome(robot, lastDir, 'idle');
+    verdict();
+    await sleep(sim.result === 'lose' ? 500 : 450);
+    return !cancelled();
   }
 
   const onResize = () => fit();

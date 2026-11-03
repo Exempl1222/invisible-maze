@@ -171,7 +171,12 @@ function updateCounters() {
   hintBtn.disabled = !editing || day.hint !== null;
   hintBtn.textContent = day.hint !== null ? 'Hint used' : `Hint (-${HINT_COST})`;
   goBtn.disabled = !editing;
-  goBtn.textContent = day.tries.length === 0 ? 'Try' : `Try again (${MAX_TRIES - day.tries.length} left)`;
+  const shown = shownDay(); // mid-walk: as if the try in flight hasn't happened yet (pips and Best match)
+  goBtn.textContent = shown.tries.length === 0 ? 'Try' : `Try again (${MAX_TRIES - shown.tries.length} left)`;
+  // Stats and Archive read the saved days, which already hold the try in flight (and on the last try,
+  // the finished day), so they would give the result away. Closed until the gnome stops.
+  const walking = state === 'running';
+  for (const id of ['stats-btn', 'archive-btn']) $(id).disabled = walking;
   renderPips();
 }
 
@@ -453,8 +458,9 @@ async function run() {
   const walls = g.board.wallList();
   const sim = simulate(g.level, walls);
   const win = sim.result === 'win';
-  // Settle the try before anything animates, so a reload can never give it back. adoptStored
-  // brought in tries spent in other tabs first, so this one goes on top of them.
+  // Settle (save) the try before anything animates, so a reload can never give it back. What the player
+  // sees holds it back until the walk ends: see shownDay() and the Stats/Archive lock in updateCounters.
+  // adoptStored brought in tries spent in other tabs first, so this one goes on top of them.
   g.day.tries.push({
     fences: walls.length,
     won: win,
