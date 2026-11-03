@@ -10,7 +10,7 @@ import { fakeD1 } from './worker-fake-d1.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const LEVELS = { easy: readJson('../assets/levels/daily-easy.json'), hard: readJson('../assets/levels/daily.json') };
-const ORIGIN = 'https://exempl1222.github.io';
+const ORIGIN = 'https://gnomesweetgnome.app';
 const at = (date) => Date.parse(`${date}T12:00:00Z`);
 const NOW = at('2026-10-27'); // day #1, index 0
 const raw = (mode, i = 0) => LEVELS[mode].levels[i];
@@ -394,6 +394,12 @@ test('CORS: allowed origins get the headers, others get none; preflight answers 
   assert.equal(sneaky.headers.get('access-control-allow-origin'), null);
   const lookalike = await call('/stats?mode=easy&date=2026-10-27', { origin: 'https://exempl1222.github.io.evil.example' });
   assert.equal(lookalike.headers.get('access-control-allow-origin'), null);
+  const lookalike2 = await call('/stats?mode=easy&date=2026-10-27', { origin: 'https://gnomesweetgnome.app.evil.example' });
+  assert.equal(lookalike2.headers.get('access-control-allow-origin'), null);
+  for (const ok of ['https://gnomesweetgnome.app', 'https://www.gnomesweetgnome.app', 'https://exempl1222.github.io']) {
+    const r = await call('/stats?mode=easy&date=2026-10-27', { origin: ok });
+    assert.equal(r.headers.get('access-control-allow-origin'), ok, `${ok} is allowed`);
+  }
   const noOrigin = await call('/stats?mode=easy&date=2026-10-27', { origin: null });
   assert.equal(noOrigin.status, 200);
   assert.equal(noOrigin.headers.get('access-control-allow-origin'), null);

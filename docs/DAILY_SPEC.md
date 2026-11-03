@@ -69,7 +69,7 @@ POST {STATS_URL}/result
 - **Page side:** only a 400 marks a result as settled (refused for good); 403, 404, 413, 429 and 5xx retry on a later load. An unsent day is retried only while its date is still within the server's window (UTC date minus 1 to plus 1). "You beat X%" counts the player as included only when the send succeeded, and `/stats` is fetched with `cache: 'no-cache'` right after a send.
 - **Cheap reads:** an accepted result is one `INSERT OR IGNORE` into `results`, and an AFTER INSERT trigger bumps a pre-counted `counts(mode, date, score, n)` row in the same statement; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
 - `GET {STATS_URL}/stats?mode=easy&date=YYYY-MM-DD` returns `{ players, bands: { "100": n, "80-99": n, "60-79": n, "30-59": n, "1-29": n, "0": n }, scores: { "<score>": n, ... } }`.
-- CORS: only `https://exempl1222.github.io`, `https://gnomesweetgnome.app`, `https://www.gnomesweetgnome.app` and `http://localhost:4173` (and the test port).
+- CORS: only `https://gnomesweetgnome.app` (and `www.`), the old `https://exempl1222.github.io`, and `http://localhost:4173` (and the test port).
 
 **What the page shows** in the result panel, once the day is done (today only; archive days show `Player stats are kept for each day's own date only.`):
 - **Score spread:** six bars (same bands as personal stats), the player's band highlighted, with `N players today`.
@@ -122,7 +122,7 @@ POST {STATS_URL}/result
   Gnome Sweet Gnome #1 Hard 🍄
   82/100 💡
   🟥🟩🟩
-  https://exempl1222.github.io/invisible-maze/daily/?mode=hard
+  https://gnomesweetgnome.app/daily/?mode=hard
   ```
   One square per try used: 🟥 loss, 🟩 win. ` 💡` only if the hint was used. Lost day: `0/100 🏠`. Archive days keep `(archive)` after the number.
 - **Streak per mode:** consecutive days with a score above 0, finished on their own date (as before).
@@ -135,7 +135,7 @@ POST {STATS_URL}/result
 
 ## Where it lives
 
-- Page: `daily/index.html`, served at `/invisible-maze/daily/`. This is the link that gets shared.
+- Page: `daily/index.html`, served at `/daily/` on gnomesweetgnome.app. This is the link that gets shared.
 - Without a query, the page plays the player's local date (**today**).
 - `?date=YYYY-MM-DD` is the **archive** (Eric, 27 Oct): any of the 29 days before today (today minus 1 to today minus 29) plays for real and is saved. Today's date in `?date` is the same as no query. A future date shows `Not ready yet. This gnome is still packing.` with a button to today. A date older than 29 days, or not a real date, shows `That day is out of the archive.` with a button to today. Dates outside the batch still show the break message.
 - Code: `assets/js/daily/` (new). Reuses the engine (`src/game/`), `assets/js/play/board.js`, `lines.js`, `icons.js`, `daily.js` (date maths) and `assets/js/sprites.js`. It must not import `assets/js/play/main.js` or `storage.js`.
@@ -185,7 +185,7 @@ Plain text, built by a pure function (unit tested). Won:
 Gnome Sweet Gnome #1 🍄
 ⭐⭐⭐ 4 fences (par 4)
 🟥🟩 2/3
-https://exempl1222.github.io/invisible-maze/daily/
+https://gnomesweetgnome.app/daily/
 ```
 
 - One square per try used: 🟥 a loss, 🟩 the win. Lost day: `🟥🟥🟥 X/3` and the star line becomes `🏠 He made it home`.

@@ -33,7 +33,7 @@ No rule changes. Nothing in `src/game/` changes.
 | `toad-back-idle.svg` | 390 x 140 | Hands gripping the board's bottom corners (about 9% in from each edge), arms angled out from the shoulders. Loops: slow breathe (body scale 1 to 1.015, 3.2s), fly orbiting the hat tip (2.4s) |
 | `toad-back-cast.svg` | 390 x 140 | Hands raised so fingertips reach about 40px above the canvas (`overflow: visible`). Throat sacs puffed, hat tip perked, fingertips glow lime, confetti twinkles |
 | `toad-back-gloat.svg` | 390 x 140 | One fist pumped up, other hand on the edge, body bounced up, "Hehehe!" in Grandstander, tongue snapping the fly, confetti. Loop: 0.5s bounce |
-| `toad-back-sulk.svg` | 390 x 140 | Body sunk, heavy lids, hat tip flopped, hands dropped out of view, rain cloud with drizzle, "Rats." and a flat whoopee cushion with "pfffft..." |
+| `toad-back-sulk.svg` | 390 x 140 | He lets go of the board: body sunk, heavy droopy lids, left fist clenched and raised near the board corner (knuckles up, shake marks and an anger cross, shaking 0.4s every 1.6s; no shake under reduced motion), right arm limp with the hand dangling, hat fallen off and lying on its side at the bottom right with the snail on it, a small cream "Rats!" speech bubble centred above his head, a small rain cloud with drizzle and a flat whoopee cushion. No floating text |
 | `toad-front-smug.svg` | 390 x 460 | Title pose. Fly orbits the hat. Optional idle: blink of the open eye every 4s |
 | `toad-front-point.svg` | 390 x 460 | How to play pose. Finger spark twinkles |
 

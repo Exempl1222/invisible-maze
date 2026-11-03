@@ -9,9 +9,9 @@ import { MAX_TRIES, LEGACY_MAX_TRIES } from '../../assets/js/daily/config.js';
 import { d1Store } from './store.js';
 
 export const ALLOWED_ORIGINS = [
-  'https://exempl1222.github.io', // the old address, allowed while it redirects to the custom domain
   'https://gnomesweetgnome.app',
   'https://www.gnomesweetgnome.app',
+  'https://exempl1222.github.io', // the old address; GitHub redirects it, kept so a stale tab can still post
   'http://localhost:4173',
   // The Playwright test server. These two localhost origins are allowed in production too: CORS only says which
   // pages may read replies, it is not a login, and every post is re-judged and limited the same way whatever its origin.
