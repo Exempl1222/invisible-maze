@@ -16,6 +16,9 @@
   figure .box { width: 100%; aspect-ratio: 1; display: grid; place-items: center; background: #8cbf5a; border-radius: 6px; overflow: hidden; }
   figure .box > span, figure .box > img { width: 92%; height: 92%; display: grid; place-items: center; }
   figure .box svg { max-width: 100%; max-height: 100%; }
+  .grid.wide { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .grid.wide figure .box { aspect-ratio: auto; min-height: 130px; overflow: visible; padding-top: 44px; }
+  .grid.wide figure .box > span { height: auto; }
   figcaption { font: 12px ui-monospace, monospace; color: var(--muted); text-align: center; word-break: break-all; }
   button { font: 600 14px system-ui; padding: 8px 14px; border-radius: 999px; border: 2px solid #3b2618; background: #2f4220; color: #fff; cursor: pointer; }
 </style>
@@ -26,15 +29,20 @@
 <h2>Gnome</h2><div class="grid" id="gnome"></div>
 <h2>Walls</h2><p><button type="button" id="rebuild">Build walls again</button></p><div class="grid" id="walls"></div>
 <h2>Teleporters</h2><div class="grid" id="tele"></div>
+<h2>Sir Croakwell</h2><p>Four back-view moods for the board border (390 x 200) and two face-on poses (390 x 460). Inline, like the gnome.</p><div class="grid wide" id="villain"></div>
 <h2>Icon</h2><div class="grid" id="icon"></div>
 <h2>Tiles</h2><div class="grid" id="tiles"></div>
 <script type="module">
   import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../assets/js/sprites.js';
+  import { VILLAIN_SPRITES } from '../assets/js/villain.js';
+  const TOAD_SPRITES = [...VILLAIN_SPRITES, 'toad-front-smug', 'toad-front-point'];
   const m = await (await fetch('../assets/sprites/manifest.json')).json();
-  await preloadSprites();
+  await preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...TOAD_SPRITES]);
   const fig = (name, inner) => `<figure><div class="box">${inner}</div><figcaption>${name}</figcaption></figure>`;
   const gnome = document.getElementById('gnome');
   for (const n of GNOME_SPRITES) { gnome.insertAdjacentHTML('beforeend', fig(n, '')); gnome.lastElementChild.querySelector('.box').appendChild(sprite(n)); }
+  const villain = document.getElementById('villain');
+  for (const n of TOAD_SPRITES) { villain.insertAdjacentHTML('beforeend', fig(n, '')); villain.lastElementChild.querySelector('.box').appendChild(sprite(n)); }
   const walls = document.getElementById('walls');
   const drawWalls = () => { walls.innerHTML = ''; for (const n of WALL_SPRITES) { walls.insertAdjacentHTML('beforeend', fig(n, '')); walls.lastElementChild.querySelector('.box').appendChild(sprite(n)); } };
   drawWalls();

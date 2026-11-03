@@ -317,6 +317,63 @@
       "buildSeconds": 1.15
     }
   },
+  "villain": {
+    "toad-back-idle": {
+      "file": "assets/sprites/toad-back-idle.svg",
+      "size": [
+        390,
+        200
+      ],
+      "loop": true,
+      "cycleSeconds": 3.2
+    },
+    "toad-back-cast": {
+      "file": "assets/sprites/toad-back-cast.svg",
+      "size": [
+        390,
+        200
+      ],
+      "loop": false,
+      "cycleSeconds": 1.6,
+      "overflowTop": 40
+    },
+    "toad-back-gloat": {
+      "file": "assets/sprites/toad-back-gloat.svg",
+      "size": [
+        390,
+        200
+      ],
+      "loop": true,
+      "cycleSeconds": 0.5
+    },
+    "toad-back-sulk": {
+      "file": "assets/sprites/toad-back-sulk.svg",
+      "size": [
+        390,
+        200
+      ],
+      "loop": false,
+      "cycleSeconds": 1.1
+    },
+    "toad-front-smug": {
+      "file": "assets/sprites/toad-front-smug.svg",
+      "size": [
+        390,
+        460
+      ],
+      "loop": true,
+      "cycleSeconds": 4
+    },
+    "toad-front-point": {
+      "file": "assets/sprites/toad-front-point.svg",
+      "size": [
+        390,
+        460
+      ],
+      "loop": true,
+      "cycleSeconds": 1.6
+    }
+  },
   "icon": {
     "icon-gnome": {
       "file": "assets/sprites/icon-gnome.svg",
