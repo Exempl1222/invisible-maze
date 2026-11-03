@@ -151,7 +151,7 @@
   .game {
     grid-template-columns: var(--board-size) minmax(260px, 300px);
     grid-template-areas: "board stats" "board side" "villain side";
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto auto 1fr; /* the spare height goes to the last row, so the toad stays under the board */
     justify-content: center;
     --game-gap: 12px;
     gap: var(--game-gap) 36px;

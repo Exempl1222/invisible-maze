@@ -119,6 +119,7 @@
 .villain {
   /* fit() in play/board.js sets --villain-h (board width x 140/390: he is always as wide as the board) and --board-size. */
   grid-area: villain;
+  align-self: start;
   position: relative;
   z-index: 3; /* over the tiles and fences; the gnome (.robot, z-index 4) walks over his hands */
   width: var(--board-size, 100%);

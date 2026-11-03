@@ -279,3 +279,15 @@ test('layout: no horizontal scroll at 375px on the home and play pages, and Easy
     expect(box.y + box.height).toBeLessThanOrEqual(844);
   }
 });
+
+test('layout: on a finished day at 1280x800 he sits directly under the board, whatever the side panel height', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openDaily(page);
+  for (const w of easy.answer) await press(page, w);
+  await tryNow(page);
+  await page.locator('#submit-btn').click();
+  await expect(page.locator('#result[data-state="done"]')).toBeVisible();
+  const [b, v] = await Promise.all([page.locator('#board').boundingBox(), page.locator('#villain').boundingBox()]);
+  const overlap = v.height * 0.18; // the grid gap is cancelled by his negative margin, leaving 18% of his height
+  expect(Math.abs((b.y + b.height - v.y) - overlap)).toBeLessThanOrEqual(3);
+});
