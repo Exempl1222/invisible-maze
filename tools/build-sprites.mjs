@@ -460,7 +460,7 @@ function toadBackSvg(mood) {
   const HS = 0.8; // hand scale
   const hw = 2.4 / HS; // hand outline width in hand units
   const bw = 2.4 / TB.k; // body outline width in mockup units
-  const shY = 88 + TB.k * m.dy;
+  const shY = 96 + TB.k * m.dy;
   const arm = (sx, [hx, hy], side) => `M${sx} ${f1(shY)} Q${f1((sx + hx) / 2 + side * 8)} ${f1((shY + hy) / 2)} ${hx} ${hy}`;
   const armSvg = (sx, h, side) => inkLine(arm(sx, h, side), K.arm, 15, 2.2) + `<path d="${arm(sx, h, side)}" fill="none" stroke="${K.skinHi}" stroke-width="5" stroke-linecap="round" opacity=".45" transform="translate(${-side * 2} -2)"/>`;
   const handSvg = ([x, y, rot], mirror, fist) => `<g class="toad-hand" transform="translate(${x} ${y}) rotate(${rot})${mirror ? ' scale(-1 1)' : ''} scale(${HS})">${hand({ w: hw, glow: m.glow, fist })}</g>`;
@@ -495,19 +495,19 @@ function toadBackSvg(mood) {
   const eyeRim = (cx) => inkLine(`M${cx - 28} 542 A31 31 0 0 1 ${cx + 28} 542`, K.gold, 5, bw * .8) + `<path d="M${cx - 13} 538 A20 20 0 0 1 ${cx + 5} 532" fill="none" stroke="${K.cream}" stroke-width="2" stroke-linecap="round"/>`;
   const lid = (cx) => m.lid ? part(`M${cx - 31} 550 A31 31 0 0 1 ${cx + 31} 550 Z`, K.lidBack, null, null, bw) : '';
   const hum = `<g fill="${K.freckle}" opacity=".7">${[[120, 612, 5], [132, 624, 3], [270, 612, 5], [258, 624, 3], [195, 640, 4], [150, 664, 3.5], [240, 664, 3.5]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`;
-  const sacs = m.sac[0] ? [62, 328].map((x) => part(ell(x, 604, m.sac[0], m.sac[1]), K.sac, null, null, bw)).join('') : '';
+  const sacs = m.sac[0] ? [10, 380].map((x) => part(ell(x, 604, m.sac[0], m.sac[1]), K.sac, null, null, bw)).join('') : '';
   const tongue = mood === 'gloat' ? `<g class="snap">${inkLine('M300 592 Q352 566 352 500', K.tongue, 9, bw * .8)}${part(ell(352, 498, 7, 7), K.tongue, null, null, bw * .8)}
     <g transform="translate(354 488) scale(1.5)">${fly('flyStill', 1)}</g></g>` : '';
-  const hemPath = 'M28 800 L28 694 Q58 678 88 694 Q118 678 148 694 Q178 678 208 694 Q238 678 268 694 Q298 678 328 694 Q346 684 362 694 L362 800 Z';
-  const diamonds = [[58, 700, 6], [118, 700, 6], [150, 704, 5], [240, 704, 5], [272, 700, 6], [332, 700, 6]]
+  const hemPath = 'M-62 800 L-62 700 Q-30 682 0 700 Q30 682 60 700 Q90 682 120 700 Q150 682 180 700 Q210 682 240 700 Q270 682 300 700 Q330 682 360 700 Q390 682 420 700 Q438 690 452 700 L452 800 Z';
+  const diamonds = [[-30, 706, 6], [30, 706, 6], [90, 706, 6], [150, 708, 5], [240, 708, 5], [300, 706, 6], [360, 706, 6], [420, 706, 6]]
     .map(([x, y, s]) => part(`M${x} ${y} l${s} 8 l${-s} 8 l${-s} -8 Z`, K.orange, null, null, bw * .55)).join('');
-  const slingshot = inkLine('M84 724 L84 702 M84 702 L74 682 M84 702 L94 682', '#8b5e34', 5, bw * .6) + inkLine('M74 684 Q84 696 94 684', K.tongue, 2.5, bw * .45);
-  const cushion = mood === 'sulk' ? '' : part(ell(318, 700, 24, 15), K.pink, null, null, bw * .8) + part(rr(336, 694, 12, 9, 3), K.pink, null, null, bw * .8) +
-      `<path d="M304 694 Q312 690 320 694" fill="none" stroke="${K.pinkHi}" stroke-width="2.5" stroke-linecap="round"/>`;
+  const slingshot = inkLine('M44 724 L44 702 M44 702 L34 682 M44 702 L54 682', '#8b5e34', 5, bw * .6) + inkLine('M34 684 Q44 696 54 684', K.tongue, 2.5, bw * .45);
+  const cushion = mood === 'sulk' ? '' : part(ell(358, 704, 24, 15), K.pink, null, null, bw * .8) + part(rr(376, 698, 12, 9, 3), K.pink, null, null, bw * .8) +
+      `<path d="M344 698 Q352 694 360 698" fill="none" stroke="${K.pinkHi}" stroke-width="2.5" stroke-linecap="round"/>`;
 
   const inner = `
     ${tongue}${sacs}
-    ${part('M28 800 L28 700 C30 640 62 584 112 556 C142 540 170 534 195 534 C220 534 248 540 278 556 C328 584 360 640 362 700 L362 800 Z', `url(#${PFX}skin)`, null, null, bw)}
+    ${part('M-62 800 L-62 716 C-56 650 10 592 110 560 C142 544 170 538 195 538 C220 538 248 544 280 560 C380 592 446 650 452 716 L452 800 Z', `url(#${PFX}skin)`, null, null, bw)}
     <path d="M60 640 C80 600 120 576 150 570" fill="none" stroke="${K.skinHi}" stroke-width="3" stroke-linecap="round" opacity=".55"/>
     ${hum}
     ${part(ell(145, 554, 33, 33), `url(#${PFX}bulge)`, null, null, bw)}${part(ell(245, 554, 33, 33), `url(#${PFX}bulge)`, null, null, bw)}
@@ -519,7 +519,7 @@ function toadBackSvg(mood) {
   // Nothing of him may hang below the band (the cloak path runs long); the top and sides stay open for the spell.
   const body = `${toadDefs(true)}<clipPath id="${PFX}band"><rect x="-80" y="-300" width="550" height="440"/></clipPath><g clip-path="url(#${PFX}band)">
     ${mood === 'idle' ? `<g transform="translate(${TB.tx} ${TB.ty}) scale(${TB.k})">${fly('flyOrbit', 1.3)}</g>` : ''}
-    ${armSvg(152, m.L, -1)}${armSvg(238, m.R, 1)}
+    ${armSvg(102, m.L, -1)}${armSvg(288, m.R, 1)}
     ${handSvg(m.L, false, m.fist === 'L')}${handSvg(m.R, true, m.fist === 'R')}
     <g transform="translate(${TB.tx} ${TB.ty}) scale(${TB.k})"><g transform="translate(0 ${m.dy - 30})"><g class="${mood === 'idle' ? 'breathe' : mood === 'gloat' ? 'bounce' : ''}">${inner}</g></g></g>
     ${castFx}${gloatFx}${sulkFx}</g>`;
