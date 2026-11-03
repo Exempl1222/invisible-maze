@@ -2,6 +2,38 @@
 
 The daily as its own page, so it can ship alone with a link to the full game later. Decided by Eric, 27 Oct 2026. Rules of play are unchanged (`docs/GAME_SPEC.md`, rules v4); this spec covers only what is new around them.
 
+## v3.2: score card share and the custom domain (Eric, 3 Nov)
+
+Adds to v3; the share text format does not change.
+
+### Score card image
+- A 1080x1080 PNG drawn on a `<canvas>` by the page. **No board, no fences** (a spoiler). Drawn once when the result panel shows, and again if anything on it changes (e.g. `beat` arrives), so a tap on Share never waits on drawing (iOS drops the share sheet if the tap's user activation is spent on slow async work).
+- Layout, top to bottom, on the site's cream garden background with the outline colour `#3b2618` for every shape:
+  1. Wordmark: gnome icon + `Gnome Sweet Gnome`.
+  2. `#N Easy` / `#N Hard`, plus `(archive)` on archive days.
+  3. The score, large: `82/100`. A `💡`-style bulb icon beside it if the hint was used (drawn, not an emoji).
+  4. One rounded square per try used, in order: win = bush green `#3f7a34`, loss = hat red `#c94a32` (the share text's 🟩/🟥).
+  5. One caption line: 100 `Fenced in perfectly.`, 1 to 99 `Fenced in.`, 0 `He made it home.`
+  6. `Beat X% of players` only when the share text has that line. `🔥 N-day streak` (drawn flame) when the current streak for this mode is 2 or more, not on archive days.
+  7. Sir Croakwell, front view, bottom right: `toad-front-smug.svg` on a 0 (he won), `toad-front-point.svg` otherwise.
+  8. Footer: `gnomesweetgnome.app`.
+- Fonts: Grandstander for headings and the score, Nunito for the rest (wait for `document.fonts.load` before drawing; draw anyway after 1.5 s).
+- The layout is chosen by a **pure, unit-tested** function `cardModel({ number, mode, score, tries, hint, archive, beat, streak })` in `assets/js/daily/card.js` that returns the strings, square colours and toad file. Drawing lives in `assets/js/daily/card-draw.js` (DOM, not unit tested).
+
+### Share button
+1. If `navigator.canShare?.({ files: [png] })` is true: `navigator.share({ files: [png], text })`. File name `gnome-sweet-gnome-<N>-<mode>.png`, type `image/png`.
+2. Else if `navigator.share` exists: `navigator.share({ text })` (as today).
+3. Else copy the text, say `Copied` (as today), and show a quiet **`Save image`** button that downloads the PNG. If the clipboard fails, the selectable box as today.
+- `AbortError` (player closed the sheet) does nothing, as today. Any other share error falls through to the next step.
+- `Save image` appears only on the copy path; phones with file sharing never see it.
+
+### Link previews and the domain
+- The site lives at `https://gnomesweetgnome.app/` (custom domain on GitHub Pages). The share link already comes from `location.href`, so it follows the domain with no code change.
+- `daily/index.html`: `og:url` `https://gnomesweetgnome.app/daily/`, `og:image` `https://gnomesweetgnome.app/assets/og/daily.png` (1200x630), `og:image:width`/`height`, `og:image:alt` `Sir Croakwell the toad and a runaway gnome`, `twitter:card` `summary_large_image`. `index.html` gets the same image and `og:url` `https://gnomesweetgnome.app/`.
+- The preview image is generated, never hand-edited: `node tools/build-og.mjs` renders it with Playwright from the existing sprites (gnome, toadstool house, a few fences, Croakwell front view, title `Gnome Sweet Gnome`, line `One new fence puzzle a day`).
+- The stats Worker also accepts `https://gnomesweetgnome.app` and `https://www.gnomesweetgnome.app` (CORS). `github.io` stays allowed while the old address redirects.
+- **Later (not this parcel):** a personalised preview (`I scored 82 on today's Hard`) served by the Worker.
+
 ## v3: optimal solution and everyone's scores (Eric, 28 Oct)
 
 Adds to v2; nothing in v2 changes unless stated.
