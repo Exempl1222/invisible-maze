@@ -20,7 +20,7 @@ docs/ART_SPEC.md           this file
 | Gnome | `gnome-{up,right,down,left}-{idle,walk,shrug}.svg` (12) | 140 x 140 | Feet anchor at (70, 131). Loops: idle 4.8s, walk 0.6s, shrug 2.2s. Left is right mirrored, baked into the file |
 | Walls | `wall-h.svg`, `wall-v.svg`, `wall-h-hint.svg`, `wall-v-hint.svg` | 64 x 32 and 24 x 72 | Build plays once on load (0.8 to 1.15s). Hint walls add a gold ribbon and sparkle |
 | Teleporters | `stump-a.svg`, `stump-b.svg`, `stump-c.svg` | 64 x 64 | Teal, violet, gold. Hollow centre at (32, 26). Glow loops forever |
-| Sir Croakwell (back) | `toad-back-{idle,cast,gloat,sulk}.svg` (4) | 390 x 200 | Board border, seen from behind. `overflow: visible`: the cast pose reaches about 40px above the canvas. Loops: idle breathe 3.2s and a fly, gloat bounce 0.5s. Inline from `assets/js/villain.js` |
+| Sir Croakwell (back) | `toad-back-{idle,cast,gloat,sulk}.svg` (4) | 390 x 200 | Board border, seen from behind. `overflow: visible`: the cast pose reaches about 40px above the canvas. Loops: idle breathe 3.2s and a fly, gloat bounce 0.5s. Sulk: he lets go of the board, raised shaking fist (0.4s every 1.6s) with an anger mark, limp right hand, hat fallen with the snail, "Rats!" speech bubble above his head. Inline from `assets/js/villain.js` |
 | Sir Croakwell (front) | `toad-front-{smug,point}.svg` (2) | 390 x 460 | Home hero (`smug`, wink) and the How to play dialog (`point`). Fly orbit and blink; finger spark |
 | Tiles | `tile-grass-{1,2,3}`, `tile-rock`, `tile-bush`, `tile-river`, `tile-bridge-h`, `tile-bridge-v`, `tile-house`, `tile-start` | 64 x 64 | Full bleed. River is seamless in every direction |
 

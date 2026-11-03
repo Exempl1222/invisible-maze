@@ -291,3 +291,12 @@ test('layout: on a finished day at 1280x800 he sits directly under the board, wh
   const overlap = v.height * 0.18; // the grid gap is cancelled by his negative margin, leaving 18% of his height
   expect(Math.abs((b.y + b.height - v.y) - overlap)).toBeLessThanOrEqual(3);
 });
+
+test('the sulk sprite has the shaking fist and the Rats! bubble, and no pfffft', () => {
+  const svg = readFileSync(new URL('../assets/sprites/toad-back-sulk.svg', import.meta.url), 'utf8');
+  expect(svg).toContain('class="toad-fist"');
+  expect(svg).toContain('class="toad-bubble"');
+  expect(svg).toContain('Rats!');
+  expect(svg).not.toContain('pfffft');
+  expect(svg).not.toContain('Rats.');
+});

@@ -353,7 +353,7 @@
         140
       ],
       "loop": false,
-      "cycleSeconds": 1.1
+      "cycleSeconds": 1.6
     },
     "toad-front-smug": {
       "file": "assets/sprites/toad-front-smug.svg",
