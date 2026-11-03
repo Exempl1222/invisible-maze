@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sir Croakwell rig</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 724px; position: relative; font-family: Fredoka, system-ui, sans-serif; pointer-events: none">
+<svg width="390" height="724" viewBox="0 0 390 724" aria-hidden="true" style="display: block; overflow: hidden">
+<defs>
+<radialGradient id="skin" cx="45%" cy="20%" r="80%"><stop offset="0" stop-color="#a3c25c"></stop><stop offset="0.5" stop-color="#6f8c3c"></stop><stop offset="1" stop-color="#435d20"></stop></radialGradient>
+<radialGradient id="bulge" cx="45%" cy="30%" r="70%"><stop offset="0" stop-color="#b3cf6a"></stop><stop offset="1" stop-color="#5c7830"></stop></radialGradient>
+<linearGradient id="hat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a58b8"></stop><stop offset="1" stop-color="#3b2768"></stop></linearGradient>
+<linearGradient id="cloak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5e4396"></stop><stop offset="1" stop-color="#36245e"></stop></linearGradient>
+<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"></feGaussianBlur></filter>
+</defs>
+
+<g opacity="{{castOp}}">
+<rect x="212" y="282" width="62" height="26" rx="13" fill="{{magic}}" opacity="0.6" filter="url(#glow)"></rect>
+<rect x="222" y="292" width="30" height="6" rx="3" fill="#9b6a3a"></rect>
+<rect x="216" y="290" width="10" height="10" rx="2" fill="#6e4524"></rect>
+<rect x="252" y="292" width="16" height="6" rx="3" fill="none" stroke="{{magic}}" stroke-width="1.5" stroke-dasharray="3 3"></rect>
+<path d="{{trailL}}" fill="none" stroke="{{magic}}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9"></path>
+<path d="{{trailR}}" fill="none" stroke="{{magic}}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9"></path>
+<g fill="{{magic}}">
+<path d="M110 236 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3 Z"></path>
+<path d="M300 250 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z"></path>
+<path d="M176 262 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z"></path>
+<circle cx="150" cy="250" r="2.5"></circle><circle cx="330" cy="224" r="2"></circle><circle cx="70" cy="262" r="2"></circle>
+</g>
+<g>
+<rect x="200" y="262" width="7" height="4" rx="1" fill="#ff9a3c" transform="rotate(30 203 264)"></rect>
+<rect x="278" y="270" width="7" height="4" rx="1" fill="#ff7fa6" transform="rotate(-25 281 272)"></rect>
+<rect x="236" y="250" width="6" height="4" rx="1" fill="#8fe3ff" transform="rotate(60 239 252)"></rect>
+<rect x="128" y="276" width="7" height="4" rx="1" fill="#ffd96b" transform="rotate(-40 131 278)"></rect>
+<rect x="320" y="262" width="6" height="4" rx="1" fill="#ff9a3c" transform="rotate(15 323 264)"></rect>
+<rect x="96" y="240" width="6" height="4" rx="1" fill="#ff7fa6" transform="rotate(50 99 242)"></rect>
+<rect x="258" y="314" width="6" height="4" rx="1" fill="#ffd96b" transform="rotate(-60 261 316)"></rect>
+<rect x="206" y="316" width="7" height="4" rx="1" fill="#8fe3ff" transform="rotate(20 209 318)"></rect>
+</g>
+</g>
+
+<g opacity="{{flyIdleOp}}">
+<ellipse cx="262" cy="414" rx="26" ry="10" fill="none" stroke="#2f4a22" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.45"></ellipse>
+<ellipse cx="286" cy="410" rx="5" ry="3.5" fill="#2a2a24"></ellipse>
+<ellipse cx="284" cy="405" rx="5" ry="3" fill="#ffffff" opacity="0.75"></ellipse>
+<ellipse cx="290" cy="405" rx="4" ry="2.5" fill="#ffffff" opacity="0.6"></ellipse>
+</g>
+
+<g>
+<path d="{{armL}}" fill="none" stroke="#56712c" stroke-width="26" stroke-linecap="round"></path>
+<path d="{{armL}}" fill="none" stroke="#86a447" stroke-width="7" stroke-linecap="round" opacity="0.55" transform="translate(-3 -3)"></path>
+<path d="{{armR}}" fill="none" stroke="#56712c" stroke-width="26" stroke-linecap="round"></path>
+<path d="{{armR}}" fill="none" stroke="#86a447" stroke-width="7" stroke-linecap="round" opacity="0.55" transform="translate(3 -3)"></path>
+
+<g transform="{{handL}}">
+<path d="M-18 -24 Q-12 -12 -6 -30 Q0 -16 6 -30 Q12 -12 18 -24 L13 -2 L-13 -2 Z" fill="#7a9a40" opacity="0.85"></path>
+<g stroke="#5f7a32" stroke-width="7" stroke-linecap="round"><line x1="-10" y1="-4" x2="-18" y2="-26"></line><line x1="-4" y1="-8" x2="-6" y2="-32"></line><line x1="4" y1="-8" x2="6" y2="-32"></line><line x1="10" y1="-4" x2="18" y2="-26"></line></g>
+<ellipse cx="0" cy="0" rx="17" ry="12" fill="#5f7a32"></ellipse>
+<g fill="#b3cf6a"><circle cx="-18" cy="-27" r="5"></circle><circle cx="-6" cy="-33" r="5"></circle><circle cx="6" cy="-33" r="5"></circle><circle cx="18" cy="-27" r="5"></circle></g>
+<g fill="{{magic}}" opacity="{{glowOp}}"><circle cx="-18" cy="-27" r="9" opacity="0.4"></circle><circle cx="-6" cy="-33" r="9" opacity="0.4"></circle><circle cx="6" cy="-33" r="9" opacity="0.4"></circle><circle cx="18" cy="-27" r="9" opacity="0.4"></circle><circle cx="-6" cy="-33" r="3"></circle><circle cx="6" cy="-33" r="3"></circle></g>
+</g>
+<g transform="{{handR}}">
+<path d="M-18 -24 Q-12 -12 -6 -30 Q0 -16 6 -30 Q12 -12 18 -24 L13 -2 L-13 -2 Z" fill="#7a9a40" opacity="0.85"></path>
+<g stroke="#5f7a32" stroke-width="7" stroke-linecap="round"><line x1="-10" y1="-4" x2="-18" y2="-26"></line><line x1="-4" y1="-8" x2="-6" y2="-32"></line><line x1="4" y1="-8" x2="6" y2="-32"></line><line x1="10" y1="-4" x2="18" y2="-26"></line></g>
+<ellipse cx="0" cy="0" rx="17" ry="12" fill="#5f7a32"></ellipse>
+<g fill="#b3cf6a"><circle cx="-18" cy="-27" r="5"></circle><circle cx="-6" cy="-33" r="5"></circle><circle cx="6" cy="-33" r="5"></circle><circle cx="18" cy="-27" r="5"></circle></g>
+<g fill="{{magic}}" opacity="{{glowOp}}"><circle cx="-18" cy="-27" r="9" opacity="0.4"></circle><circle cx="-6" cy="-33" r="9" opacity="0.4"></circle><circle cx="6" cy="-33" r="9" opacity="0.4"></circle><circle cx="18" cy="-27" r="9" opacity="0.4"></circle><circle cx="-6" cy="-33" r="3"></circle><circle cx="6" cy="-33" r="3"></circle></g>
+</g>
+</g>
+
+<g transform="{{headT}}">
+<g opacity="{{gloatOp}}">
+<path d="M300 592 Q352 566 352 500" fill="none" stroke="#e0687c" stroke-width="9" stroke-linecap="round"></path>
+<circle cx="352" cy="498" r="7" fill="#e0687c"></circle>
+<ellipse cx="354" cy="490" rx="5" ry="3.5" fill="#2a2a24"></ellipse>
+<ellipse cx="350" cy="485" rx="5" ry="3" fill="#ffffff" opacity="0.75"></ellipse>
+<ellipse cx="358" cy="485" rx="4" ry="2.5" fill="#ffffff" opacity="0.6"></ellipse>
+</g>
+<ellipse cx="62" cy="604" rx="{{sacRx}}" ry="{{sacRy}}" fill="#f1e2a0" stroke="#c9b46a" stroke-width="2"></ellipse>
+<ellipse cx="328" cy="604" rx="{{sacRx}}" ry="{{sacRy}}" fill="#f1e2a0" stroke="#c9b46a" stroke-width="2"></ellipse>
+
+<path d="M28 800 L28 700 C30 640 62 584 112 556 C142 540 170 534 195 534 C220 534 248 540 278 556 C328 584 360 640 362 700 L362 800 Z" fill="url(#skin)"></path>
+<path d="M60 640 C80 600 120 576 150 570" fill="none" stroke="#c4dc84" stroke-width="3" stroke-linecap="round" opacity="0.5"></path>
+
+<circle cx="80" cy="634" r="14" fill="#6b8a34" stroke="#4a6425" stroke-width="2.5"></circle>
+<circle cx="77" cy="630" r="4" fill="#9cb85a" opacity="0.7"></circle>
+<circle cx="310" cy="634" r="14" fill="#6b8a34" stroke="#4a6425" stroke-width="2.5"></circle>
+<circle cx="307" cy="630" r="4" fill="#9cb85a" opacity="0.7"></circle>
+
+
+<g fill="#86a447" opacity="0.8">
+<circle cx="120" cy="612" r="5"></circle><circle cx="132" cy="624" r="3"></circle>
+<circle cx="270" cy="612" r="5"></circle><circle cx="258" cy="624" r="3"></circle>
+<circle cx="195" cy="640" r="4"></circle>
+<circle cx="150" cy="664" r="3.5"></circle><circle cx="240" cy="664" r="3.5"></circle>
+</g>
+
+<circle cx="145" cy="554" r="33" fill="url(#bulge)" stroke="#4a6425" stroke-width="2"></circle>
+<circle cx="245" cy="554" r="33" fill="url(#bulge)" stroke="#4a6425" stroke-width="2"></circle>
+<path d="M117 542 A31 31 0 0 1 173 542" fill="none" stroke="#e8b63c" stroke-width="5" stroke-linecap="round"></path>
+<path d="M217 542 A31 31 0 0 1 273 542" fill="none" stroke="#e8b63c" stroke-width="5" stroke-linecap="round"></path>
+<path d="M132 538 A20 20 0 0 1 150 532" fill="none" stroke="#fff6d6" stroke-width="2" stroke-linecap="round"></path>
+<path d="M232 538 A20 20 0 0 1 250 532" fill="none" stroke="#fff6d6" stroke-width="2" stroke-linecap="round"></path>
+<path d="{{lidL}}" fill="#5c7830"></path>
+<path d="{{lidR}}" fill="#5c7830"></path>
+
+<g transform="{{hatT}}">
+<ellipse cx="195" cy="542" rx="54" ry="12" fill="#2f1f55"></ellipse>
+<path d="M163 540 C171 504 187 474 200 454 L214 458 C219 488 225 514 229 540 Z" fill="url(#hat)"></path>
+<g transform="{{tipT}}">
+<path d="M207 456 c6 -14 20 -14 20 -2 c0 10 -12 10 -10 0 c2 -12 18 -14 22 -2 c3 9 -8 11 -8 2 c0 -10 14 -14 22 -6" fill="none" stroke="#4f3585" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="257" cy="446" r="9" fill="#ff9a3c" stroke="#c96a1a" stroke-width="1.5"></circle>
+<path d="M250 443 Q257 438 264 443 M249 449 Q257 454 265 449" fill="none" stroke="#ffd96b" stroke-width="2" stroke-linecap="round"></path>
+</g>
+<path d="M166 528 Q196 538 227 528 L229 538 Q196 548 164 538 Z" fill="#ff9a3c"></path>
+<g fill="#ffd96b"><circle cx="176" cy="535" r="2"></circle><circle cx="190" cy="538" r="2"></circle><circle cx="204" cy="538" r="2"></circle><circle cx="218" cy="535" r="2"></circle></g>
+<g transform="rotate(-18 172 518)"><rect x="165" y="506" width="14" height="20" rx="2" fill="#fffaf0" stroke="#2f4a22" stroke-width="1.2"></rect><path d="M172 511 l4 5 l-4 5 l-4 -5 Z" fill="#c8402f"></path></g>
+<rect x="185" y="488" width="15" height="14" rx="1.5" transform="rotate(-10 192 495)" fill="#8f6fcc"></rect>
+<rect x="187" y="490" width="11" height="10" transform="rotate(-10 192 495)" fill="none" stroke="#f6f1df" stroke-width="1.2" stroke-dasharray="2 2"></rect>
+<path d="M214 500 l2.5 5.5 l6 0.6 l-4.5 4 l1.3 6 l-5.3 -3 l-5.3 3 l1.3 -6 l-4.5 -4 l6 -0.6 Z" fill="#ffd96b"></path>
+<g>
+<path d="M226 540 Q232 534 248 538 L250 542 Q236 544 226 542 Z" fill="#c9b38e"></path>
+<line x1="248" y1="538" x2="252" y2="528" stroke="#8a7656" stroke-width="1.5" stroke-linecap="round"></line>
+<line x1="245" y1="538" x2="246" y2="527" stroke="#8a7656" stroke-width="1.5" stroke-linecap="round"></line>
+<circle cx="236" cy="532" r="8" fill="#d98c5f" stroke="#9c5a35" stroke-width="1.5"></circle>
+<path d="M236 532 m-1 0 a2 2 0 1 1 3 1 a4 4 0 1 1 -6 -3" fill="none" stroke="#9c5a35" stroke-width="1.2"></path>
+</g>
+</g>
+
+<path d="M28 800 L28 694 Q58 678 88 694 Q118 678 148 694 Q178 678 208 694 Q238 678 268 694 Q298 678 328 694 Q346 684 362 694 L362 800 Z" fill="url(#cloak)"></path>
+<path d="M195 690 C180 690 178 704 195 704 C212 704 210 690 195 690 Z" fill="#c8402f"></path>
+<path d="M181 698 C181 684 209 684 209 698 Z" fill="#c8402f"></path>
+<circle cx="189" cy="692" r="2" fill="#fff6e6"></circle><circle cx="200" cy="690" r="2.4" fill="#fff6e6"></circle>
+<rect x="191" y="698" width="8" height="8" rx="2" fill="#f4e8cf"></rect>
+<g fill="#ff9a3c"><path d="M58 700 l6 8 l-6 8 l-6 -8 Z"></path><path d="M118 700 l6 8 l-6 8 l-6 -8 Z"></path><path d="M150 704 l5 7 l-5 7 l-5 -7 Z"></path><path d="M240 704 l5 7 l-5 7 l-5 -7 Z"></path><path d="M272 700 l6 8 l-6 8 l-6 -8 Z"></path><path d="M332 700 l6 8 l-6 8 l-6 -8 Z"></path></g>
+<g>
+<path d="M84 724 L84 702 M84 702 L74 682 M84 702 L94 682" fill="none" stroke="#8b5e34" stroke-width="5" stroke-linecap="round"></path>
+<path d="M74 684 Q84 696 94 684" fill="none" stroke="#e0687c" stroke-width="2.5"></path>
+</g>
+<g opacity="{{cushionOp}}">
+<ellipse cx="318" cy="700" rx="24" ry="15" fill="#ff7fa6" stroke="#c94f78" stroke-width="2"></ellipse>
+<rect x="336" y="694" width="12" height="9" rx="3" fill="#ff7fa6" stroke="#c94f78" stroke-width="2"></rect>
+<path d="M304 694 Q312 690 320 694" fill="none" stroke="#ffd0de" stroke-width="2.5" stroke-linecap="round"></path>
+</g>
+<g opacity="{{flatOp}}">
+<path d="M294 704 Q318 696 342 706 Q318 712 294 704 Z" fill="#ff7fa6" stroke="#c94f78" stroke-width="2"></path>
+<rect x="340" y="702" width="10" height="6" rx="2" fill="#ff7fa6" stroke="#c94f78" stroke-width="2"></rect>
+</g>
+</g>
+
+<g opacity="{{gloatOp}}">
+<text x="74" y="478" transform="rotate(-12 74 478)" font-family="Fredoka, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fff6e0" stroke="#2f4a22" stroke-width="5" paint-order="stroke" stroke-linejoin="round">Hehehe!</text>
+<rect x="60" y="430" width="8" height="4" rx="1" fill="#ff9a3c" transform="rotate(30 64 432)"></rect>
+<rect x="200" y="452" width="8" height="4" rx="1" fill="#ff7fa6" transform="rotate(-30 204 454)"></rect>
+<rect x="150" y="420" width="7" height="4" rx="1" fill="#8fe3ff" transform="rotate(55 153 422)"></rect>
+<rect x="300" y="440" width="7" height="4" rx="1" fill="#ffd96b" transform="rotate(-50 303 442)"></rect>
+<rect x="250" y="410" width="7" height="4" rx="1" fill="#ff9a3c" transform="rotate(10 253 412)"></rect>
+<path d="M60 560 q-14 -6 -18 -20" fill="none" stroke="#2f4a22" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M330 560 q14 -6 18 -20" fill="none" stroke="#2f4a22" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M52 584 q-10 -2 -16 -12" fill="none" stroke="#2f4a22" stroke-width="2" stroke-linecap="round"></path>
+</g>
+
+<g opacity="{{sulkOp}}">
+<g fill="#7b8494"><circle cx="286" cy="442" r="15"></circle><circle cx="306" cy="434" r="19"></circle><circle cx="328" cy="444" r="14"></circle><rect x="276" y="442" width="62" height="14" rx="7"></rect></g>
+<g stroke="#74b6dc" stroke-width="2.5" stroke-linecap="round"><line x1="290" y1="464" x2="286" y2="476"></line><line x1="306" y1="464" x2="302" y2="480"></line><line x1="322" y1="464" x2="318" y2="474"></line></g>
+<text x="86" y="470" transform="rotate(-6 86 470)" font-family="Fredoka, system-ui, sans-serif" font-size="22" font-weight="600" fill="#fff6e0" stroke="#2f4a22" stroke-width="4" paint-order="stroke" stroke-linejoin="round">Rats.</text>
+<text x="246" y="680" transform="rotate(-8 246 680)" font-family="Fredoka, system-ui, sans-serif" font-size="16" font-weight="600" font-style="italic" fill="#fff6e0" stroke="#2f4a22" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round">pfffft…</text>
+<path d="M60 600 q-8 -10 0 -18 q8 -8 0 -16" fill="none" stroke="#9aa0a8" stroke-width="2" stroke-linecap="round" opacity="0.8"></path>
+<path d="M332 600 q8 -10 0 -18 q-8 -8 0 -16" fill="none" stroke="#9aa0a8" stroke-width="2" stroke-linecap="round" opacity="0.8"></path>
+</g>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mood":{"editor":"enum","options":["idle","cast","gloat","sulk"],"default":"idle"},"magic":{"editor":"color","default":"#c9a6ff","options":["#c9a6ff","#e4ff7a","#8fe3ff","#ff9e7a"]},"$preview":{"width":390,"height":724}}'>
+class Component extends DCLogic {
+renderVals() {
+const moods = {
+idle:  { dy: 0,   hat: 'rotate(-6 195 540)',                 tip: 'rotate(0 207 456)',   L: [70, 352, -6],  R: [320, 352, 6],   glow: 0.45, cast: 0, flyIdle: 1, gloat: 0, sulk: 0, sac: [0, 0],   lid: 0 },
+cast:  { dy: -8,  hat: 'translate(0 -10) rotate(5 195 540)', tip: 'rotate(-25 207 456)', L: [30, 318, -32], R: [360, 318, 32],  glow: 1,    cast: 1, flyIdle: 0, gloat: 0, sulk: 0, sac: [14, 10], lid: 0 },
+gloat: { dy: -16, hat: 'translate(0 -14) rotate(-16 195 540)', tip: 'rotate(-40 207 456)', L: [34, 296, -14], R: [328, 358, 10], glow: 0.7,  cast: 0, flyIdle: 0, gloat: 1, sulk: 0, sac: [24, 18], lid: 0 },
+sulk:  { dy: 34,  hat: 'translate(0 16) rotate(12 195 540)', tip: 'rotate(85 207 456)',  L: [44, 560, 190], R: [346, 560, 170], glow: 0,    cast: 0, flyIdle: 0, gloat: 0, sulk: 1, sac: [0, 0],   lid: 1 }
+};
+const m = moods[this.props.mood] || moods.idle;
+const shY = 610 + m.dy;
+const arm = (sx, hx, hy, side) => {
+const cx = (sx + hx) / 2 + side * 40;
+const cy = (shY + hy) / 2;
+return 'M' + sx + ' ' + shY + ' Q' + cx + ' ' + cy + ' ' + hx + ' ' + hy;
+};
+const tipOf = (h) => {
+const r = h[2] * Math.PI / 180;
+return [h[0] + 32 * Math.sin(r), h[1] - 32 * Math.cos(r)];
+};
+const fl = tipOf(m.L), fr = tipOf(m.R);
+const trail = (f, tx, ty) => 'M' + f[0].toFixed(1) + ' ' + f[1].toFixed(1) + ' Q' + ((f[0] + tx) / 2).toFixed(1) + ' ' + (Math.min(f[1], ty) - 60).toFixed(1) + ' ' + tx + ' ' + ty;
+const lid = (cx) => m.lid ? 'M' + (cx - 31) + ' 550 A31 31 0 0 1 ' + (cx + 31) + ' 550 Z' : 'M0 0 Z';
+return {
+magic: this.props.magic ?? '#c9a6ff',
+headT: 'translate(0 ' + (m.dy - 30) + ')',
+hatT: m.hat,
+tipT: m.tip,
+armL: arm(104, m.L[0], m.L[1], -1),
+armR: arm(286, m.R[0], m.R[1], 1),
+handL: 'translate(' + m.L[0] + ' ' + m.L[1] + ') rotate(' + m.L[2] + ')',
+handR: 'translate(' + m.R[0] + ' ' + m.R[1] + ') rotate(' + m.R[2] + ') scale(-1 1)',
+trailL: trail(fl, 236, 296),
+trailR: trail(fr, 252, 298),
+glowOp: m.glow,
+castOp: m.cast,
+flyIdleOp: m.flyIdle,
+gloatOp: m.gloat,
+sulkOp: m.sulk,
+cushionOp: m.sulk ? 0 : 1,
+flatOp: m.sulk,
+sacRx: m.sac[0],
+sacRy: m.sac[1],
+lidL: lid(145),
+lidR: lid(245)
+};
+}
+}
+</script>
+</body>
+</html>
