@@ -69,7 +69,7 @@ POST {STATS_URL}/result
 - **Page side:** only a 400 marks a result as settled (refused for good); 403, 404, 413, 429 and 5xx retry on a later load. An unsent day is retried only while its date is still within the server's window (UTC date minus 1 to plus 1). "You beat X%" counts the player as included only when the send succeeded, and `/stats` is fetched with `cache: 'no-cache'` right after a send.
 - **Cheap reads:** an accepted result is one `INSERT OR IGNORE` into `results`, and an AFTER INSERT trigger bumps a pre-counted `counts(mode, date, score, n)` row in the same statement; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
 - `GET {STATS_URL}/stats?mode=easy&date=YYYY-MM-DD` returns `{ players, bands: { "100": n, "80-99": n, "60-79": n, "30-59": n, "1-29": n, "0": n }, scores: { "<score>": n, ... } }`.
-- CORS: only `https://exempl1222.github.io` and `http://localhost:4173` (and the test port).
+- CORS: only `https://exempl1222.github.io`, `https://gnomesweetgnome.app`, `https://www.gnomesweetgnome.app` and `http://localhost:4173` (and the test port).
 
 **What the page shows** in the result panel, once the day is done (today only; archive days show `Player stats are kept for each day's own date only.`):
 - **Score spread:** six bars (same bands as personal stats), the player's band highlighted, with `N players today`.
