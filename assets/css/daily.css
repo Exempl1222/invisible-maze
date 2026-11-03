@@ -16,10 +16,10 @@
 .today-link { width: auto; margin-top: 6px; padding-inline: 1rem; }
 .date-line { margin: 2px 0 0; color: var(--muted); font-weight: 700; font-size: var(--step--1); }
 
-/* Three pips: a filled pip is a try left, an empty one is spent, a tick is the try that won. No legend colours. */
+/* Five pips: a filled pip is a try left, an empty one is spent, a tick is the try that won. No legend colours. */
 .tries { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .tries-label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); line-height: 1; }
-.pips { display: inline-flex; gap: 6px; }
+.pips { display: inline-flex; gap: 5px; }
 .pips i {
   width: 18px;
   height: 18px;

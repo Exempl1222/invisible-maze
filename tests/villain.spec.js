@@ -143,9 +143,9 @@ test('daily: the gnome getting home makes him sulk until the player builds again
   await expect(pose(page)).toHaveAttribute('data-sprite', 'toad-back-idle');
 });
 
-test('daily: three losses finish the day with a sulk, also after a reload', async ({ page }) => {
+test('daily: five losses finish the day with a sulk, also after a reload', async ({ page }) => {
   await openDaily(page);
-  for (let i = 0; i < 3; i++) await tryNow(page); // three losses
+  for (let i = 0; i < 5; i++) await tryNow(page); // five losses
   await expect(page.locator('#result[data-state="done"]')).toBeVisible();
   await expect(pose(page)).toHaveAttribute('data-sprite', 'toad-back-sulk');
   await page.reload();

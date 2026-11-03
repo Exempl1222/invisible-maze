@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS results (
   mode     TEXT    NOT NULL,           -- easy or hard
   date     TEXT    NOT NULL,           -- the day of the puzzle, YYYY-MM-DD
   score    INTEGER NOT NULL,           -- 0 to 100, worked out by the server
-  tries    INTEGER NOT NULL,           -- 1 to 3
+  tries    INTEGER NOT NULL,           -- 1 to 5 (1 to 3 before v3.1)
   hint     INTEGER NOT NULL,           -- 0 or 1
   received TEXT    NOT NULL,           -- the UTC day the result arrived
   PRIMARY KEY (device, mode, date)     -- one result per device, mode and day

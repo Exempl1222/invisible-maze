@@ -8,7 +8,7 @@
 // `base` is a try's score before the hint; the shown score is derived (see score.js shownScore), so a
 // hint used after a win can never be lost by a save or a merge. `reviewing`: the last try won and the
 // player has not pressed Retry yet (a reload shows the Retry or Submit choice, not the editor).
-import { MAX_TRIES, MODES } from './config.js';
+import { MAX_TRIES, LEGACY_MAX_TRIES, MODES } from './config.js';
 import { parseDate } from '../play/daily.js';
 import { scoreFor, HINT_COST } from './score.js';
 
@@ -157,10 +157,10 @@ export function migrateV1(raw, parOf) {
     const hint = parseLineKey(d.hint) ? d.hint : null;
     const spent = Number.isInteger(d.tries) ? Math.min(MAX_TRIES, Math.max(0, d.tries)) : 0;
     const won = d.won === true;
-    const done = d.done === true || won || spent >= MAX_TRIES;
+    const done = d.done === true || won || spent >= LEGACY_MAX_TRIES; // v1 had 3 tries, so 3 spent was a finished day
     let tries;
     if (won) tries = [{ fences: walls.length, won: true, base: scoreFor(walls.length, par), walls }];
-    else tries = Array.from({ length: done ? MAX_TRIES : spent }, () => ({ fences: walls.length, won: false, base: 0 }));
+    else tries = Array.from({ length: done ? (spent > 0 ? spent : MAX_TRIES) : spent }, () => ({ fences: walls.length, won: false, base: 0 }));
     out.hard[date] = cleanDay({ tries, hint, walls, done, finishedOn: d.finishedOn });
     if (!done && tries.length === 0 && walls.length === 0 && hint === null) delete out.hard[date];
   }

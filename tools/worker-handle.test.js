@@ -91,11 +91,11 @@ test('the hint lowers the score by 15 and never below 15', async () => {
 
 test('null fences (a day with no win) scores 0 and is kept', async () => {
   const { post, db } = setup();
-  const res = await post(payload({ fences: null, tries: 3 }));
+  const res = await post(payload({ fences: null, tries: 5 }));
   assert.equal(res.status, 200);
   assert.equal((await bodyOf(res)).score, 0);
   assert.equal([...db.results.values()][0].score, 0);
-  assert.equal([...db.results.values()][0].tries, 3);
+  assert.equal([...db.results.values()][0].tries, 5);
 });
 
 test('fences that are not on the grid, duplicated, unbuildable, over the side cap, cutting every route or losing are rejected', async () => {
@@ -174,7 +174,7 @@ test('bad device, mode, date, hint, tries and body are rejected', async () => {
   const bad = [
     { device: 'short' }, { device: 42 }, { device: 'has spaces in it' }, { mode: 'medium' }, { mode: undefined },
     { date: '2026-13-40' }, { date: 'tomorrow' }, { date: 20261027 }, { hint: 'yes' }, { hint: undefined },
-    { tries: 0 }, { tries: 4 }, { tries: 1.5 }, { tries: '1' }, { fences: undefined },
+    { tries: 0 }, { tries: 6 }, { tries: 1.5 }, { tries: '1' }, { fences: undefined },
   ];
   for (const over of bad) {
     const { post, db } = setup();
@@ -186,9 +186,11 @@ test('bad device, mode, date, hint, tries and body are rejected', async () => {
   assert.equal((await post('not json')).status, 400);
   assert.equal((await post('[1,2]')).status, 400);
   assert.equal((await post('x'.repeat(10000))).status, 413);
-  // a win cannot be posted as null fences unless all 3 tries were spent
-  for (const tries of [1, 2]) assert.equal((await setup().post(payload({ fences: null, tries }))).status, 400, `null fences, ${tries} tries`);
-  assert.equal((await setup().post(payload({ fences: null, tries: 3 }))).status, 200);
+  // null fences (no win) only when all 5 tries were spent, or 3 under the old cap (a day finished before v3.1)
+  for (const tries of [1, 2, 4]) assert.equal((await setup().post(payload({ fences: null, tries }))).status, 400, `null fences, ${tries} tries`);
+  assert.equal((await setup().post(payload({ fences: null, tries: 5 }))).status, 200);
+  assert.equal((await setup().post(payload({ fences: null, tries: 3 }))).status, 200, 'legacy 3-try lost day');
+  assert.equal((await setup().post(payload({ tries: 5 }))).status, 200, 'a win on try 5');
 });
 
 test('a declared Content-Length over the limit is refused with 413 before the body is read', async () => {
@@ -255,7 +257,7 @@ test('a repeat post for the same device, mode and date is ignored and never over
   const first = await post(payload({ tries: 2 }));
   assert.equal((await bodyOf(first)).duplicate, false);
   const worse = withExtras(raw('easy'), 3);
-  const again = await post(payload({ fences: worse, tries: 3, hint: true }));
+  const again = await post(payload({ fences: worse, tries: 5, hint: true }));
   assert.equal(again.status, 200);
   assert.deepEqual(await bodyOf(again), { ok: true, duplicate: true });
   assert.equal(db.results.size, 1);
