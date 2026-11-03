@@ -22,9 +22,12 @@ assets/css/sprites.css tile, wall and gnome art placement
 assets/sprites/        generated art (36 SVGs: 35 sprites incl. 6 Sir Croakwell toads, plus icon-gnome.svg; and manifest.json). Never hand-edit
 tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mjs`
 tools/sprites.html     dev gallery of every sprite
+tools/build-og.mjs     renders the link-preview image with Playwright: `npm run build:og` writes assets/og/daily.png (generated, never hand-edit)
+assets/og/             daily.png, the 1200x630 og:image
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs
 assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
 assets/js/daily/      standalone daily: main, config (APP_LINK switch, modes), pure score/record (v2, merge, v1 migration)/streak (per-mode stats)/share/countdown/archive, store, dialogs
+assets/js/daily/card.js  pure `cardModel(...)`: what the score card says (unit tested); card-draw.js draws it as a 1080x1080 PNG on a canvas and keeps the Save image download
 assets/js/daily/judge.js, everyone.js  shared pure judge (page and server score identically), stats send/spread helpers
 worker/               stats Worker (Cloudflare + D1): src/handle.js pure handler, src/index.js entry, schema.sql, wrangler.toml, README.md (setup)
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
@@ -75,5 +78,6 @@ npm install              once
 npm run serve            local site at http://localhost:4173
 npm run test:unit        engine tests (node:test)
 npm run test:e2e         browser tests (Playwright)
+npm run build:og         rebuild assets/og/daily.png (needs Chromium)
 npm test                 both
 ```

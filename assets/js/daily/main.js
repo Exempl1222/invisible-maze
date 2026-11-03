@@ -16,6 +16,9 @@ import { levelWithoutLimit } from './judge.js';
 import { loadStore, getDay, saveDay, getDevice, markSent, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
 import { classifyDate, archiveRows } from './archive.js';
 import { shareText, pageUrl } from './share.js';
+import { computeStats } from './streak.js';
+import { cardModel, cardFileName } from './card.js';
+import { drawCard, downloadBlob } from './card-draw.js';
 import { nextGnome, msToNextMinute } from './countdown.js';
 import { setupHowTo, setupStats, setupArchive } from './dialogs.js';
 
@@ -72,6 +75,9 @@ let clockTimer = 0;
 let countdownBox = null; // { box, text } once a day is done
 let sendingNow = new Map(); // 'mode|date' -> the POST in flight, so one result is never sent twice at once
 let villain = null; // Sir Croakwell under the board: { setMood, cast }, or null if his sprites did not load
+let cardBlob = null; // the latest score card PNG, ready before the player taps Share
+let cardKey = ''; // what the card in cardBlob (or being drawn) was made from
+let cardBlobInfo = null; // { key, beat }: what cardBlob was drawn from, so the shared text always matches the image
 let playToken = 0; // bumps whenever the board replays, so a walk cut short by a toggle stops drawing
 
 /* ---------- page chrome ---------- */
@@ -748,6 +754,7 @@ function renderResult() {
   resultEl.appendChild(cd);
   countdownBox = { box: cd, text: cdText };
   clockTick();
+  refreshCard();
 
   if (APP_LINK.enabled) {
     const card = document.createElement('div');
@@ -850,6 +857,7 @@ function everyoneBlock(score) {
     box.append(el('p', 'dist-title', "Everyone's scores"), list, count);
     const beat = beatPercent(stats, score, included);
     g.beat = beat;
+    refreshCard();
     const line = el('p', beat === null ? 'everyone-note' : 'everyone-beat', beat === null ? `Only ${plural(stats.players, 'player')} so far. Check back later.` : `You beat ${beat}% of players`);
     line.id = 'everyone-beat';
     box.append(line);
@@ -882,7 +890,7 @@ function clockTick() {
 
 /* ---------- share ---------- */
 
-function currentShareText() {
+function currentShareText(beat = game.beat ?? null) {
   const { day, number } = game;
   return shareText({
     number,
@@ -892,21 +900,92 @@ function currentShareText() {
     tries: day.tries,
     hint: day.hint !== null,
     archive: isArchive,
-    beat: isArchive ? null : game.beat ?? null,
+    beat: isArchive ? null : beat,
   });
 }
 
+/** What the score card shows for the day on screen (card.js turns it into strings). */
+function currentCardModel() {
+  const { day, number } = game;
+  return cardModel({
+    number,
+    mode,
+    score: dayScore(day),
+    tries: day.tries,
+    hint: day.hint !== null,
+    archive: isArchive,
+    beat: isArchive ? null : game.beat ?? null,
+    streak: isArchive ? 0 : computeStats(allDays()[mode], realToday).current,
+  });
+}
+
+/**
+ * Draw the card now, ahead of any tap on Share, and keep the latest PNG in `cardBlob`. Called when the result
+ * panel shows and again when something on it changes (the beat line arriving). Skips work when nothing changed.
+ */
+function refreshCard() {
+  if (!game || game.state !== 'done') return;
+  const model = currentCardModel();
+  const key = JSON.stringify(model);
+  if (key === cardKey) return;
+  cardKey = key;
+  delete resultEl.dataset.card; // not ready until the latest draw lands
+  const g = game;
+  const beat = isArchive ? null : g.beat ?? null;
+  drawCard(model).then((blob) => {
+    if (cardKey !== key || game !== g) return; // a newer draw, or another day, wins
+    cardBlob = blob;
+    cardBlobInfo = { key, beat };
+    resultEl.dataset.card = 'ready'; // for the tests: the card can be shared now
+    resultEl.dataset.cardKey = key; // for the tests: which model the card was drawn from
+  }).catch(() => {
+    if (cardKey === key) cardKey = ''; // no card: Share falls back to text, a later change tries again
+  });
+}
+
+const abortedShare = (err) => Boolean(err) && err.name === 'AbortError'; // the player closed the share sheet
+
+/**
+ * Share: the card with the text (file share), else the text alone, else copy the text and offer Save image,
+ * else the selectable box. Nothing is awaited before the first navigator.share call, so the tap's user
+ * activation is still live; the card was drawn ahead of time (refreshCard). No card yet means text share.
+ */
 async function share(button, note, box) {
-  const text = currentShareText();
+  // The text follows the card: if the card in hand was drawn before `beat` arrived, the text has no beat line either.
+  const blob = cardBlob;
+  const text = blob && cardBlobInfo ? currentShareText(cardBlobInfo.beat) : currentShareText();
+  const fileName = cardFileName(game.number, mode);
   note.textContent = '';
   box.hidden = true;
+  note.parentNode.querySelector('#save-image-btn')?.remove();
   if (typeof navigator.share === 'function') {
+    if (blob && typeof navigator.canShare === 'function') {
+      const file = new File([blob], fileName, { type: 'image/png' });
+      let ok = false;
+      try { ok = navigator.canShare({ files: [file] }); } catch { ok = false; }
+      if (ok) {
+        try {
+          await navigator.share({ files: [file], text });
+          return;
+        } catch (err) {
+          if (abortedShare(err)) return;
+        }
+      }
+    }
+    // After a failed file share this call follows an await, so the tap's user activation may be spent. On iOS it
+    // will usually throw NotAllowedError and fall through to copy below; that is intended.
     try {
       await navigator.share({ text });
       return;
     } catch (err) {
-      if (err && err.name === 'AbortError') return; // the player closed the share sheet
+      if (abortedShare(err)) return;
     }
+  }
+  // Copy path: only here does the player get a way to save the card.
+  if (blob) {
+    const save = actionButton('Save image', false, () => downloadBlob(blob, fileName));
+    save.id = 'save-image-btn';
+    note.after(save);
   }
   try {
     await navigator.clipboard.writeText(text);

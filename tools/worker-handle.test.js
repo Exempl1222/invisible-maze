@@ -371,6 +371,7 @@ test('GET /stats rejects a bad mode or date', async () => {
 
 test('CORS: allowed origins get the headers, others get none; preflight answers 204', async () => {
   const { call, post } = setup();
+  for (const o of ['https://gnomesweetgnome.app', 'https://www.gnomesweetgnome.app']) assert.ok(ALLOWED_ORIGINS.includes(o), o);
   for (const origin of ALLOWED_ORIGINS) {
     const get = await call('/stats?mode=easy&date=2026-10-27', { origin });
     assert.equal(get.headers.get('access-control-allow-origin'), origin);
