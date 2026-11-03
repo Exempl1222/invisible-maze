@@ -45,8 +45,9 @@ test('cleanDay repairs junk to a fresh day', () => {
   for (const bad of [null, 'x', [], 5, {}, { tries: 'many' }]) assert.deepEqual(cleanDay(bad), freshDay());
 });
 
-test('cleanDay: tries are capped at 3 and each is repaired (a loss has base 0, a win 1 to 100)', () => {
-  const d = cleanDay({ tries: [W(3, 100), L(), L(), L(), W(3, 100)] });
+test('cleanDay: tries are capped at MAX_TRIES (5) and each is repaired (a loss has base 0, a win 1 to 100)', () => {
+  const d = cleanDay({ tries: [W(3, 100), L(), L(), L(), L(), W(3, 100), L()] });
+  assert.equal(MAX_TRIES, 5);
   assert.equal(d.tries.length, MAX_TRIES);
   assert.deepEqual(cleanDay({ tries: [{ won: false, score: 80, fences: 'x' }] }).tries, [{ fences: 0, won: false, base: 0 }]);
   assert.equal(cleanDay({ tries: [{ won: true, base: 400, fences: 3 }] }).tries[0].base, 1);
@@ -54,9 +55,32 @@ test('cleanDay: tries are capped at 3 and each is repaired (a loss has base 0, a
   assert.equal(cleanDay({ tries: [null, 4, W(3, 90)] }).tries.length, 1);
 });
 
-test('cleanDay: three tries is a finished day, never a fresh board', () => {
-  const d = cleanDay({ tries: [L(), L(), L()], done: false });
+test('cleanDay: all five tries is a finished day, never a fresh board', () => {
+  const d = cleanDay({ tries: [L(), L(), L(), L(), L()], done: false });
   assert.equal(d.done, true);
+});
+
+test('cleanDay (3 to 5 tries): an old finished day with 3 lost tries stays done with score 0', () => {
+  const d = cleanDay({ tries: [L(), L(), L()], done: true, finishedOn: '2026-10-27', sent: true });
+  assert.equal(d.done, true);
+  assert.equal(d.tries.length, 3);
+  assert.equal(d.finishedOn, '2026-10-27');
+  assert.equal(bestScore(d.tries, d.hint !== null), 0);
+  assert.equal(d.sent, true);
+  // and it survives a save and load
+  const back = parseSaved(serialize({ ...emptySaved(), easy: { '2026-10-27': d } })).easy['2026-10-27'];
+  assert.equal(back.done, true);
+  assert.equal(back.tries.length, 3);
+});
+
+test('cleanDay (3 to 5 tries): an old in-progress day with 2 tries is not done and has 3 left', () => {
+  const d = cleanDay({ tries: [L(), L()], done: false, walls: ['1,1,R'] });
+  assert.equal(d.done, false);
+  assert.equal(d.tries.length, 2);
+  assert.equal(MAX_TRIES - d.tries.length, 3);
+  const three = cleanDay({ tries: [L(), L(), L()], done: false }); // 3 spent but not marked done: 2 left now
+  assert.equal(three.done, false);
+  assert.equal(MAX_TRIES - three.tries.length, 2);
 });
 
 test('cleanDay: done with no tries used is impossible, so it is reset', () => {
@@ -126,6 +150,18 @@ test('mergeDay: an existing hint and finishedOn are kept', () => {
   assert.equal(mergeDay(a, b).finishedOn, '2026-10-27');
 });
 
+test('mergeDay (3 to 5 tries): a finished 3-try day beats a stale in-progress copy, and a 4th try extends an old 3', () => {
+  const fin = day({ tries: [L(), L(), L()], done: true, finishedOn: '2026-10-27' });
+  const stale = day({ tries: [L(), L()] });
+  assert.equal(mergeDay(fin, stale).done, true);
+  assert.equal(mergeDay(stale, fin).tries.length, 3);
+  const open3 = day({ tries: [L(), L(), L()] });
+  const open4 = day({ tries: [L(), L(), L(), L()] });
+  assert.equal(mergeDay(open3, open4).tries.length, 4);
+  assert.equal(mergeDay(open4, open3).tries.length, 4);
+  assert.equal(mergeDay(open4, open3).done, false);
+});
+
 test('mergeDay: null or missing sides', () => {
   const d = day({ tries: [L(), L()] });
   assert.deepEqual(mergeDay(null, d), d);
@@ -180,7 +216,7 @@ test('migrateV1: a lost day keeps all its lost tries (score 0); an unfinished da
     '2026-10-28': { tries: 2, won: false, walls: ['0,0,R'], hint: '0,0,R', done: false, finishedOn: null },
     '2026-10-29': { tries: 0, won: false, walls: [], hint: null, done: false },
   }), parOf);
-  assert.equal(s.hard['2026-10-27'].tries.length, 3);
+  assert.equal(s.hard['2026-10-27'].tries.length, 3); // a v1 day lost on 3 tries stays 3 (v1 cap), done
   assert.ok(s.hard['2026-10-27'].tries.every((t) => !t.won && t.base === 0));
   assert.equal(s.hard['2026-10-27'].done, true);
   assert.equal(s.hard['2026-10-28'].tries.length, 2);

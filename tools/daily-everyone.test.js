@@ -34,8 +34,10 @@ test('resultBody: a win sends the best try\'s fences as [x, y, dir], with the hi
 });
 
 test('resultBody: a day with no win sends null fences; a lost try never supplies fences', () => {
-  const day = done({ tries: [L(), L(), L()] });
-  assert.deepEqual(resultBody({ device: 'device-abc123', mode: 'hard', date: '2026-10-27', day }), { device: 'device-abc123', mode: 'hard', date: '2026-10-27', fences: null, hint: false, tries: 3 });
+  const day = done({ tries: [L(), L(), L(), L(), L()] });
+  assert.deepEqual(resultBody({ device: 'device-abc123', mode: 'hard', date: '2026-10-27', day }), { device: 'device-abc123', mode: 'hard', date: '2026-10-27', fences: null, hint: false, tries: 5 });
+  const old = done({ tries: [L(), L(), L()] }); // a day lost under the old 3-try cap still sends, with tries: 3
+  assert.equal(resultBody({ device: 'device-abc123', mode: 'hard', date: '2026-10-27', day: old }).tries, 3);
 });
 
 test('resultBody: nothing for an unfinished day, an archive play, or a win with no saved fences', () => {
