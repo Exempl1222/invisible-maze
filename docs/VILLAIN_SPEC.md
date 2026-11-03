@@ -30,14 +30,14 @@ No rule changes. Nothing in `src/game/` changes.
 
 | File | Canvas | Notes |
 |---|---|---|
-| `toad-back-idle.svg` | 390 x 200 | Hands resting on the top edge. Loops: slow breathe (body scale 1 to 1.015, 3.2s), fly orbiting the hat tip (2.4s) |
-| `toad-back-cast.svg` | 390 x 200 | Hands raised so fingertips reach about 40px above the canvas (`overflow: visible`). Throat sacs puffed, hat tip perked, fingertips glow lime, confetti twinkles |
-| `toad-back-gloat.svg` | 390 x 200 | One fist pumped up, other hand on the edge, body bounced up, "Hehehe!" in Grandstander, tongue snapping the fly, confetti. Loop: 0.5s bounce |
-| `toad-back-sulk.svg` | 390 x 200 | Body sunk, heavy lids, hat tip flopped, hands dropped out of view, rain cloud with drizzle, "Rats." and a flat whoopee cushion with "pfffft..." |
+| `toad-back-idle.svg` | 390 x 140 | Hands gripping the board's bottom corners (about 9% in from each edge), arms angled out from the shoulders. Loops: slow breathe (body scale 1 to 1.015, 3.2s), fly orbiting the hat tip (2.4s) |
+| `toad-back-cast.svg` | 390 x 140 | Hands raised so fingertips reach about 40px above the canvas (`overflow: visible`). Throat sacs puffed, hat tip perked, fingertips glow lime, confetti twinkles |
+| `toad-back-gloat.svg` | 390 x 140 | One fist pumped up, other hand on the edge, body bounced up, "Hehehe!" in Grandstander, tongue snapping the fly, confetti. Loop: 0.5s bounce |
+| `toad-back-sulk.svg` | 390 x 140 | Body sunk, heavy lids, hat tip flopped, hands dropped out of view, rain cloud with drizzle, "Rats." and a flat whoopee cushion with "pfffft..." |
 | `toad-front-smug.svg` | 390 x 460 | Title pose. Fly orbits the hat. Optional idle: blink of the open eye every 4s |
 | `toad-front-point.svg` | 390 x 460 | How to play pose. Finger spark twinkles |
 
-The back view is re-proportioned from the mockup into a 390 x 200 band: head dome top about 70px down, hands at the top edge. Shapes, colours and props match the mockup; arm lengths shrink to fit.
+The back view is re-proportioned from the mockup into a wide, short 390 x 140 band: head dome top about 52px down, hands near the left and right edges, body trimmed to the dome, eye bulges, hat and the top of the cloak (slingshot, acorn, whoopee cushion). Shapes, colours and props match the mockup; the arms are long and splay out to the corners.
 
 Same file rules as every sprite: self-contained CSS scoped to `.gsg-toad`, `gsg-` keyframes, unique ids, reduced motion respected, add to `manifest.json` and `tools/sprites.html`.
 
@@ -57,9 +57,9 @@ On the wall itself: when the player places a fence, the `.wall-bar` gets a one-s
 ### 1. Gameplay border (daily page and play page)
 
 - An element `<div class="villain" id="villain" aria-hidden="true"></div>` directly after the board in the game column, before the status and controls.
-- His box is as wide as the board (`var(--board-size)`, centred). His height `--villain-h` is set by `fit()` in `assets/js/play/board.js`: the sprite's shape (board width x 200/390), at most 190px. Negative top margin (the grid gap, 10px on a phone or 12px on desktop, plus 8% of his height) so his hands overlap the bottom edge of the board. `pointer-events: none` so every board line stays tappable, and the gnome (`.robot`) draws above his hands.
-- Phones (narrow layout): the board is sized exactly as before him; he frames it full width and a short scroll to reach Try is accepted.
-- Desktop (wide layout): `fit()` reserves his visible height (height less the overlap) from the window height, so he is fully visible (at 1366x768 too); he shrinks to as little as 40px if the window is very short.
+- His box is always exactly as wide as the board (`var(--board-size)`, centred), on phones and desktop. His height `--villain-h` is set by `fit()` in `assets/js/play/board.js` to board width x 140/390, with no separate cap. Negative top margin (the grid gap, 10px on a phone or 12px on desktop, plus 18% of his height) so his hands, which grip the board's bottom corners, overlap its bottom edge. `pointer-events: none` so every board line stays tappable, and the gnome (`.robot`) draws above his hands.
+- Phones (narrow layout): the board is sized exactly as before him; a short scroll to reach Try is accepted.
+- Desktop (wide layout): `fit()` reserves his visible height (height less the overlap) from the window height by shrinking the board a little, so he is fully visible (at 1366x768 too).
 - Triggers:
 
 | Event | Mood |
