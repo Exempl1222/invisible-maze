@@ -28,6 +28,8 @@ export function createBoard(root, level, { onLine, onHelp }) {
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', `Level board, ${level.size} by ${level.size}`);
   root.setAttribute('aria-describedby', 'board-help');
+  root.setAttribute('aria-busy', 'false'); // true only while the gnome walks (see play), not merely while locked
+  let walking = 0; // replays in flight: a cut-short one may still be winding down when the next starts
 
   const n = level.size;
   const letters = [...new Set(level.tiles.join('').split('').filter(isPortal))].sort();
@@ -414,7 +416,6 @@ export function createBoard(root, level, { onLine, onHelp }) {
       locked = on;
       if (on) { press = null; hideHint(); }
       root.classList.toggle('locked', on);
-      root.setAttribute('aria-busy', on ? 'true' : 'false');
     },
     /** Put the robot back at the start and wipe trail and effects. Walls stay. */
     resetRun() {
@@ -431,7 +432,18 @@ export function createBoard(root, level, { onLine, onHelp }) {
      * Replay a simulate() result. Resolves true when it played to the end, false if
      * cancelled. `instant` skips the animation and jumps to the final frame.
      */
-    async play(sim, { stepMs = 300, instant = false, onMove, cancelled = () => false }) {
+    async play(sim, opts) {
+      walking++;
+      root.setAttribute('aria-busy', 'true');
+      try {
+        return await replay(sim, opts);
+      } finally {
+        if (--walking === 0) root.setAttribute('aria-busy', 'false');
+      }
+    },
+  };
+
+  async function replay(sim, { stepMs = 300, instant = false, onMove, cancelled = () => false }) {
       api.resetRun();
       const last = sim.steps.length - 1;
       const mark = (pos) => {
@@ -509,8 +521,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
       verdict();
       await sleep(sim.result === 'lose' ? 500 : 450);
       return !cancelled();
-    },
-  };
+  }
 
   const onResize = () => fit();
   window.addEventListener('resize', onResize);

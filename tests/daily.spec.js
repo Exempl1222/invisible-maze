@@ -510,6 +510,7 @@ test.describe('with the walk animation on', () => {
           scoreShown: !document.getElementById('result').hidden || /out of 100/.test(document.getElementById('status').textContent),
           best: document.getElementById('best-score').textContent,
           wonPips: document.querySelectorAll('#pips i.won').length,
+          busy: document.getElementById('board').getAttribute('aria-busy'),
         };
       }));
       if (frames.at(-1).scoreShown) break;
@@ -530,6 +531,10 @@ test.describe('with the walk animation on', () => {
       expect(f.wonPips, 'a won pip showed before the walk ended').toBe(base.wonPips);
     }
     expect(frames[first].best).not.toBe(base.best); // and Best does update once it ends
+    // aria-busy means "the gnome is walking": on through the walk, off once he stops (board still locked).
+    expect(before.every((f) => f.busy === 'true'), 'aria-busy should be on for the whole walk').toBe(true);
+    await expect(page.locator('#board')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#board')).toHaveClass(/locked/);
     await page.clock.resume();
   }
 
