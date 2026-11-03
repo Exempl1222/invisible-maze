@@ -6,7 +6,7 @@ import { createBoard } from '../play/board.js';
 import { capMessage, lineKey } from '../play/lines.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
 import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
-import { mountVillain } from '../villain.js';
+import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
 import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './score.js';
 import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
@@ -242,8 +242,11 @@ async function boot() {
 
   let data;
   try {
-    data = mode === 'hard' && hardData ? hardData : await fetchJson(LEVEL_URL[mode]);
-    await preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, 'toad-front-point']);
+    // The level and every sprite (Sir Croakwell's too) load side by side.
+    [data] = await Promise.all([
+      mode === 'hard' && hardData ? hardData : fetchJson(LEVEL_URL[mode]),
+      preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...VILLAIN_SPRITES, 'toad-front-point']),
+    ]);
   } catch {
     failed('The daily did not load. Check your connection and try again.');
     return;

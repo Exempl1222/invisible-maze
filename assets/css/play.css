@@ -138,7 +138,8 @@
 .game {
   --board-size: min(calc(100vw - 32px), 560px); /* JS refines this to fit the window height too */
   display: grid;
-  gap: 10px;
+  --game-gap: 10px;
+  gap: var(--game-gap);
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: "stats" "board" "villain" "side";
 }
@@ -152,7 +153,8 @@
     grid-template-areas: "board stats" "board side" "villain side";
     grid-template-rows: auto 1fr auto;
     justify-content: center;
-    gap: 12px 36px;
+    --game-gap: 12px;
+    gap: var(--game-gap) 36px;
     padding-top: 0.25rem;
   }
   /* Only the game screen centres its heading over the board; the level select keeps it flush with the tabs. */
@@ -259,7 +261,7 @@
 .tele-link.jump { animation: link-in 220ms ease-out; height: 5px; background: var(--teleporter); }
 @keyframes link-in { from { opacity: 0; } }
 
-.play-board .robot { z-index: 2; transition: transform 240ms cubic-bezier(.4,.1,.3,1), opacity 110ms ease; }
+.play-board .robot { z-index: 4; transition: transform 240ms cubic-bezier(.4,.1,.3,1), opacity 110ms ease; }
 
 /* ---------- side panel ---------- */
 

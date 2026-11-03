@@ -19,7 +19,7 @@ assets/js/sprites.js   loads the sprites; inline gnome and walls, one-shot anima
 assets/js/villain.js   Sir Croakwell under the board: `mountVillain(host)` returns `{ setMood, cast }` (docs/VILLAIN_SPEC.md)
 assets/js/tiles.js     which art variant each tile gets (shared by game and home replay)
 assets/css/sprites.css tile, wall and gnome art placement
-assets/sprites/        generated art (35 sprites incl. 6 Sir Croakwell toads, icon-gnome.svg, manifest.json). Never hand-edit
+assets/sprites/        generated art (36 SVGs: 35 sprites incl. 6 Sir Croakwell toads, plus icon-gnome.svg; and manifest.json). Never hand-edit
 tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mjs`
 tools/sprites.html     dev gallery of every sprite
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs

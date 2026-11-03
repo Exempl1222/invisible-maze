@@ -470,14 +470,14 @@ function toadBackSvg(mood) {
   const [fl, fr] = [tipOf(m.L), tipOf(m.R)];
   const trail = (f, tx, ty) => `M${f1(f[0])} ${f1(f[1])} Q${f1((f[0] + tx) / 2)} ${f1(Math.min(f[1], ty) - 30)} ${tx} ${ty}`;
   const castFx = mood === 'cast' ? `<g>
-    <rect x="166" y="-72" width="62" height="26" rx="13" fill="${K.lime}" opacity=".6" filter="url(#${PFX}glow)"/>
-    ${part(rr(177, -62, 32, 6, 3), K.wood, null, null, 1.4)}${part(rr(171, -64, 10, 11, 2), '#6e4524', null, null, 1.4)}
-    <rect x="209" y="-62" width="16" height="6" rx="3" fill="none" stroke="${K.lime}" stroke-width="1.6" stroke-dasharray="3 3"/>
-    <path d="${trail(fl, 178, -50)}" fill="none" stroke="${K.lime}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 8" class="pulse"/>
-    <path d="${trail(fr, 220, -50)}" fill="none" stroke="${K.lime}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 8" class="pulse"/>
-    ${[[130, -52, 6], [286, -44, 5], [196, -26, 5]].map(([x, y, s], i) => `<path class="twinkle" style="animation-delay:${i * .4}s" d="${star4(x, y, s)}" fill="${K.lime}" ${O(.8)}/>`).join('')}
-    ${[[60, -30], [338, -34], [100, -64], [300, -66]].map(([x, y], i) => `<circle class="twinkle" style="animation-delay:${i * .3}s" cx="${x}" cy="${y}" r="2.4" fill="${K.limeCore}"/>`).join('')}
-    ${[[150, -30, 30, 0], [258, -24, -25, 1], [118, -46, 60, 2], [322, -50, 15, 3], [236, -66, 50, 1], [86, -58, -40, 0]].map((b, i) => bit(b, 7, 4, 'twinkle', `animation-delay:${i * .25}s`)).join('')}</g>` : '';
+    <rect x="168" y="-40" width="62" height="22" rx="11" fill="${K.lime}" opacity=".6" filter="url(#${PFX}glow)"/>
+    ${part(rr(179, -33, 32, 6, 3), C.stake, null, null, 1.4)}${part(rr(173, -35, 10, 11, 2), C.stake2, null, null, 1.4)}
+    <rect x="211" y="-33" width="16" height="6" rx="3" fill="none" stroke="${K.lime}" stroke-width="1.6" stroke-dasharray="3 3"/>
+    <path d="${trail(fl, 180, -26)}" fill="none" stroke="${K.lime}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 8" class="pulse"/>
+    <path d="${trail(fr, 222, -26)}" fill="none" stroke="${K.lime}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 8" class="pulse"/>
+    ${[[132, -26, 5], [288, -24, 5], [200, -14, 4]].map(([x, y, s], i) => `<path class="twinkle" style="animation-delay:${i * .4}s" d="${star4(x, y, s)}" fill="${K.lime}" ${O(.8)}/>`).join('')}
+    ${[[60, -14], [338, -16], [104, -34], [300, -34]].map(([x, y], i) => `<circle class="twinkle" style="animation-delay:${i * .3}s" cx="${x}" cy="${y}" r="2.4" fill="${K.limeCore}"/>`).join('')}
+    ${[[150, -20, 30, 0], [258, -12, -25, 1], [118, -30, 60, 2], [322, -30, 15, 3], [236, -38, 50, 1], [86, -30, -40, 0]].map((b, i) => bit(b, 7, 4, 'twinkle', `animation-delay:${i * .25}s`)).join('')}</g>` : '';
 
   const gloatFx = mood === 'gloat' ? `<g>
     <text x="14" y="66" transform="rotate(-10 14 66)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="25" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="5" paint-order="stroke" stroke-linejoin="round">Hehehe!</text>
@@ -485,8 +485,8 @@ function toadBackSvg(mood) {
     <path d="M62 116 q-9 -4 -12 -14 M334 116 q9 -4 12 -14 M56 132 q-8 -2 -12 -9" fill="none" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/></g>` : '';
 
   const sulkFx = mood === 'sulk' ? `<g>
-    ${blob([ell(300, 26, 14, 11), ell(320, 18, 18, 14), ell(342, 26, 13, 10), rr(290, 26, 64, 12, 6)], K.cloud, 2)}
-    ${[[304, 46], [320, 46], [336, 46]].map(([x, y], i) => `<path class="drip" style="animation-delay:${i * .35}s" d="M${x} ${y} l-3 9" stroke="${K.rain}" stroke-width="2.6" stroke-linecap="round"/>`).join('')}
+    ${blob([ell(300, 44, 14, 11), ell(320, 36, 18, 14), ell(342, 44, 13, 10), rr(290, 44, 64, 12, 6)], K.cloud, 2)}
+    ${[[304, 64], [320, 64], [336, 64]].map(([x, y], i) => `<path class="drip" style="animation-delay:${i * .35}s" d="M${x} ${y} l-3 9" stroke="${K.rain}" stroke-width="2.6" stroke-linecap="round"/>`).join('')}
     <text x="38" y="92" transform="rotate(-6 38 92)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="21" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="4.5" paint-order="stroke" stroke-linejoin="round">Rats.</text>
     ${part('M268 190 Q296 181 322 192 Q296 199 268 190 Z', K.pink, null, null, 1.8)}${part(rr(320, 188, 11, 7, 2.5), K.pink, null, null, 1.8)}
     <text x="272" y="177" transform="rotate(-6 272 177)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="13" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">pfffft...</text>
@@ -656,7 +656,7 @@ for (const hint of [false, true]) {
 // Sir Croakwell (docs/VILLAIN_SPEC.md): four back-view moods for the board border, two face-on poses.
 for (const mood of ['idle', 'cast', 'gloat', 'sulk']) {
   write(`toad-back-${mood}.svg`, toadBackSvg(mood),
-    { size: [390, 200], loop: mood === 'idle' || mood === 'gloat', cycleSeconds: { idle: 3.2, cast: 1.6, gloat: 0.5, sulk: 1.1 }[mood], ...(mood === 'cast' ? { overflowTop: 40 } : {}) }, 'villain');
+    { size: [390, 200], loop: mood === 'idle' || mood === 'gloat', cycleSeconds: { idle: 3.2, cast: 1.6, gloat: 0.5, sulk: 1.1 }[mood], ...(mood === 'cast' ? { overflowTop: 42 } : {}) }, 'villain');
 }
 for (const pose of ['smug', 'point']) {
   write(`toad-front-${pose}.svg`, toadFrontSvg(pose), { size: [390, 460], loop: true, cycleSeconds: pose === 'smug' ? 4 : 1.6 }, 'villain');

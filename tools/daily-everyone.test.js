@@ -60,7 +60,7 @@ test('pendingResults: finished-on-own-date, unsent days from today or yesterday,
       '2026-10-27': done({ tries: win, finishedOn: '2026-10-28' }), // an archive play
     },
   };
-  const got = pendingResults(days, '2026-10-28').map((p) => `${p.mode} ${p.date}`).sort();
+  const got = pendingResults(days, '2026-10-28', '2026-10-28').map((p) => `${p.mode} ${p.date}`).sort();
   assert.deepEqual(got, ['easy 2026-10-27', 'easy 2026-10-28']);
 });
 

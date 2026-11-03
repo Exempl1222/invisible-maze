@@ -14,6 +14,11 @@ const GAP = 3;
 const SIDE_MARGIN = 16; // keeps clear of iOS edge swipes
 const MAX_BOARD = 560;
 const SIDE_COLUMN = 260 + 36; // stats column plus the gap, in the wide layout
+const SIDE_BELOW = 210; // narrow layout: status, buttons and the gap under the board (measured: about 200)
+const TOAD_MAX = 170; // Sir Croakwell's tallest height, in px
+const TOAD_MIN = 40; // and the shortest he shrinks to before the board gives up more room
+const TOAD_OVERLAP = 0.08; // his hands overlap the board's bottom edge by this share of his height
+const NARROW_BOARD_FLOOR = 300; // on a phone the board only shrinks this far for him
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isPortal = (c) => c >= 'a' && c <= 'z';
@@ -123,8 +128,25 @@ export function createBoard(root, level, { onLine, onHelp }) {
     const availW = Math.min(MAX_BOARD, vw - 2 * SIDE_MARGIN - (wide ? SIDE_COLUMN : 0));
     const top = root.getBoundingClientRect().top + window.scrollY;
     const availH = window.innerHeight - top - 12;
-    const px = Math.floor(Math.max(200, Math.min(availW, availH)));
-    (root.parentElement || root).style.setProperty('--board-size', `${px}px`);
+    const host = root.parentElement || root;
+    let px;
+    if (host.querySelector(':scope > .villain')) {
+      // Sir Croakwell stands under the board: his visible height (his height less the overlap) comes out of
+      // the room, and on a phone so do the buttons, so Try stays on screen. The board shrinks first, down to
+      // a floor; then he does. His width is the board's, his height at most the sprite's 390:200 shape.
+      const free = availH - (wide ? 0 : SIDE_BELOW);
+      const toadFor = (b) => Math.min(TOAD_MAX, (b * 200) / 390);
+      const seen = 1 - TOAD_OVERLAP;
+      const uncapped = free / (1 + (seen * 200) / 390); // the board that fits with a toad of the sprite's shape
+      px = Math.min(availW, (uncapped * 200) / 390 <= TOAD_MAX ? uncapped : free - seen * TOAD_MAX);
+      const floor = wide ? 200 : Math.min(NARROW_BOARD_FLOOR, availW);
+      px = Math.floor(Math.max(floor, Math.min(availW, px)));
+      const toad = Math.max(TOAD_MIN, Math.min(toadFor(px), (free - px) / seen));
+      host.style.setProperty('--villain-h', `${Math.floor(toad)}px`);
+    } else {
+      px = Math.floor(Math.max(200, Math.min(availW, availH)));
+    }
+    host.style.setProperty('--board-size', `${px}px`);
     layout();
   }
 

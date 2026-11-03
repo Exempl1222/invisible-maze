@@ -23,7 +23,6 @@ const result = (page) => page.locator('#result');
 const status = (page) => page.locator('#status');
 
 async function pointFor(page, x, y, side) {
-  await tile(page, x, y).scrollIntoViewIfNeeded(); // a hint press can have scrolled the page down to the buttons
   const box = await tile(page, x, y).boundingBox();
   const f = { R: [0.88, 0.5], D: [0.5, 0.88], L: [0.12, 0.5], U: [0.5, 0.12] }[side];
   return [box.x + box.width * f[0], box.y + box.height * f[1]];
@@ -42,7 +41,6 @@ async function tapLine(page, [x, y, dir]) {
 /** A real touch tap on an element when the project has touch, otherwise a click. */
 async function tapOn(page, locator, hasTouch) {
   if (!hasTouch) { await locator.click(); return; }
-  await locator.scrollIntoViewIfNeeded(); // Sir Croakwell now sits between the board and the buttons, so they can be below the fold
   const box = await locator.boundingBox();
   await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
 }

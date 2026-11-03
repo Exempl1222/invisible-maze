@@ -56,18 +56,31 @@ test('daily: Sir Croakwell stands under the board with his idle sprite, and neve
   expect(errors).toEqual([]);
 });
 
-test('daily: a fence on a bottom-row line, right under his hands, is still tappable', async ({ page }) => {
+test('daily: a fence on a bottom-row line under one of his hands is still tappable', async ({ page }) => {
   await openDaily(page);
   const lv = parseLevel({ ...easy, wallBudget: 999 });
   const last = lv.size - 1;
-  const line = buildableLines(lv).find((l) => l[1] === last && l[2] === 'R' && capViolation(lv, [l]) === null && !cutsAllRoutes(lv, [l]));
-  expect(line).toBeTruthy();
-  const box = await tile(page, line[0], line[1]).boundingBox();
-  const point = { x: box.x + box.width * 0.97, y: box.y + box.height * 0.88 }; // low on the tile: inside the overlap
+  const lines = buildableLines(lv).filter((l) => l[1] === last && l[2] === 'R' && capViolation(lv, [l]) === null && !cutsAllRoutes(lv, [l]));
+  expect(lines.length).toBeGreaterThan(0);
+  // Where his hands are: 118 and 272 on the sprite's 390 x 200 canvas, drawn to fit the box, centred.
+  const v = await page.locator('#villain').boundingBox();
+  const s = Math.min(v.width / 390, v.height / 200);
+  const hands = [118, 272].map((x) => v.x + (v.width - 390 * s) / 2 + x * s);
+  const pressX = async (l) => { const b = await tile(page, l[0], l[1]).boundingBox(); return b.x + b.width * 0.99; };
+  let best = null;
+  for (const l of lines) {
+    const x = await pressX(l);
+    const dist = Math.min(...hands.map((h) => Math.abs(h - x)));
+    if (!best || dist < best.dist) best = { l, dist };
+  }
+  const tileBox = await tile(page, best.l[0], best.l[1]).boundingBox();
+  expect(best.dist).toBeLessThan(tileBox.width); // a line in the column under a hand
+  const point = { x: tileBox.x + tileBox.width * 0.99, y: tileBox.y + tileBox.height * 0.96 }; // the very bottom of the tile: inside the overlap
+  expect(point.y).toBeGreaterThan(v.y); // the toad's box covers this point...
   const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('#villain') !== null, point);
-  expect(hit).toBe(false); // the toad is not the element under the finger
-  await pressAt(page, line[0], line[1], [0.97, 0.88]);
-  await expect(page.locator(`#board .wall-bar[data-line="${line.join(',')}"]`)).toHaveCount(1);
+  expect(hit).toBe(false); // ...but he is not the element under the finger
+  await pressAt(page, best.l[0], best.l[1], [0.99, 0.96]);
+  await expect(page.locator(`#board .wall-bar[data-line="${best.l.join(',')}"]`)).toHaveCount(1);
 });
 
 test('daily: placing a fence casts (spell sprite and magic on the new fence), then he is idle again', async ({ page }) => {
@@ -208,4 +221,44 @@ test('play: Sir Croakwell casts on a placed wall, gloats on a win and sulks on a
   await expect(pose(page)).toHaveAttribute('data-sprite', /toad-back-(cast|idle)/);
   await page.locator('#go').click();
   await expect(pose(page)).toHaveAttribute('data-sprite', 'toad-back-gloat');
+});
+
+test('layout: on a 390x844 phone Try stays on screen and the board keeps at least 300px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openDaily(page);
+  const [b, go, v] = await Promise.all([page.locator('#board').boundingBox(), page.locator('#go').boundingBox(), page.locator('#villain').boundingBox()]);
+  expect(go.y + go.height).toBeLessThanOrEqual(844);
+  expect(b.width).toBeGreaterThanOrEqual(300);
+  expect(v.width).toBeCloseTo(b.width, 0); // his box is as wide as the board
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('layout: on a 1366x768 desktop window he is fully visible under the board', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await openDaily(page);
+  const v = await page.locator('#villain').boundingBox();
+  expect(v.y + v.height).toBeLessThanOrEqual(768);
+});
+
+test('layout: the gnome walks over his hands, not under them', async ({ page }) => {
+  await openDaily(page);
+  const z = await page.evaluate(() => ({
+    robot: +getComputedStyle(document.querySelector('#board .robot')).zIndex,
+    villain: +getComputedStyle(document.querySelector('#villain')).zIndex,
+  }));
+  expect(z.robot).toBeGreaterThan(z.villain);
+});
+
+test('layout: no horizontal scroll at 375px on the home and play pages, and Easy and Hard sit above the fold at 390x844', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  for (const path of ['/', '/play/']) {
+    await page.goto(path);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  for (const b of await page.locator('.hero-actions .btn.big').all()) {
+    const box = await b.boundingBox();
+    expect(box.y + box.height).toBeLessThanOrEqual(844);
+  }
 });

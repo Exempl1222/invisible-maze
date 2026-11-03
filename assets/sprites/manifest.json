@@ -335,7 +335,7 @@
       ],
       "loop": false,
       "cycleSeconds": 1.6,
-      "overflowTop": 40
+      "overflowTop": 42
     },
     "toad-back-gloat": {
       "file": "assets/sprites/toad-back-gloat.svg",

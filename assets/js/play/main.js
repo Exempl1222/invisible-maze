@@ -5,8 +5,8 @@ import { loadProgress, recordWin, loadHints, hintCount, spendHint, earnDailyHint
 import { renderSelect, renderLab } from './select.js';
 import { capMessage } from './lines.js';
 import { starsMarkup } from './icons.js';
-import { preloadSprites, sprite } from '../sprites.js';
-import { mountVillain } from '../villain.js';
+import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
+import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from './daily.js';
 
 const PACK_URL = '../assets/levels/pack-01.json';
@@ -471,6 +471,9 @@ window.addEventListener('popstate', () => render());
 
 async function boot() {
   const loading = $('loading');
+  // Start the art (Sir Croakwell's too) now, so it loads beside the level files, not after them.
+  const art = preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...VILLAIN_SPRITES]);
+  art.catch(() => {}); // handled where it is awaited below
   try {
     const res = await fetch(PACK_URL);
     if (!res.ok) throw new Error(`${res.status}`);
@@ -496,7 +499,7 @@ async function boot() {
     labFailed = true; // the Lab tab says so; the rest of the game still works
   }
   try {
-    await preloadSprites();
+    await art;
   } catch {
     loading.textContent = '';
     const p = document.createElement('p');

@@ -57,7 +57,8 @@ On the wall itself: when the player places a fence, the `.wall-bar` gets a one-s
 ### 1. Gameplay border (daily page and play page)
 
 - An element `<div class="villain" id="villain" aria-hidden="true"></div>` directly after the board in the game column, before the status and controls.
-- Width matches the board. Height `clamp(120px, 34vw, 170px)`. Negative top margin so his hands overlap the bottom edge of the board by about 8% of his height. `pointer-events: none` so every board line stays tappable.
+- His box is as wide as the board (`var(--board-size)`, centred). His height `--villain-h` is set by `fit()` in `assets/js/play/board.js`: the sprite's shape (board width x 200/390), at most 170px and at least 40px. Negative top margin (the grid gap, 10px on a phone or 12px on desktop, plus 8% of his height) so his hands overlap the bottom edge of the board. `pointer-events: none` so every board line stays tappable, and the gnome (`.robot`) draws above his hands.
+- `fit()` reserves his visible height (height less the overlap) from the window height, on phones and desktop, so he is fully visible. On a phone it also reserves about 210px for the status and buttons so Try stays on screen at 390x844. The board shrinks first, to a floor of 300px on a phone; after that he shrinks (down to 40px). On a short phone window the buttons may still need a scroll.
 - Triggers:
 
 | Event | Mood |

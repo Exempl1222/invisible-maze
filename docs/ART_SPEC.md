@@ -5,7 +5,7 @@ Source of truth for the game's art. Pairs with `docs/GAME_SPEC.md` (rules). If t
 ## What's in the pack
 
 ```
-assets/sprites/            35 SVGs + manifest.json (generated, don't hand-edit)
+assets/sprites/            36 SVGs (35 sprites and icon-gnome.svg) + manifest.json (generated, don't hand-edit)
 assets/js/sprites.js       loader: preload, inline copies, gnome state swap, one-shot helper
 assets/css/sprites.css     tile backgrounds, wall placement, gnome placement, teleport and goal animations
 tools/build-sprites.mjs    builds every sprite from one file. `node tools/build-sprites.mjs`
