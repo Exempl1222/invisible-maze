@@ -134,6 +134,10 @@ a:hover { color: var(--robot-deep); }
   margin: 0 0 1.75rem;
 }
 .hero p.tagline { max-width: none; }
+/* Home hero text column: everything centred under Sir Croakwell. */
+.hero-text { text-align: center; }
+.hero-text p { margin-inline: auto; }
+.hero-text .hero-actions { margin-inline: auto; }
 
 /* Buttons: rounded pills with a 2px outline and a small offset shadow that flattens on press. */
 .btn {
