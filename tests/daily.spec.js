@@ -487,6 +487,61 @@ test.describe('with the walk animation on', () => {
     await expect(left(page)).toHaveCount(4);
     expect((await saved(page)).easy['2026-10-27'].tries).toHaveLength(1);
   });
+
+  /**
+   * Press Try on a paused clock and step it 50ms at a time, snapshotting each frame, until the score shows.
+   * The score must stay hidden for the whole walk, and only appear once the gnome has stopped (shrugging,
+   * fenced in) on his final tile.
+   */
+  async function tryAndWatchScore(page) {
+    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1000));
+    await tryBtn(page).click();
+    const frames = [];
+    for (let t = 0; t < 400; t++) { // 20s of faked time: the walk must be over well before this
+      frames.push(await page.evaluate(() => {
+        const r = document.getElementById('robot');
+        return {
+          pos: `${r.dataset.x},${r.dataset.y}`,
+          pose: r.dataset.state,
+          scoreShown: !document.getElementById('result').hidden || /out of 100/.test(document.getElementById('status').textContent),
+        };
+      }));
+      if (frames.at(-1).scoreShown) break;
+      await page.clock.runFor(50);
+    }
+    const first = frames.findIndex((f) => f.scoreShown);
+    expect(first, 'the score never showed').toBeGreaterThan(0);
+    const before = frames.slice(0, first);
+    expect(new Set(before.map((f) => f.pos)).size, 'the gnome should have walked').toBeGreaterThan(3);
+    expect(before.some((f) => f.pose === 'walk'), 'the walk should have animated').toBe(true);
+    // The frame before the score appears: walk over, gnome already fenced in where he ends up.
+    const last = before.at(-1);
+    expect(last.pose).toBe('shrug');
+    expect(frames[first].pos).toBe(last.pos);
+    await page.clock.resume();
+  }
+
+  test('a win: the score only shows once the gnome\'s walk has finished', async ({ page }) => {
+    await openDay(page);
+    await placeAll(page, level('easy').answer);
+    await tryAndWatchScore(page);
+    await expect(result(page)).toBeVisible();
+    await expect(score(page)).toHaveText('100 / 100');
+  });
+
+  test('the last try: Day done and the score only show once the walk has finished', async ({ page }) => {
+    await openDay(page);
+    for (const label of ['Try', 'Try again (4 left)', 'Try again (3 left)', 'Try again (2 left)']) {
+      await expect(tryBtn(page)).toHaveText(label);
+      await tryBtn(page).click();
+      await page.clock.runFor(8000);
+      await settle(page);
+    }
+    await placeAll(page, level('easy').answer);
+    await tryAndWatchScore(page);
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    await expect(page.locator('#status')).toContainText('Day done. 100 out of 100.');
+  });
 });
 
 test('the hint costs 15 points, can be used once, stays through Reset, and shows in the share text', async ({ page }) => {
