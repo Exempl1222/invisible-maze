@@ -162,8 +162,8 @@ a:hover { color: var(--robot-deep); }
 .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 
 /* Home hero: Sir Croakwell faces the player with his bubble, then the daily buttons. */
-.toad-stage { position: relative; width: min(100%, 240px); margin: 0 0 1rem; } /* small on a phone so Easy and Hard stay above the fold */
-@media (min-width: 860px) { .toad-stage { width: min(100%, 300px); margin-bottom: 1.25rem; } }
+.toad-stage { position: relative; width: min(100%, 240px); margin: 0 auto 1rem; } /* small on a phone so Easy and Hard stay above the fold */
+@media (min-width: 860px) { .toad-stage { width: min(100%, 300px); margin: 0 auto 1.25rem; } }
 .toad-stage .toad-front { display: block; width: 100%; height: auto; }
 .bubble {
   position: absolute;

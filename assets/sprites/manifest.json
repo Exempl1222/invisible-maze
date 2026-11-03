@@ -322,7 +322,7 @@
       "file": "assets/sprites/toad-back-idle.svg",
       "size": [
         390,
-        200
+        140
       ],
       "loop": true,
       "cycleSeconds": 3.2
@@ -331,7 +331,7 @@
       "file": "assets/sprites/toad-back-cast.svg",
       "size": [
         390,
-        200
+        140
       ],
       "loop": false,
       "cycleSeconds": 1.6,
@@ -341,7 +341,7 @@
       "file": "assets/sprites/toad-back-gloat.svg",
       "size": [
         390,
-        200
+        140
       ],
       "loop": true,
       "cycleSeconds": 0.5
@@ -350,7 +350,7 @@
       "file": "assets/sprites/toad-back-sulk.svg",
       "size": [
         390,
-        200
+        140
       ],
       "loop": false,
       "cycleSeconds": 1.1

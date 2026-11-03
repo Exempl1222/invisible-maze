@@ -62,10 +62,11 @@ test('daily: a fence on a bottom-row line under one of his hands is still tappab
   const last = lv.size - 1;
   const lines = buildableLines(lv).filter((l) => l[1] === last && l[2] === 'R' && capViolation(lv, [l]) === null && !cutsAllRoutes(lv, [l]));
   expect(lines.length).toBeGreaterThan(0);
-  // Where his hands are: 118 and 272 on the sprite's 390 x 200 canvas, drawn to fit the box, centred.
+  // Where his hands are: measured from the hand groups themselves (they grip the board's bottom corners).
   const v = await page.locator('#villain').boundingBox();
-  const s = Math.min(v.width / 390, v.height / 200);
-  const hands = [118, 272].map((x) => v.x + (v.width - 390 * s) / 2 + x * s);
+  const hands = [];
+  for (const h of await page.locator('#villain .toad-hand').all()) { const hb = await h.boundingBox(); hands.push(hb.x + hb.width / 2); }
+  expect(hands).toHaveLength(2);
   const pressX = async (l) => { const b = await tile(page, l[0], l[1]).boundingBox(); return b.x + b.width * 0.99; };
   let best = null;
   for (const l of lines) {
@@ -228,17 +229,33 @@ test('layout: on a 390x844 phone he frames the board full width and the board is
   await openDaily(page);
   const [b, v] = await Promise.all([page.locator('#board').boundingBox(), page.locator('#villain').boundingBox()]);
   expect(b.width).toBe(358); // the board size on base 549a1a2 at this viewport
-  expect(v.height).toBeGreaterThanOrEqual(150);
+  expect(v.height).toBeGreaterThanOrEqual(120);
   expect(Math.abs(v.width - b.width)).toBeLessThanOrEqual(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
-test('layout: on a 1366x768 desktop window he is fully visible under the board', async ({ page }) => {
+test('layout: on a 1366x768 desktop window he is fully visible and as wide as the board', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await openDaily(page);
-  const v = await page.locator('#villain').boundingBox();
+  const [b, v] = await Promise.all([page.locator('#board').boundingBox(), page.locator('#villain').boundingBox()]);
   expect(v.y + v.height).toBeLessThanOrEqual(768);
+  expect(Math.abs(v.width - b.width)).toBeLessThanOrEqual(2);
 });
+
+for (const [w, h] of [[390, 844], [1366, 768]]) {
+  test(`layout: his hands grip the board's outer 15% on each side at ${w}x${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await openDaily(page);
+    const b = await page.locator('#board').boundingBox();
+    const hands = await page.locator('#villain .toad-hand').all();
+    expect(hands).toHaveLength(2);
+    const [l, r] = await Promise.all(hands.map((x) => x.boundingBox()));
+    expect(l.x).toBeGreaterThanOrEqual(b.x - 1);
+    expect(l.x + l.width).toBeLessThanOrEqual(b.x + b.width * 0.15);
+    expect(r.x).toBeGreaterThanOrEqual(b.x + b.width * 0.85);
+    expect(r.x + r.width).toBeLessThanOrEqual(b.x + b.width + 1);
+  });
+}
 
 test('layout: the gnome walks over his hands, not under them', async ({ page }) => {
   await openDaily(page);

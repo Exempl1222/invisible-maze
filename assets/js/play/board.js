@@ -14,9 +14,8 @@ const GAP = 3;
 const SIDE_MARGIN = 16; // keeps clear of iOS edge swipes
 const MAX_BOARD = 560;
 const SIDE_COLUMN = 260 + 36; // stats column plus the gap, in the wide layout
-const TOAD_MAX = 190; // Sir Croakwell's tallest height, in px
-const TOAD_MIN = 40; // and the shortest he shrinks to before the board gives up more room
-const TOAD_OVERLAP = 0.08; // his hands overlap the board's bottom edge by this share of his height
+const TOAD_ASPECT = 140 / 390; // the back sprites' canvas: height over width. He is always as wide as the board
+const TOAD_OVERLAP = 0.18; // his hands overlap the board's bottom edge by this share of his height
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isPortal = (c) => c >= 'a' && c <= 'z';
@@ -131,17 +130,13 @@ export function createBoard(root, level, { onLine, onHelp }) {
     if (host.querySelector(':scope > .villain')) {
       const seen = 1 - TOAD_OVERLAP;
       if (!wide) {
-        // Phones: the board is sized as it always was; Sir Croakwell frames it full width (a short scroll to Try is fine).
+        // Phones: the board is sized as it always was; he is as wide as it is.
         px = Math.floor(Math.max(200, Math.min(availW, availH)));
-        host.style.setProperty('--villain-h', `${Math.floor(Math.min(TOAD_MAX, (px * 200) / 390))}px`);
       } else {
         // Desktop: his visible height (height less the overlap) comes out of the window height so he is fully visible.
-        const uncapped = availH / (1 + (seen * 200) / 390);
-        px = Math.min(availW, (uncapped * 200) / 390 <= TOAD_MAX ? uncapped : availH - seen * TOAD_MAX);
-        px = Math.floor(Math.max(200, Math.min(availW, px)));
-        const toad = Math.max(TOAD_MIN, Math.min((px * 200) / 390, TOAD_MAX, (availH - px) / seen));
-        host.style.setProperty('--villain-h', `${Math.floor(toad)}px`);
+        px = Math.floor(Math.max(200, Math.min(availW, availH / (1 + seen * TOAD_ASPECT))));
       }
+      host.style.setProperty('--villain-h', `${(px * TOAD_ASPECT).toFixed(2)}px`);
     } else {
       px = Math.floor(Math.max(200, Math.min(availW, availH)));
     }

@@ -428,7 +428,7 @@ const toadDefs = (back) => `<defs>
   <filter id="${PFX}glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs>`;
 
 /* ----- back view: a 390 x 200 band. Mockup coordinates are mapped with k = .62; hands and arms live in band coordinates ----- */
-const TB = { k: 0.62, tx: 74.1, ty: -234.4 }; // x' = tx + k x, y' = ty + k y  (dome top of the idle pose lands at y 70)
+const TB = { k: 0.46, tx: 105.3, ty: -179.8 }; // x' = tx + k x, y' = ty + k y  (dome top of the idle pose lands at y 70)
 const TOAD_CSS = `
 .breathe{transform-box:fill-box;transform-origin:50% 100%;animation:toadBreathe 3.2s ease-in-out infinite}
 @keyframes toadBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
@@ -448,22 +448,22 @@ const TOAD_CSS = `
 
 /** Pose numbers: from the mockup's renderVals(), hands re-placed into the band. */
 const BACK = {
-  idle: { dy: 0, hat: 'rotate(-6 195 540)', tip: 'rotate(0 207 456)', L: [118, 26, -6], R: [272, 26, 6], glow: false, sac: [0, 0], lid: false },
-  cast: { dy: -8, hat: 'translate(0 -10) rotate(5 195 540)', tip: 'rotate(-25 207 456)', L: [92, -10, -32], R: [298, -10, 32], glow: true, sac: [14, 10], lid: false },
-  gloat: { dy: -16, hat: 'translate(0 -14) rotate(-16 195 540)', tip: 'rotate(-40 207 456)', L: [86, -8, -14], R: [300, 24, 10], glow: false, sac: [24, 18], lid: false, fist: 'L' },
-  sulk: { dy: 34, hat: 'translate(0 16) rotate(12 195 540)', tip: 'rotate(85 207 456)', L: [112, 238, 190], R: [278, 238, 170], glow: false, sac: [0, 0], lid: true },
+  idle: { dy: 0, hat: 'rotate(-6 195 540)', tip: 'rotate(0 207 456)', L: [36, 36, -8], R: [354, 36, 8], glow: false, sac: [0, 0], lid: false },
+  cast: { dy: -8, hat: 'translate(0 -10) rotate(5 195 540)', tip: 'rotate(-25 207 456)', L: [34, 4, -24], R: [356, 4, 24], glow: true, sac: [14, 10], lid: false },
+  gloat: { dy: -16, hat: 'translate(0 -14) rotate(-16 195 540)', tip: 'rotate(-40 207 456)', L: [36, 6, -10], R: [354, 38, 10], glow: false, sac: [24, 18], lid: false, fist: 'L' },
+  sulk: { dy: 34, hat: 'translate(0 16) rotate(12 195 540)', tip: 'rotate(85 207 456)', L: [70, 175, 190], R: [320, 175, 170], glow: false, sac: [0, 0], lid: true },
 };
 function toadBackSvg(mood) {
   cid = 0;
   PFX = `gsg-tb-${mood}-`;
   const m = BACK[mood];
-  const HS = 0.85; // hand scale
+  const HS = 0.8; // hand scale
   const hw = 2.4 / HS; // hand outline width in hand units
   const bw = 2.4 / TB.k; // body outline width in mockup units
-  const shY = 125 + TB.k * m.dy;
-  const arm = (sx, [hx, hy], side) => `M${sx} ${f1(shY)} Q${f1((sx + hx) / 2 + side * 22)} ${f1((shY + hy) / 2)} ${hx} ${hy}`;
-  const armSvg = (sx, h, side) => inkLine(arm(sx, h, side), K.arm, 20, 2.4) + `<path d="${arm(sx, h, side)}" fill="none" stroke="${K.skinHi}" stroke-width="5" stroke-linecap="round" opacity=".45" transform="translate(${-side * 2} -2)"/>`;
-  const handSvg = ([x, y, rot], mirror, fist) => `<g transform="translate(${x} ${y}) rotate(${rot})${mirror ? ' scale(-1 1)' : ''} scale(${HS})">${hand({ w: hw, glow: m.glow, fist })}</g>`;
+  const shY = 88 + TB.k * m.dy;
+  const arm = (sx, [hx, hy], side) => `M${sx} ${f1(shY)} Q${f1((sx + hx) / 2 + side * 8)} ${f1((shY + hy) / 2)} ${hx} ${hy}`;
+  const armSvg = (sx, h, side) => inkLine(arm(sx, h, side), K.arm, 15, 2.2) + `<path d="${arm(sx, h, side)}" fill="none" stroke="${K.skinHi}" stroke-width="5" stroke-linecap="round" opacity=".45" transform="translate(${-side * 2} -2)"/>`;
+  const handSvg = ([x, y, rot], mirror, fist) => `<g class="toad-hand" transform="translate(${x} ${y}) rotate(${rot})${mirror ? ' scale(-1 1)' : ''} scale(${HS})">${hand({ w: hw, glow: m.glow, fist })}</g>`;
   const tipOf = ([x, y, rot]) => { const r = rot * Math.PI / 180; return [x + 26 * Math.sin(r), y - 26 * Math.cos(r)]; };
 
   // Magic: the conjured fence plank above the hands, lime trails from the fingertips, sparkles, confetti.
@@ -480,17 +480,17 @@ function toadBackSvg(mood) {
     ${[[150, -20, 30, 0], [258, -12, -25, 1], [118, -30, 60, 2], [322, -30, 15, 3], [236, -38, 50, 1], [86, -30, -40, 0]].map((b, i) => bit(b, 7, 4, 'twinkle', `animation-delay:${i * .25}s`)).join('')}</g>` : '';
 
   const gloatFx = mood === 'gloat' ? `<g>
-    <text x="14" y="66" transform="rotate(-10 14 66)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="25" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="5" paint-order="stroke" stroke-linejoin="round">Hehehe!</text>
-    ${[[34, 8, 30, 0], [150, -4, -30, 1], [112, -16, 55, 2], [240, -6, 10, 3], [196, 6, -50, 0], [330, 18, 25, 1], [298, -14, -35, 2]].map((b, i) => bit(b, 7, 4, 'twinkle', `animation-delay:${i * .2}s`)).join('')}
-    <path d="M62 116 q-9 -4 -12 -14 M334 116 q9 -4 12 -14 M56 132 q-8 -2 -12 -9" fill="none" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/></g>` : '';
+    <text x="8" y="112" transform="rotate(-8 8 112)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="22" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="4.5" paint-order="stroke" stroke-linejoin="round">Hehehe!</text>
+    ${[[70, 10, 30, 0], [118, -6, -30, 1], [96, 60, 55, 2], [270, 4, 10, 3], [300, 56, -50, 0], [330, 70, 25, 1], [214, -8, -35, 2]].map((b, i) => bit(b, 7, 4, 'twinkle', `animation-delay:${i * .2}s`)).join('')}
+    <path d="M118 100 q-9 -4 -12 -14 M272 100 q9 -4 12 -14" fill="none" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/></g>` : '';
 
   const sulkFx = mood === 'sulk' ? `<g>
-    ${blob([ell(300, 44, 14, 11), ell(320, 36, 18, 14), ell(342, 44, 13, 10), rr(290, 44, 64, 12, 6)], K.cloud, 2)}
-    ${[[304, 64], [320, 64], [336, 64]].map(([x, y], i) => `<path class="drip" style="animation-delay:${i * .35}s" d="M${x} ${y} l-3 9" stroke="${K.rain}" stroke-width="2.6" stroke-linecap="round"/>`).join('')}
-    <text x="38" y="92" transform="rotate(-6 38 92)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="21" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="4.5" paint-order="stroke" stroke-linejoin="round">Rats.</text>
-    ${part('M268 190 Q296 181 322 192 Q296 199 268 190 Z', K.pink, null, null, 1.8)}${part(rr(320, 188, 11, 7, 2.5), K.pink, null, null, 1.8)}
-    <text x="272" y="177" transform="rotate(-6 272 177)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="13" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">pfffft...</text>
-    <path d="M112 120 q-6 -8 0 -14 q6 -6 0 -12" fill="none" stroke="${K.smoke}" stroke-width="2" stroke-linecap="round" opacity=".8"/></g>` : '';
+    ${blob([ell(300, 60, 14, 11), ell(320, 52, 18, 14), ell(342, 60, 13, 10), rr(290, 60, 64, 12, 6)], K.cloud, 2)}
+    ${[[304, 80], [320, 80], [336, 80]].map(([x, y], i) => `<path class="drip" style="animation-delay:${i * .35}s" d="M${x} ${y} l-3 9" stroke="${K.rain}" stroke-width="2.6" stroke-linecap="round"/>`).join('')}
+    <text x="14" y="84" transform="rotate(-6 14 84)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="21" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="4.5" paint-order="stroke" stroke-linejoin="round">Rats.</text>
+    ${part('M262 132 Q290 123 316 134 Q290 141 262 132 Z', K.pink, null, null, 1.8)}${part(rr(314, 130, 11, 7, 2.5), K.pink, null, null, 1.8)}
+    <text x="264" y="118" transform="rotate(-6 264 118)" font-family="Grandstander, 'Nunito', system-ui, sans-serif" font-size="13" font-weight="800" fill="${K.cream}" stroke="${C.ink}" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">pfffft...</text>
+    <path d="M130 84 q-6 -8 0 -14 q6 -6 0 -12" fill="none" stroke="${K.smoke}" stroke-width="2" stroke-linecap="round" opacity=".8"/></g>` : '';
 
   const eyeRim = (cx) => inkLine(`M${cx - 28} 542 A31 31 0 0 1 ${cx + 28} 542`, K.gold, 5, bw * .8) + `<path d="M${cx - 13} 538 A20 20 0 0 1 ${cx + 5} 532" fill="none" stroke="${K.cream}" stroke-width="2" stroke-linecap="round"/>`;
   const lid = (cx) => m.lid ? part(`M${cx - 31} 550 A31 31 0 0 1 ${cx + 31} 550 Z`, K.lidBack, null, null, bw) : '';
@@ -517,15 +517,15 @@ function toadBackSvg(mood) {
     ${acorn(195, 690, bw * .7)}${diamonds}${slingshot}${cushion}`;
 
   // Nothing of him may hang below the band (the cloak path runs long); the top and sides stay open for the spell.
-  const body = `${toadDefs(true)}<clipPath id="${PFX}band"><rect x="-80" y="-300" width="550" height="500"/></clipPath><g clip-path="url(#${PFX}band)">
+  const body = `${toadDefs(true)}<clipPath id="${PFX}band"><rect x="-80" y="-300" width="550" height="440"/></clipPath><g clip-path="url(#${PFX}band)">
     ${mood === 'idle' ? `<g transform="translate(${TB.tx} ${TB.ty}) scale(${TB.k})">${fly('flyOrbit', 1.3)}</g>` : ''}
-    ${armSvg(138.6, m.L, -1)}${armSvg(251.4, m.R, 1)}
+    ${armSvg(152, m.L, -1)}${armSvg(238, m.R, 1)}
     ${handSvg(m.L, false, m.fist === 'L')}${handSvg(m.R, true, m.fist === 'R')}
     <g transform="translate(${TB.tx} ${TB.ty}) scale(${TB.k})"><g transform="translate(0 ${m.dy - 30})"><g class="${mood === 'idle' ? 'breathe' : mood === 'gloat' ? 'bounce' : ''}">${inner}</g></g></g>
     ${castFx}${gloatFx}${sulkFx}</g>`;
   const css = TOAD_CSS + (mood === 'idle' ? orbitFrames('toadOrbit', 258, 414, 30, 11) + '.flyOrbit{animation:toadOrbit 2.4s linear infinite}' : '');
   const label = { idle: 'Sir Croakwell, a toad wizard, watching from behind', cast: 'Sir Croakwell casting a fence spell', gloat: 'Sir Croakwell gloating', sulk: 'Sir Croakwell sulking' }[mood];
-  return svgDoc(390, 200, css, body, label, 'gsg-toad').replace('<svg ', '<svg style="overflow:visible" ');
+  return svgDoc(390, 140, css, body, label, 'gsg-toad').replace('<svg ', '<svg style="overflow:visible" ');
 }
 
 /* ----- face-on view: 390 x 460, mockup coordinates as drawn ----- */
@@ -656,7 +656,7 @@ for (const hint of [false, true]) {
 // Sir Croakwell (docs/VILLAIN_SPEC.md): four back-view moods for the board border, two face-on poses.
 for (const mood of ['idle', 'cast', 'gloat', 'sulk']) {
   write(`toad-back-${mood}.svg`, toadBackSvg(mood),
-    { size: [390, 200], loop: mood === 'idle' || mood === 'gloat', cycleSeconds: { idle: 3.2, cast: 1.6, gloat: 0.5, sulk: 1.1 }[mood], ...(mood === 'cast' ? { overflowTop: 42 } : {}) }, 'villain');
+    { size: [390, 140], loop: mood === 'idle' || mood === 'gloat', cycleSeconds: { idle: 3.2, cast: 1.6, gloat: 0.5, sulk: 1.1 }[mood], ...(mood === 'cast' ? { overflowTop: 42 } : {}) }, 'villain');
 }
 for (const pose of ['smug', 'point']) {
   write(`toad-front-${pose}.svg`, toadFrontSvg(pose), { size: [390, 460], loop: true, cycleSeconds: pose === 'smug' ? 4 : 1.6 }, 'villain');
