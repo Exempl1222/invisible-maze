@@ -37,4 +37,4 @@ List each bug with steps to reproduce (seed, taps). Don't fix them in the same p
 ## Notes
 
 - Google Fonts may fail to load in sandboxes; that's not a bug. A 404 on any of our own files is.
-- The site lives under `/invisible-maze/` on GitHub Pages, so also check links on the live URL after a deploy.
+- The site is live at https://gnomesweetgnome.app (the old `exempl1222.github.io/invisible-maze/` address redirects), so also check links on the live URL after a deploy.
