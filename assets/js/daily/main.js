@@ -126,9 +126,19 @@ function showBreak(message, more) {
   breakEl.hidden = false;
 }
 
+/**
+ * The day as the player should see it. While the gnome walks, the try that started the walk is already
+ * saved (so a reload can't give it back) but stays hidden from Best and the pips until he stops.
+ */
+function shownDay() {
+  const { day, state } = game;
+  if (state !== 'running') return day;
+  return { ...day, tries: day.tries.slice(0, -1), done: false };
+}
+
 /** Filled pips are tries left; a won try is a tick; spent lost tries are empty. */
 function renderPips() {
-  const { tries, done } = game.day;
+  const { tries, done } = shownDay();
   [...pipsEl.children].forEach((pip, i) => {
     pip.className = i < tries.length ? (tries[i].won ? 'won' : '') : !done ? 'left' : '';
   });
@@ -153,7 +163,7 @@ function updateCounters() {
   const { board, day, state } = game;
   const used = board.wallList().length;
   fencesEl.textContent = String(used);
-  const best = dayScore(day);
+  const best = dayScore(shownDay());
   bestEl.textContent = best > 0 ? String(best) : '-';
   const mine = used - board.hintLines().length;
   const editing = state === 'editing';

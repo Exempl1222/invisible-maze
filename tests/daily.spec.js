@@ -495,6 +495,10 @@ test.describe('with the walk animation on', () => {
    */
   async function tryAndWatchScore(page) {
     await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1000));
+    const base = await page.evaluate(() => ({
+      best: document.getElementById('best-score').textContent,
+      wonPips: document.querySelectorAll('#pips i.won').length,
+    }));
     await tryBtn(page).click();
     const frames = [];
     for (let t = 0; t < 400; t++) { // 20s of faked time: the walk must be over well before this
@@ -504,6 +508,8 @@ test.describe('with the walk animation on', () => {
           pos: `${r.dataset.x},${r.dataset.y}`,
           pose: r.dataset.state,
           scoreShown: !document.getElementById('result').hidden || /out of 100/.test(document.getElementById('status').textContent),
+          best: document.getElementById('best-score').textContent,
+          wonPips: document.querySelectorAll('#pips i.won').length,
         };
       }));
       if (frames.at(-1).scoreShown) break;
@@ -518,6 +524,12 @@ test.describe('with the walk animation on', () => {
     const last = before.at(-1);
     expect(last.pose).toBe('shrug');
     expect(frames[first].pos).toBe(last.pos);
+    // Nothing else gives the result away mid-walk: Best and the pips hold their pre-try values.
+    for (const f of before) {
+      expect(f.best, 'Best changed before the walk ended').toBe(base.best);
+      expect(f.wonPips, 'a won pip showed before the walk ended').toBe(base.wonPips);
+    }
+    expect(frames[first].best).not.toBe(base.best); // and Best does update once it ends
     await page.clock.resume();
   }
 
