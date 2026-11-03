@@ -28,6 +28,7 @@ function closeOnBackdrop(dlg) {
 
 export function setupHowTo() {
   const dlg = $('howto-dlg');
+  $('howto-toad').appendChild(sprite('toad-front-point', 'toad-front'));
   $('howto-art-1').appendChild(sprite('gnome-down-walk', 'gnome-sprite'));
   $('howto-art-2').appendChild(sprite('wall-v', 'wall-art'));
   dlg.addEventListener('close', markSeenHowTo); // closing it, any way, counts as seen

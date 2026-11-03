@@ -112,3 +112,45 @@
   .play-board .robot.dive, .play-board .robot.pop { animation: none; }
   .play-board .robot .gsg-gnome *, .wall-bar .gsg-wall * { animation: none !important; }
 }
+
+/* ---------- Sir Croakwell (docs/VILLAIN_SPEC.md) ---------- */
+/* The border under the board. His hands overlap the board's bottom edge by about 8% of his height;
+   pointer-events none keeps every line on the board tappable. */
+.villain {
+  --villain-h: clamp(120px, 34vw, 170px);
+  grid-area: villain;
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: var(--villain-h);
+  margin-top: calc(-10px - var(--villain-h) * 0.08); /* the grid gap, then the 8% overlap */
+  pointer-events: none;
+}
+.villain .sprite { display: block; width: 100%; height: 100%; overflow: visible; }
+.villain .sprite svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* A fence the player just placed: lime glow (his magic) and four bits of confetti, 600ms, once. */
+.wall-bar.magic .wall-art { animation: gsg-magic-glow 600ms ease-out both; }
+@keyframes gsg-magic-glow {
+  0%   { filter: drop-shadow(0 0 0 #d8f26a); }
+  30%  { filter: drop-shadow(0 0 6px #d8f26a) drop-shadow(0 0 12px #f4ffc4); }
+  100% { filter: drop-shadow(0 0 0 #d8f26a); }
+}
+.magic-fx { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.magic-fx .bit {
+  position: absolute; left: -4px; top: -2.5px; width: 8px; height: 5px;
+  border: 1px solid #3b2618; border-radius: 1px;
+  animation: gsg-magic-bit 600ms ease-out both;
+}
+.magic-fx .bit:nth-child(1) { background: #ff9a3c; --dx: -16px; --dy: -22px; --rot: -70deg; }
+.magic-fx .bit:nth-child(2) { background: #ff7fa6; --dx: 14px; --dy: -26px; --rot: 80deg; }
+.magic-fx .bit:nth-child(3) { background: #d8f26a; --dx: -8px; --dy: 18px; --rot: 120deg; }
+.magic-fx .bit:nth-child(4) { background: #fff6e0; --dx: 18px; --dy: 12px; --rot: -100deg; }
+@keyframes gsg-magic-bit {
+  0%   { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wall-bar.magic .wall-art { animation: none; }
+  .magic-fx { display: none; }
+}

@@ -5,7 +5,8 @@ import { simulate, cutsAllRoutes, wouldBreakCap } from '../../../src/game/index.
 import { createBoard } from '../play/board.js';
 import { capMessage, lineKey } from '../play/lines.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
-import { preloadSprites, sprite } from '../sprites.js';
+import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
+import { mountVillain } from '../villain.js';
 import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
 import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './score.js';
 import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
@@ -43,6 +44,7 @@ const hintBtn = $('hint-btn');
 const resultEl = $('result');
 const newDayEl = $('new-day');
 
+const mood = (m) => villain?.setMood(m);
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** The day's score as shown: the best winning try's base, less the hint when it was used. */
 const dayScore = (day) => bestScore(day.tries, day.hint !== null);
@@ -69,6 +71,7 @@ let stats = null;
 let clockTimer = 0;
 let countdownBox = null; // { box, text } once a day is done
 let sendingNow = new Map(); // 'mode|date' -> the POST in flight, so one result is never sent twice at once
+let villain = null; // Sir Croakwell under the board: { setMood, cast }, or null if his sprites did not load
 let playToken = 0; // bumps whenever the board replays, so a walk cut short by a toggle stops drawing
 
 /* ---------- page chrome ---------- */
@@ -240,10 +243,15 @@ async function boot() {
   let data;
   try {
     data = mode === 'hard' && hardData ? hardData : await fetchJson(LEVEL_URL[mode]);
-    await preloadSprites();
+    await preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, 'toad-front-point']);
   } catch {
     failed('The daily did not load. Check your connection and try again.');
     return;
+  }
+  try {
+    villain = await mountVillain($('villain'));
+  } catch {
+    villain = null; // he is decoration: the game plays without him
   }
   setLastMode(mode);
   loading.hidden = true;
@@ -342,6 +350,7 @@ function onLine(target) {
     refused('That fence is the hint, so it stays.');
   } else if (board.hasWall(line)) {
     board.setWall(line, false);
+    mood('idle');
     setStatus('Fence removed.');
   } else if (board.wallList().length >= level.wallBudget) {
     board.refuse(target);
@@ -353,7 +362,9 @@ function onLine(target) {
     board.refuse(target);
     refused('The gnome needs at least one way through.');
   } else {
-    board.setWall(line, true);
+    board.setWall(line, true, { magic: true });
+    mood('idle'); // a sulk from the last try ends when the player starts building again
+    villain?.cast();
     setStatus(`Fence placed. ${plural(board.wallList().length, 'fence')} on the board.`);
   }
   persist();
@@ -363,6 +374,7 @@ function onLine(target) {
 clearBtn.addEventListener('click', () => {
   if (!game || game.state !== 'editing') return;
   game.board.clearWalls();
+  mood('idle');
   persist();
   updateCounters();
   setStatus(game.board.hintLines().length ? 'Your fences are cleared. The hint stays.' : 'Fences cleared.');
@@ -402,7 +414,9 @@ function useHint() {
     return;
   }
   if (missing.length === 0) board.setWall(line, false);
-  board.setWall(line, true, { hint: true });
+  board.setWall(line, true, { hint: true, magic: true });
+  mood('idle');
+  villain?.cast();
   day.hint = lineKey(line);
   persist(); // tries keep their base score; the hint is docked when a score is shown
   setStatus(`Hint placed: one fence of a good answer. It takes ${HINT_COST} points off.`);
@@ -434,6 +448,7 @@ async function run() {
   }
   g.day.reviewing = win && !g.day.done; // a reload on the win screen shows the choice again
   persist();
+  mood('idle');
 
   g.state = 'running';
   resultEl.hidden = true;
@@ -448,6 +463,7 @@ async function run() {
     onMove: (i) => { movesLeftEl.textContent = String(g.level.moveLimit - i); },
   });
 
+  mood(win ? 'gloat' : 'sulk'); // the walk is over: he gloats if the gnome was trapped, sulks if he got home
   if (g.day.done) {
     showDone({ live: true });
     return;
@@ -476,6 +492,7 @@ function showReview({ live = false } = {}) {
   controlsEl.hidden = true;
   newDayEl.hidden = true;
   const last = g.day.tries.at(-1);
+  mood('gloat');
   const sim = simulate(g.level, g.board.wallList());
   g.board.play(sim, { instant: true, onMove: (i) => { movesLeftEl.textContent = String(g.level.moveLimit - i); } });
   updateCounters();
@@ -491,6 +508,7 @@ function retry() {
   if (g.day.tries.length >= MAX_TRIES) return;
   g.state = 'editing';
   g.day.reviewing = false; // a reload from here reopens the editor with these fences
+  mood('idle');
   persist();
   resultEl.hidden = true;
   controlsEl.hidden = false;
@@ -544,6 +562,7 @@ function showDone({ live = false, redraw = false } = {}) {
   updateCounters();
   renderResult();
   const score = dayScore(day);
+  if (!live) mood(score > 0 ? 'gloat' : 'sulk'); // live: run() already set it from the last walk
   if (live) setStatus(score > 0 ? `Day done. ${score} out of 100.` : 'He made it home. Out of tries.');
   else if (redraw) setStatus('');
   else setStatus('');

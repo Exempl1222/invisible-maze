@@ -338,6 +338,16 @@ export function createBoard(root, level, { onLine, onHelp }) {
     setTimeout(() => c.classList.remove(cls), 600);
   };
 
+  /** The one-shot spell on a fresh fence: a `.magic` class (lime glow) and four confetti bits, gone after 600ms. */
+  function castMagic(bar) {
+    const fx = el('magic-fx');
+    fx.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 4; i++) fx.appendChild(el('bit'));
+    bar.classList.add('magic');
+    bar.appendChild(fx);
+    setTimeout(() => { bar.classList.remove('magic'); fx.remove(); }, 600);
+  }
+
   /* ---------- public ---------- */
 
   const api = {
@@ -348,8 +358,11 @@ export function createBoard(root, level, { onLine, onHelp }) {
     /** True if the wall on this line was placed by a hint (it can't be taken back). */
     isHintWall: (line) => walls.get(lineKey(line))?.hint === true,
     hintLines: () => [...walls.values()].filter((w) => w.hint).map((w) => w.line),
-    /** Place or remove a wall. `hint: true` draws it in the hint style; hint walls are only removed with force. */
-    setWall(line, on, { hint: isHint = false, force = false } = {}) {
+    /**
+     * Place or remove a wall. `hint: true` draws it in the hint style; hint walls are only removed with force.
+     * `magic: true` is for a fence the player just placed: Sir Croakwell's lime glow and confetti, once (600ms).
+     */
+    setWall(line, on, { hint: isHint = false, force = false, magic = false } = {}) {
       const k = lineKey(line);
       if (!on && walls.get(k)?.hint && !force) return;
       if (on && !walls.has(k)) {
@@ -364,6 +377,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
         const w = { line, bar, hint: isHint };
         walls.set(k, w);
         placeWallBar(w);
+        if (magic) castMagic(bar);
       } else if (!on && walls.has(k)) {
         walls.get(k).bar.remove();
         walls.delete(k);

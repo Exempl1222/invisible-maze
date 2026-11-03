@@ -140,7 +140,7 @@
   display: grid;
   gap: 10px;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "stats" "board" "side";
+  grid-template-areas: "stats" "board" "villain" "side";
 }
 .stats { grid-area: stats; }
 .play-board { grid-area: board; }
@@ -149,8 +149,8 @@
 @media (min-width: 880px) {
   .game {
     grid-template-columns: var(--board-size) minmax(260px, 300px);
-    grid-template-areas: "board stats" "board side";
-    grid-template-rows: auto 1fr;
+    grid-template-areas: "board stats" "board side" "villain side";
+    grid-template-rows: auto 1fr auto;
     justify-content: center;
     gap: 12px 36px;
     padding-top: 0.25rem;
