@@ -22,7 +22,8 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { generateLevels, formatStats } from './generate.js';
-import { parseLevel, buildableLines, simulate, capViolation, cutsAllRoutes } from '../src/game/index.js';
+import { parseLevel, buildableLines, simulate, capViolation, cutsAllRoutes, solve } from '../src/game/index.js';
+import { levelWithoutLimit } from '../assets/js/daily/judge.js';
 
 export const DAILY_DEFAULTS = { days: 180, start: '2026-10-27', seed: 20261027 };
 
@@ -32,7 +33,20 @@ export const DAILY_DEFAULTS = { days: 180, start: '2026-10-27', seed: 20261027 }
  * days that had not been played yet were remade. Days before `from` keep their original sub-seed and stay as
  * they were (players and the stats server already hold results for them).
  */
-export const DAILY_REFRESH = { from: '2026-11-12', salt: 'r2' };
+export const DAILY_REFRESH = { from: '2026-11-08', salt: 'r2' };
+
+/**
+ * Work budget for the hint and solution solve in the browser (`solve(level, { exactPar: par, maxNodes })`, the exact call
+ * solver-worker.js makes). The generator drops a candidate that needs more, so no shipped day can take long on a phone.
+ * 50000 nodes is about 0.9 s in Node on the dev machine (about 18 microseconds a node); before the budget the worst
+ * days needed 345873 nodes (6.2 s) and 317036 (5.9 s), and about 1 day in 10 took over 0.8 s.
+ */
+export const SOLVE_NODE_BUDGET = 50000;
+
+/** True if the browser's solve of this raw level (exactPar, no fence limit) finishes within SOLVE_NODE_BUDGET. */
+export function solvesWithinBudget(raw, budget = SOLVE_NODE_BUDGET) {
+  return solve(levelWithoutLimit(raw), { exactPar: raw.par, maxNodes: budget }) !== null;
+}
 
 /** The sub-seed for day i, attempt a. Unchanged for days before the refresh date. */
 export function daySeed(seed, start, i, attempt, refresh = DAILY_REFRESH) {
@@ -125,6 +139,8 @@ export function buildDay(i, { start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULT
     for (const [k, v] of Object.entries(gen.stats.rejected)) stats.rejected[k] = (stats.rejected[k] ?? 0) + v;
     if (!gen.levels.length) continue;
     if (easy && winsAtParFromEnds(gen.levels[0])) { stats.rejected['par-from-ends'] = (stats.rejected['par-from-ends'] ?? 0) + 1; continue; }
+    // Only for remade days: days before the cutover are pinned as they were shipped.
+    if (addDays(start, i) >= DAILY_REFRESH.from && !solvesWithinBudget(gen.levels[0])) { stats.rejected['slow-solve'] = (stats.rejected['slow-solve'] ?? 0) + 1; continue; }
     if (gen.meta[0].usesTeleporter) stats.usesTeleporter++;
     const { id, ...rest } = gen.levels[0]; // drop the generator's temporary id
     return { level: withoutAnswer({ id: `${easy ? 'e' : 'd'}-${addDays(start, i)}`, ...rest }), stats };
@@ -207,6 +223,7 @@ async function main() {
     levels.push(b.level);
   }
   console.log(formatStats(total));
+  console.log(`rejected as slow to solve in the browser (over ${SOLVE_NODE_BUDGET} nodes): ${total.rejected['slow-solve'] ?? 0}`);
   const boards = new Set(levels.map((l) => l.tiles.join('/')));
   if (boards.size !== levels.length) throw new Error('two days share a board; change the seed');
   const daily = { id: size === 7 ? 'daily-easy' : 'daily', start: opts.start, levels };

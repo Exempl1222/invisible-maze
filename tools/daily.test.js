@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { parseLevel, buildableLines, findPath, solve, countAnswers, simulate, cutsAllRoutes, capViolation } from '../src/game/index.js';
 import { isRingAnswer, invalidBridges } from './generate.js';
 import { levelWithoutLimit } from '../assets/js/daily/judge.js';
-import { addDays, buildDaily, buildDay, daySeed, withoutAnswer, winsAtParFromEnds, dailyPar, easyPar, weekdayUTC, DAILY_DEFAULTS, DAILY_REFRESH } from './build-daily.js';
+import { SOLVE_NODE_BUDGET, solvesWithinBudget, addDays, buildDaily, buildDay, daySeed, withoutAnswer, winsAtParFromEnds, dailyPar, easyPar, weekdayUTC, DAILY_DEFAULTS, DAILY_REFRESH } from './build-daily.js';
 
 const file = fileURLToPath(new URL('../assets/levels/daily.json', import.meta.url));
 const daily = JSON.parse(readFileSync(file, 'utf8'));
@@ -179,15 +179,16 @@ test('shipped daily files have no "answer" key anywhere (v3.4)', () => {
 /** The fields a player's saved results depend on. */
 const playable = (l) => ({ id: l.id, size: l.size, tiles: l.tiles, rules: l.rules, moveLimit: l.moveLimit, wallBudget: l.wallBudget, par: l.par, parAnswers: l.parAnswers });
 const PRE_CUTOVER_SHA = {
-  daily: 'f2e401d16625af2ff3191eed41ef4675aae936f0dbac6a7df027935343908a07',
-  'daily-easy': 'a1dd91b6abac58aa93a86bc4ff58679771c3681519a0723bf306060f18fc7b65',
+  daily: 'ccb9a50478011fed9d1e11009c74eb1ec6afcebf1a1032cd20ea2b2ec471d2e4',
+  'daily-easy': '027573636920cad4cda073cb03edead9c37e93456aa0f21d95d350c2bcd95097',
 };
 
 test('days before the refresh date never change: their playable fields are pinned by hash (v3.4)', () => {
-  assert.equal(DAILY_REFRESH.from, '2026-11-12');
+  assert.equal(DAILY_REFRESH.from, '2026-11-08');
   for (const [name, file] of [['daily', daily], ['daily-easy', easy]]) {
     const before = file.levels.filter((l) => l.id.slice(2) < DAILY_REFRESH.from);
-    assert.equal(before.length, 16, `${name} has 16 days before 12 Nov`);
+    assert.equal(before.length, 12, `${name} has 12 days before 8 Nov (27 Oct to 7 Nov)`);
+    assert.equal(before.at(-1).id.slice(2), '2026-11-07');
     const sha = createHash('sha256').update(JSON.stringify(before.map(playable))).digest('hex');
     assert.equal(sha, PRE_CUTOVER_SHA[name], `${name}: a day before ${DAILY_REFRESH.from} changed`);
   }
@@ -195,14 +196,14 @@ test('days before the refresh date never change: their playable fields are pinne
 
 test('daySeed: unchanged before the refresh date, salted from it on', () => {
   const start = DAILY_DEFAULTS.start;
-  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 15, 0), `${DAILY_DEFAULTS.seed}-15-0`); // 2026-11-11
-  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 16, 0), `${DAILY_DEFAULTS.seed}-${DAILY_REFRESH.salt}-16-0`); // 2026-11-12
-  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 16, 3, null), `${DAILY_DEFAULTS.seed}-16-3`);
+  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 11, 0), `${DAILY_DEFAULTS.seed}-11-0`); // 2026-11-07
+  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 12, 0), `${DAILY_DEFAULTS.seed}-${DAILY_REFRESH.salt}-12-0`); // 2026-11-08
+  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 12, 3, null), `${DAILY_DEFAULTS.seed}-12-3`);
 });
 
 test('the refreshed days rebuild identically from the seed (Easy and Hard, the first refreshed day)', () => {
-  assert.deepEqual(buildDay(16, { size: 7 }).level, easy.levels[16]);
-  assert.deepEqual(buildDay(16, { size: 9 }).level, daily.levels[16]);
+  assert.deepEqual(buildDay(12, { size: 7 }).level, easy.levels[12]);
+  assert.deepEqual(buildDay(12, { size: 9 }).level, daily.levels[12]);
 });
 
 test('daily-easy: reproducible from the seed (the first days rebuild identically)', () => {
@@ -212,4 +213,23 @@ test('daily-easy: reproducible from the seed (the first days rebuild identically
 
 test('daily-easy: no level can be won at par using only fences beside the gnome or his house', () => {
   for (const l of easy.levels) assert.equal(winsAtParFromEnds(l), false, l.id);
+});
+
+test('every remade day solves at its par within the node budget (the exact call the browser worker makes)', () => {
+  assert.ok(SOLVE_NODE_BUDGET > 0 && SOLVE_NODE_BUDGET <= 50000, 'budget keeps the worst day near a second in Node');
+  for (const [name, file] of [['daily', daily], ['daily-easy', easy]]) {
+    const remade = file.levels.filter((l) => l.id.slice(2) >= DAILY_REFRESH.from);
+    assert.equal(remade.length, file.levels.length - 12, name);
+    for (const raw of remade) {
+      const s = solve(levelWithoutLimit(raw), { exactPar: raw.par, maxNodes: SOLVE_NODE_BUDGET });
+      assert.ok(s, `${raw.id} needs more than ${SOLVE_NODE_BUDGET} nodes to solve at par ${raw.par}`);
+      assert.equal(s.answer.length, raw.par, raw.id);
+      assert.equal(solvesWithinBudget(raw), true, raw.id);
+    }
+  }
+});
+
+test('solvesWithinBudget: a budget that is too small says no', () => {
+  const sunday = daily.levels.find((l) => l.par === 6 && l.id.slice(2) >= DAILY_REFRESH.from);
+  assert.equal(solvesWithinBudget(sunday, 5), false);
 });
