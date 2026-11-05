@@ -1726,3 +1726,87 @@ test('when the beat line arrives after the first draw, a second card is drawn an
   const beat = (await result(page).getAttribute('data-card-key')).match(/Beat (\d+)% of players/)[0];
   expect(calls[0].text).toContain(beat);
 });
+
+/* ---------- v3.5: midnight, bot check off, one reload on a mixed deploy ---------- */
+
+test.describe('v3.5 time and deploy hardening', () => {
+  const STATS = '/__stats';
+  const win = (date) => ({ tries: [{ fences: 3, won: true, base: 100, walls: [] }], hint: null, walls: [], done: true, finishedOn: date, startedOn: date, reviewing: false, sent: true });
+
+  test('a day begun at 23:59 and finished at 00:01 keeps the streak and still sends its result, dated the day it was begun', async ({ page }) => {
+    // Three Easy wins on 27 to 29 Oct, each finished on its own day. The player is on the 30th (day #4) at 23:58 Sydney.
+    await page.addInitScript(([key, days]) => {
+      try {
+        if (sessionStorage.getItem('seeded')) return;
+        sessionStorage.setItem('seeded', '1');
+        localStorage.setItem(key, JSON.stringify({ v: 2, easy: days, hard: {}, lastMode: 'easy', seenHowTo: true, device: 'device-midnight1' }));
+      } catch { /* storage blocked */ }
+    }, [KEY, { '2026-10-27': win('2026-10-27'), '2026-10-28': win('2026-10-28'), '2026-10-29': win('2026-10-29') }]);
+    const posts = [];
+    await page.route(`**${STATS}/**`, async (route) => {
+      const req = route.request();
+      if (req.method() === 'POST') posts.push(JSON.parse(req.postData()));
+      const reply = req.method() === 'POST' ? { ok: true, duplicate: false } : { players: 0, bands: { '100': 0, '80-99': 0, '60-79': 0, '30-59': 0, '1-29': 0, '0': 0 }, scores: {} };
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(reply) });
+    });
+    await page.clock.setSystemTime(new Date('2026-10-30T23:58:00+11:00'));
+    await openDay(page, `${url('easy')}&stats=${STATS}`);
+    await expect(page.locator('h1')).toHaveText('Daily #4');
+    await placeAll(page, level('easy', 3).answer);
+    await tryNow(page); // the first try is spent before midnight
+    expect((await saved(page)).easy['2026-10-30']).toMatchObject({ startedOn: '2026-10-30', done: false });
+    await page.clock.setSystemTime(new Date('2026-10-31T00:01:00+11:00')); // midnight passes while the player decides
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    expect((await saved(page)).easy['2026-10-30']).toMatchObject({ startedOn: '2026-10-30', finishedOn: '2026-10-31', done: true });
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0]).toMatchObject({ mode: 'easy', date: '2026-10-30', hint: false, tries: 1 });
+    await expect.poll(async () => (await saved(page)).easy['2026-10-30'].sent).toBe(true);
+    await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
+    await expect(statsCell(page, 'Streak')).toHaveText('4');
+    await expect(statsCell(page, 'Best streak')).toHaveText('4');
+  });
+
+  test('an archive day begun after its own date does not count toward the streak, even when finished before midnight', async ({ page }) => {
+    await page.clock.setSystemTime(new Date('2026-10-28T10:00:00+11:00'));
+    await winDay(page, 'easy', 0, url('easy', '2026-10-27'));
+    const rec = (await saved(page)).easy['2026-10-27'];
+    expect(rec.startedOn).toBeNull();
+    await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
+    await expect(statsCell(page, 'Played')).toHaveText('1');
+    await expect(statsCell(page, 'Streak')).toHaveText('0');
+  });
+
+  test('with no Turnstile site key (the default), finishing a day with stats on never touches Cloudflare', async ({ page }) => {
+    const external = [];
+    page.on('request', (r) => { if (/challenges\.cloudflare\.com/.test(r.url())) external.push(r.url()); });
+    const posts = [];
+    await page.route(`**${STATS}/**`, async (route) => {
+      const req = route.request();
+      if (req.method() === 'POST') posts.push(JSON.parse(req.postData()));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(req.method() === 'POST' ? { ok: true } : { players: 0, bands: { '100': 0, '80-99': 0, '60-79': 0, '30-59': 0, '1-29': 0, '0': 0 }, scores: {} }) });
+    });
+    await winDay(page, 'easy', 0, `${url('easy')}&stats=${STATS}`);
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0]).not.toHaveProperty('turnstile');
+    expect(external).toEqual([]);
+    expect(await page.locator('script[src*="cloudflare"]').count()).toBe(0);
+  });
+
+  test('a module that fails to load (a mixed deploy) reloads the page once and then works', async ({ page }) => {
+    let hits = 0;
+    await page.route('**/assets/js/daily/streak.js*', (route) => (++hits === 1 ? route.abort() : route.continue()));
+    await page.goto(url('easy'));
+    await expect(page.locator('#board .cell').first()).toBeVisible();
+    expect(hits).toBe(2);
+  });
+
+  test('if the module still fails after the one reload, the page does not reload again (no loop)', async ({ page }) => {
+    let hits = 0;
+    await page.route('**/assets/js/daily/streak.js*', (route) => { hits++; return route.abort(); });
+    await page.goto(url('easy'));
+    await expect.poll(() => hits).toBe(2);
+    await page.waitForTimeout(1500);
+    expect(hits).toBe(2);
+  });
+});
