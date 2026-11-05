@@ -21,11 +21,17 @@ Daily fence-building puzzle at gnomesweetgnome.app. Players place fences on grid
 - "See optimal solution" only appears once the day is done.
 - The Worker re-checks every submitted fence layout and computes the score itself; client scores are never trusted. Date window: UTC-12 minus 6 hours to UTC+14.
 - Stats are switched off: `STATS_URL` is `null`, nothing is sent or shown. Turnstile is built but off (`TURNSTILE_SITE_KEY` null, no secret).
-- The Worker always deploys on pushes to `main` (no change filter) when the Cloudflare secrets exist. The Pages deploy stamps `?v=<commit>` on own assets and the daily page reloads once on a failed module load.
+- The Worker always deploys on pushes to `main` (no change filter) when the Cloudflare secrets exist. The Pages deploy stamps `?v=<commit>` on own assets and the daily page reloads once on a failed module load or link error (the reload guard checks the `window.__gsgBooted` flag that `main.js` sets).
+- Days from 2026-11-08 were remade with no answer ever in git or the page (`DAILY_REFRESH`); 27 Oct to 7 Nov keep their old layouts, whose answers sit in git history (every player had reached those days by the merge). A hash test pins them.
+- Hint and solution run `solve(level, { exactPar })` in a worker; the generator rejects days over `SOLVE_NODE_BUDGET` (50000 nodes, about 0.9 s in Node). A finished day's answer is cached in localStorage (`answer-cache.js`); the hint never stores it.
+- Time: `startedOn` is set from the date the page loaded with (`realToday`), so a first try just after midnight still counts as begun on the puzzle's day; a begun-on-the-day finish counts until the end of the next local day. A finish late on that next day can keep the streak but fall outside the Worker's posting window, so it is not posted (accepted).
+- The Worker also requires the Turnstile token's `hostname` to be `gnomesweetgnome.app`. CI smoke-tests the stamped site (`tools/collect-site.sh`, `playwright.site.config.js`). `TURNSTILE_SECRET` is in the env of one deploy step only.
 - Shared links always bring people back to the main site to play. `play/?daily` redirects to `daily/`.
 
 ## Known and accepted limits (do not re-report)
 - Par is derivable with the bundled solver; the answer itself is not shipped.
+- Any day's answer can be computed in seconds from the public layout with the bundled solver (for example by posting to `solver-worker.js` in devtools). The goal is that it is never handed over, not that it cannot be found. Nothing client-side can stop a determined player.
+- A player can read a finished day's cached answer in their own localStorage; it is stored only after the day is done.
 - Future days' layouts are in the public repo and level files.
 - Streaks and stats live only in the player's localStorage (lost on clearing site data).
 - A player can change their device clock (affects only themselves, and the Worker's date window bounds what it can post).
@@ -54,4 +60,4 @@ GitHub repo invisible-maze, GitHub Pages, custom domain gnomesweetgnome.app, Clo
 - Structure: is there one implementation of the pathfinding and scoring rules, or two?
 
 ## Last reviewed
-4 Nov 2026 at `b0b72c0`. Verdict: not ready (19 findings). Fixes are on `fix/review-nov`.
+4 Nov 2026 at `b0b72c0`. Verdict: not ready (19 findings). Fixes are on `fix/review-nov`. Second review of that branch at `b08aa97` (5 Nov): merge with fixes (N1 to N9), addressed in the follow-up commits.
