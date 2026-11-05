@@ -7,7 +7,7 @@ Status: the Cloudflare account, the D1 database, the two GitHub secrets and the 
 1. **Account and database.** Done. The D1 database `gnome-stats` exists and its ID is in `worker/wrangler.toml`.
 2. **API token.** Done. It was made from the "Edit Cloudflare Workers" template, plus Account > D1 > Edit. The account ID is the second secret.
 3. **GitHub secrets.** Done: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (repo Settings, Secrets and variables, Actions).
-4. **First deploy.** It happens when the PR that adds `worker/` is merged to `main`: the `worker` job creates the tables and deploys the Worker (wrangler is pinned to 4.0.0). Later it runs only when `worker/`, the engine, the levels, the judge or the workflow file changed. If it ever needs a manual redeploy: Actions > "Test and deploy" > Run workflow, on `main` (a manual run always deploys).
+4. **First deploy.** It happens when the PR that adds `worker/` is merged to `main`: the `worker` job creates the tables and deploys the Worker (wrangler is pinned to 4.0.0). Later it runs on every push to `main` (and on a manual run: Actions > "Test and deploy" > Run workflow, on `main`), as long as the two Cloudflare secrets exist. There is no change filter: the Worker bundles shared files such as `config.js`, and a filter once missed one.
 5. **Find the Worker URL.** It is `https://gnome-sweet-gnome-stats.<your-subdomain>.workers.dev`. Read it from the "Deploy the Worker" step log, or in Cloudflare under Workers & Pages > gnome-sweet-gnome-stats > Settings > Domains & Routes.
 6. **Switch the page on.** Set that URL as `STATS_URL` in `assets/js/daily/config.js` and push. Until then the feature stays off.
 
@@ -17,3 +17,20 @@ Notes
 - Posts are limited to 10 a minute per caller address by a Workers Rate Limiting binding (`POST_LIMIT` in `wrangler.toml`), counted in memory by Cloudflare. The address is never stored.
 - No IP addresses are stored. Rows hold a random device id, the mode, the date, the score, the tries and whether the hint was used.
 - Local check of the handler (no Cloudflare needed): `node --test tools/worker-*.test.js`.
+
+## Turn on bot protection (Cloudflare Turnstile)
+
+Built and switched off. Without it anyone can post made-up scores. You do these steps once, in this order:
+
+1. In Cloudflare, go to Turnstile > Add widget. Name it "Gnome Sweet Gnome daily", add the hostname `gnomesweetgnome.app`, and choose the Managed widget mode. Copy the **site key** (public) and the **secret key** (private).
+2. Give the secret to the Worker, either way:
+   - from your computer: `cd worker && npx wrangler@4.0.0 secret put TURNSTILE_SECRET`, then paste the secret key; or
+   - as a GitHub secret named `TURNSTILE_SECRET` (repo Settings, Secrets and variables, Actions). The `worker` job puts it on the Worker at every deploy when it is not empty.
+3. Set `TURNSTILE_SITE_KEY` in `assets/js/daily/config.js` to the site key, and push to `main`.
+4. Set `STATS_URL` in `assets/js/daily/config.js` to `https://gnome-sweet-gnome-stats.gaoeric1234567890.workers.dev` (in the same push, if you like). The page now sends a result only with a Turnstile token, and the Worker refuses one without a good token (403).
+
+Order matters: put the secret on the Worker first (step 2), then switch the page on (3). A page that sends a token to a Worker with no secret still works (the token is ignored). A Worker with a secret and an old page without a key refuses every post (403), so those players' results stay unsent.
+
+To turn it off again: set `TURNSTILE_SITE_KEY` back to `null`, and delete the secret (`npx wrangler@4.0.0 secret delete TURNSTILE_SECRET` in `worker/`) and the GitHub secret.
+
+The token is a field in the JSON body (`turnstile`), so the CORS settings (`Content-Type` only) already allow it. Local check: `node --test tools/worker-*.test.js` (the tests fake Cloudflare's reply).

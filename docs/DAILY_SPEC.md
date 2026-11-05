@@ -2,6 +2,17 @@
 
 The daily as its own page, so it can ship alone with a link to the full game later. Decided by Eric, 27 Oct 2026. Rules of play are unchanged (`docs/GAME_SPEC.md`, rules v4); this spec covers only what is new around them.
 
+## v3.5: time, stats and deploy hardening (5 Nov)
+
+Fixes from the review. No game rules, scoring or levels change.
+
+- **Midnight finish (F3).** When the first try of a day is spent on the puzzle's own date, while it is the player's today, the record gets `startedOn` (that date). A day with `startedOn === date` counts as played on its day if it is finished by the end of the next calendar day, so a last try submitted at 00:01 keeps the streak and still sends its result (dated the puzzle's date). `finishedOn` stays as it was, for history. An archive day begun later has no `startedOn` and still doesn't count; an older save without the field behaves as before. Merging two tabs keeps the earlier `startedOn`. The one-day limit is a choice, marked `SPEC-QUESTION` in `record.js` (`countsOnDay`).
+- **Date window (F5).** The Worker accepts a post only for a date that is, or just was, a real local date somewhere: from the date at UTC-12 minus a 6 hour grace (so a finish after midnight still posts) up to the date at UTC+14. In `assets/js/daily/window.js`, shared by the Worker and the page, so the page never retries a day the server refuses. This replaces "UTC date plus or minus one".
+- **Legacy lost-day shape (F11).** `fences: null` with `tries: 3` is accepted only for dates before `FIVE_TRIES_FROM` (`2026-11-04`, in `config.js`): v3.1 went live on 3 Nov, so a day dated 3 Nov may still have been lost on 3 tries. For later dates only `tries: 5` is a lost day.
+- **Bot protection (F4), built and switched off.** Cloudflare Turnstile. `TURNSTILE_SITE_KEY` in `config.js` is `null`: nothing changes and no external script loads. When set, the page loads Cloudflare's script only when about to send a result, adds the token to the post as `turnstile`, and sends nothing if there is no token (as if the Worker were down; play is never blocked). When the Worker has a `TURNSTILE_SECRET`, it verifies the token with Cloudflare's siteverify before writing: a missing or refused token is 403, Cloudflare unreachable is 503 (the page retries). No secret, no check. Setup steps are in `worker/README.md`.
+- **Worker deploys (F6).** The change filter is gone: the `worker` job deploys on every push to `main` and every manual run (when the Cloudflare secrets exist). The Worker bundles `config.js` and more, and the filter had missed it. The job also sets `TURNSTILE_SECRET` on the Worker when that GitHub secret is non-empty.
+- **Cache busting (F7).** The deploy runs `node tools/stamp-version.mjs _site "$GITHUB_SHA"`, which appends `?v=<first 8 of the commit>` to every relative reference to our own `.js`, `.json` and `.css` in the collected site (script and link tags, static and dynamic imports, `new URL(..., import.meta.url)`, string constants such as `LEVEL_URL`). External and root-relative URLs are untouched and running it twice changes nothing. Locally there is still no build step. If a module fails to load on the daily page (old and new files mixed during a deploy), `reload-guard.js` reloads the page once (a `sessionStorage` flag stops any loop).
+
 ## v3.2: score card share and the custom domain (Eric, 3 Nov)
 
 Adds to v3; the share text format does not change.

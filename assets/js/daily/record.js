@@ -2,7 +2,10 @@
 // hand-edited value can never break the page or hand back a try. No DOM, no storage.
 //
 // Saved state: { easy: { date: record }, hard: { date: record }, lastMode, seenHowTo, v1Migrated, device }.
-// A record: { tries: [{ fences, won, base, walls }], hint, walls, done, finishedOn, reviewing, sent }.
+// A record: { tries: [{ fences, won, base, walls }], hint, walls, done, finishedOn, startedOn, reviewing, sent }.
+// `startedOn`: the player's local date when they spent the first try, set only if that was this record's own date
+// (a day begun on its own date can be finished just after midnight and still count, see countsOnDay). Null on an
+// older save and on an archive play begun later.
 // `device` is a random id made once per browser for the stats server (nothing personal). `sent`: this day's
 // result reached the server (see stats.js); once true it stays true through every merge.
 // `base` is a try's score before the hint; the shown score is derived (see score.js shownScore), so a
@@ -19,7 +22,7 @@ const DEVICE_ID = /^[A-Za-z0-9_-]{8,64}$/;
 export const cleanDevice = (v) => (typeof v === 'string' && DEVICE_ID.test(v) ? v : null);
 
 /** A fresh day: nothing tried yet. */
-export const freshDay = () => ({ tries: [], hint: null, walls: [], done: false, finishedOn: null, reviewing: false, sent: false });
+export const freshDay = () => ({ tries: [], hint: null, walls: [], done: false, finishedOn: null, startedOn: null, reviewing: false, sent: false });
 
 /** The state with nothing saved. */
 export const emptySaved = () => ({ easy: {}, hard: {}, lastMode: null, seenHowTo: false, v1Migrated: false, device: null });
@@ -66,8 +69,22 @@ export function cleanDay(d) {
   const done = d.done === true || tries.length >= MAX_TRIES; // all tries spent is a finished day, never a fresh board
   if (done && tries.length < 1) return freshDay(); // a finished day with no tries can't have happened
   const finishedOn = done && typeof d.finishedOn === 'string' && parseDate(d.finishedOn) !== null ? d.finishedOn : null;
+  const startedOn = tries.length > 0 && typeof d.startedOn === 'string' && parseDate(d.startedOn) !== null ? d.startedOn : null;
   const reviewing = !done && tries.length > 0 && tries.at(-1).won && d.reviewing !== false; // unset on an older save: a win still being decided
-  return { tries, hint, walls: cleanKeys(d.walls), done, finishedOn, reviewing, sent: done && d.sent === true };
+  return { tries, hint, walls: cleanKeys(d.walls), done, finishedOn, startedOn, reviewing, sent: done && d.sent === true };
+}
+
+/**
+ * Did this finished record (for puzzle date `date`) count as played on its own day? Yes if it was finished on
+ * `date`, or if the first try was spent on `date` (startedOn) and the day was finished by the end of the next
+ * calendar day (a finish just after midnight). A record with no finishedOn is an older save, taken as on the day.
+ * SPEC-QUESTION: the one-day limit on a started-on-the-day finish is mine; the brief only says started on its own day.
+ */
+export function countsOnDay(day, date) {
+  if (!day || !day.done) return false;
+  if (!day.finishedOn || day.finishedOn === date) return true;
+  const t = parseDate(date);
+  return day.startedOn === date && t !== null && day.finishedOn === new Date(t + 86400000).toISOString().slice(0, 10);
 }
 
 /**
@@ -87,6 +104,7 @@ export function mergeDay(a, b) {
     walls: base.walls,
     done: x.done || y.done,
     finishedOn: x.finishedOn ?? y.finishedOn,
+    startedOn: [x.startedOn, y.startedOn].filter(Boolean).sort()[0] ?? null, // the first try came first: the earlier date wins
     reviewing: (x.tries.length === y.tries.length ? base : longer).reviewing, // the copy with more tries knows best where the player is
     sent: x.sent || y.sent, // once the server has it, it stays sent
   });

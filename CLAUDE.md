@@ -22,6 +22,7 @@ assets/css/sprites.css tile, wall and gnome art placement
 assets/sprites/        generated art (36 SVGs: 35 sprites incl. 6 Sir Croakwell toads, plus icon-gnome.svg; and manifest.json). Never hand-edit
 tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mjs`
 tools/sprites.html     dev gallery of every sprite
+tools/stamp-version.mjs  deploy-only cache busting: appends ?v=<commit> to own .js/.json/.css references in _site (never run on the repo)
 tools/build-og.mjs     renders the link-preview image with Playwright: `npm run build:og` writes assets/og/daily.png (generated, never hand-edit)
 assets/og/             daily.png, the 1200x630 og:image
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs

@@ -7,7 +7,7 @@ import { capMessage, lineKey } from '../play/lines.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
 import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
 import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
-import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
+import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL, TURNSTILE_SITE_KEY } from './config.js';
 import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './score.js';
 import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
 import { freshDay, parseLineKey, mergeDay } from './record.js';
@@ -483,6 +483,9 @@ async function run() {
   const win = sim.result === 'win';
   // Settle the try before anything animates, so a reload can never give it back. adoptStored
   // brought in tries spent in other tabs first, so this one goes on top of them.
+  // The first try on the puzzle's own date, while it is the player's today, marks the day as begun on its day, so
+  // finishing it just after midnight still counts for the streak and the stats (record.js countsOnDay).
+  if (g.day.tries.length === 0 && !g.day.startedOn && date === localDateString()) g.day.startedOn = date;
   g.day.tries.push({
     fences: walls.length,
     won: win,
@@ -844,6 +847,12 @@ function sendResult(m, d, day) {
   if (!body) return Promise.resolve(false);
   const p = (async () => {
     try {
+      if (TURNSTILE_SITE_KEY) { // bot protection on: no token, no send (like the server being down; the next load retries)
+        const { getToken } = await import('./turnstile.js'); // only loads when a result is about to be sent
+        const token = await getToken();
+        if (!token) return false;
+        body.turnstile = token;
+      }
       const res = await fetch(`${STATS}/result`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const outcome = postOutcome(res.status);
       if (outcome !== 'retry') {
