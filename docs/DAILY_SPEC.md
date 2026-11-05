@@ -133,6 +133,16 @@ POST {STATS_URL}/result
 - New key `gnome-sweet-gnome:daily:v2`, `{ easy: { date: record }, hard: { date: record }, lastMode, seenHowTo }`. A record holds `tries` (array of `{ fences, won, base, walls }`; `base` is the score before the hint), `hint`, `walls` (current fences), `done`, `finishedOn`, `reviewing` (the last try won and Retry was not pressed yet). A try saved with only `score` is read as already docked: `base = hint ? min(100, score + 15) : score`. The cross-tab merge keeps the longer `tries` list.
 - On first load, v1 records become Hard records: one try, scored from their walls, the level's par and the hint, `done` and `finishedOn` kept. v1 is then left in place, unused.
 
+## v3.4: answers off the page (5 Nov)
+
+An independent review found every day's answer in the level files (all 180 days, future ones too), and the old in-page daily showed any date's puzzle. Changes:
+
+1. **No `answer` in `assets/levels/daily.json` or `daily-easy.json`.** `par` and `parAnswers` stay (par is needed for scoring). `tools/build-daily.js` never writes `answer` (`withoutAnswer`). The pack and lab files are untouched.
+2. **Days from 2026-11-12 on were remade.** Their old answers sit in git history. `DAILY_REFRESH` in `build-daily.js` adds a salt to those days' sub-seeds (`daySeed`); days before it keep their original seed and must not change (a hash test pins their playable fields). Same end date, same pars. To remake again, change the salt and build the pieces with `--from 16`.
+3. **The engine solves at a known par.** `solve(level, { exactPar })` searches only at that many walls and returns what the full solve returns (null if nothing wins there).
+4. **Hint and solution are solved in the browser, lazily.** `assets/js/daily/solver.js` starts the module worker `solver-worker.js` (relative import of `src/game`, which deploy copies) only when the player presses Hint or "See the optimal solution". While it works the button is disabled and `#status` says "Croakwell is thinking...". If the worker fails or takes over 20 s the page says so and does not spend the hint. Hint rules are as before, and the hint fence is saved as before (`day.hint`). Worst case on a laptop: about 6 s for a Hard Sunday (par 6), about 1 s for most Hard days, under 50 ms for Easy.
+5. **`play/?daily` is retired.** Any `?daily` on the play page goes to `../daily/`, keeping `mode` and `date`; the old in-page daily code and the "earn a hint from the daily" reward are removed. `assets/js/play/daily.js` stays (date helpers shared with the daily page and the Worker). A date after today lands on the daily page's "Not ready yet".
+
 ## Where it lives
 
 - Page: `daily/index.html`, served at `/daily/` on gnomesweetgnome.app. This is the link that gets shared.
