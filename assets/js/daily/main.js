@@ -23,6 +23,9 @@ import { drawCard, downloadBlob } from './card-draw.js';
 import { nextGnome, msToNextMinute } from './countdown.js';
 import { setupHowTo, setupStats, setupArchive } from './dialogs.js';
 
+// Tells reload-guard.js the modules linked and this one is running (a link error leaves it unset, and the guard reloads once).
+window.__gsgBooted = true;
+
 const STEP_MS = 220;
 /** The stats server, or null when everyone's scores are off (see config.js STATS_URL). */
 const STATS = statsUrl(location.search, location.hostname);

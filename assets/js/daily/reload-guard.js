@@ -22,8 +22,15 @@
     var m = String((e.reason && e.reason.message) || e.reason || '');
     if (/dynamically imported module|Importing a module script failed|error loading dynamically/i.test(m)) reloadOnce();
   });
+  // A link error (a module imports a name its dependency no longer exports) fires `error` on window with no
+  // element, and nothing else. So main.js sets window.__gsgBooted as its first statement, and a page that has not
+  // set it shortly after `load` failed to start: reload once. (Modules run before `load`, so a good page is booted by then.)
+  var BOOT_WAIT_MS = 1500;
+  window.addEventListener('load', function () {
+    setTimeout(function () { if (!window.__gsgBooted) reloadOnce(); }, BOOT_WAIT_MS);
+  });
   // A page that loaded cleanly forgets the flag, so the next mixed deploy can reload once again.
   window.addEventListener('load', function () {
-    setTimeout(function () { if (!failed) set(''); }, 3000);
+    setTimeout(function () { if (!failed && window.__gsgBooted) set(''); }, 3000);
   });
 })();
