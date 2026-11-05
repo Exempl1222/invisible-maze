@@ -12,6 +12,17 @@
   <link rel="stylesheet" href="../assets/css/site.css">
   <link rel="stylesheet" href="../assets/css/play.css">
   <link rel="stylesheet" href="../assets/css/sprites.css">
+  <script>
+    // The old in-page daily is retired (v3.4): any ?daily goes to the daily page, keeping mode and date.
+    (function () {
+      var q = new URLSearchParams(location.search);
+      if (!q.has('daily')) return;
+      var out = new URLSearchParams();
+      ['mode', 'date'].forEach(function (k) { if (q.has(k)) out.set(k, q.get(k)); });
+      var s = out.toString();
+      location.replace('../daily/' + (s ? '?' + s : ''));
+    })();
+  </script>
 </head>
 <body>
   <header class="wrap site-header">
@@ -36,11 +47,6 @@
     <noscript><p class="loading">The game needs JavaScript to run.</p></noscript>
 
     <div id="select-view" hidden></div>
-    <div id="daily-break" class="daily-note" hidden>
-      <p><strong>The daily is taking a break.</strong></p>
-      <p>There is no daily level for this date yet. Check back soon, or play the levels in the meantime.</p>
-      <a class="btn" href="./">Back to levels</a>
-    </div>
 
     <div id="game-view" class="game" hidden>
       <div class="stats" aria-label="Level limits">
@@ -63,7 +69,7 @@
           <button type="button" class="btn" id="go">Go</button>
         </div>
         <div class="hint-panel" id="hint-panel" role="region" aria-label="Out of hints" hidden>
-          <p><strong>Out of hints.</strong> Finish today's daily for 1 more. More hints from ads are coming soon.</p>
+          <p><strong>Out of hints.</strong> More hints from ads are coming soon.</p>
           <div class="hint-panel-actions">
             <button type="button" class="btn quiet" id="watch-ad" disabled>Watch an ad</button>
             <button type="button" class="btn quiet" id="hint-panel-close">Close</button>

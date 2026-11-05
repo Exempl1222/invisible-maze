@@ -1,16 +1,14 @@
 // Play page: level select, the game screen, and the glue between taps and the engine.
 import { parseLevel, simulate, cutsAllRoutes, wouldBreakCap, stars as scoreStars } from '../../../src/game/index.js';
 import { createBoard } from './board.js';
-import { loadProgress, recordWin, loadHints, hintCount, spendHint, earnDailyHint } from './storage.js';
+import { loadProgress, recordWin, loadHints, hintCount, spendHint } from './storage.js';
 import { renderSelect, renderLab } from './select.js';
 import { capMessage } from './lines.js';
 import { starsMarkup } from './icons.js';
 import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
 import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
-import { localDateString, parseDate, dayIndex, formatDaily } from './daily.js';
 
 const PACK_URL = '../assets/levels/pack-01.json';
-const DAILY_URL = '../assets/levels/daily.json';
 const LAB_URL = '../assets/levels/lab.json';
 const STEP_MS = 220;
 
@@ -20,7 +18,6 @@ const backEl = $('back');
 const selectView = $('select-view');
 const gameView = $('game-view');
 const boardEl = $('board');
-const breakEl = $('daily-break');
 const wallsUsedEl = $('walls-used');
 const parEl = $('par');
 const limitEl = $('move-limit');
@@ -36,8 +33,7 @@ const resultEl = $('result');
 let levels = [];
 let labLevels = []; // lab pack (rules v4), parsed
 let labFailed = false;
-let daily = null; // { start, levels } once daily.json has loaded
-let game = null; // { kind: 'level' | 'daily', index, level, board, state: 'editing' | 'running' | 'result', token }
+let game = null; // { kind: 'level' | 'lab', index, level, board, state: 'editing' | 'running' | 'result', token }
 
 let villain = null; // Sir Croakwell under the board: { setMood, cast }, or null if his sprites did not load
 const mood = (m) => villain?.setMood(m);
@@ -46,13 +42,12 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /* ---------- routing ---------- */
 
-/** What the URL asks for: the select screen, a pack level, or the daily (optionally for a given date). */
+/**
+ * What the URL asks for: the select screen, a pack level, or the lab. (The old in-page daily is gone: play/index.html
+ * sends `?daily` to the daily page before this runs, v3.4.)
+ */
 function routeFromUrl() {
   const q = new URLSearchParams(location.search);
-  if (q.has('daily')) {
-    const asked = q.get('date');
-    return { type: 'daily', date: parseDate(asked) !== null ? asked : localDateString() };
-  }
   if (q.has('lab')) {
     const k = Number(q.get('lab'));
     if (Number.isInteger(k) && k >= 1 && k <= labLevels.length) return { type: 'lab-level', index: k - 1 };
@@ -70,20 +65,17 @@ function navigate(url, { push = true } = {}) {
 }
 const toSelect = () => navigate('./');
 const toLevel = (i) => navigate(`./?level=${i + 1}`);
-const toDaily = () => navigate('./?daily');
 const toLab = () => navigate('./?lab');
 const toLabLevel = (i) => navigate(`./?lab=${i + 1}`);
-const toMode = (m) => (m === 'daily' ? toDaily() : m === 'lab' ? toLab() : toSelect());
+const toMode = (m) => (m === 'lab' ? toLab() : toSelect());
 
 async function render() {
   stopGame();
-  breakEl.hidden = true;
   const r = routeFromUrl();
   if (r.type === 'select') showSelect();
   else if (r.type === 'level') startGame({ kind: 'level', index: r.index, level: levels[r.index], title: `Level ${r.index + 1}` });
   else if (r.type === 'lab') showLab();
   else if (r.type === 'lab-level') startGame({ kind: 'lab', index: r.index, level: labLevels[r.index], title: `Lab ${r.index + 1}` });
-  else await showDaily(r.date);
 }
 
 /* ---------- level select ---------- */
@@ -107,49 +99,6 @@ function showLab() {
   selectView.hidden = false;
   document.title = 'Lab · Gnome Sweet Gnome';
   renderLab(selectView, labLevels, { onPick: toLabLevel, onMode: toMode, failed: labFailed });
-}
-
-/* ---------- daily ---------- */
-
-async function loadDaily() {
-  if (daily) return daily;
-  const res = await fetch(DAILY_URL);
-  if (!res.ok) throw new Error(`${res.status}`);
-  const data = await res.json();
-  daily = { start: data.start, levels: data.levels };
-  return daily;
-}
-
-async function showDaily(date) {
-  const pretty = formatDaily(date);
-  titleEl.textContent = 'Daily';
-  backEl.hidden = false;
-  selectView.hidden = true;
-  gameView.hidden = true;
-  let data;
-  try {
-    data = await loadDaily();
-  } catch {
-    showBreak('The daily did not load. Check your connection and try again.');
-    return;
-  }
-  if (routeFromUrl().type !== 'daily') return; // the player already moved on
-  const i = dayIndex(data.start, date);
-  if (i === null || i < 0 || i >= data.levels.length) {
-    showBreak();
-    return;
-  }
-  const level = parseLevel(data.levels[i]);
-  startGame({ kind: 'daily', index: i, level, title: `Daily, ${pretty}` });
-}
-
-function showBreak(message) {
-  titleEl.textContent = 'Daily';
-  document.title = 'Daily · Gnome Sweet Gnome';
-  gameView.hidden = true;
-  selectView.hidden = true;
-  breakEl.querySelector('strong').textContent = message || 'The daily is taking a break.';
-  breakEl.hidden = false;
 }
 
 /* ---------- game ---------- */
@@ -323,7 +272,6 @@ function finish(sim, walls) {
     const hintsUsed = g.board.hintLines().length;
     const earned = scoreStars(g.level.par, walls.length, g.level.wallBudget, hintsUsed);
     recordWin(g.level.id, earned); // keeps the highest ever earned
-    const gotHint = g.kind === 'daily' && earnDailyHint(g.level.id.slice(2));
     heading.textContent = 'Fenced in!';
     const starsEl = document.createElement('div');
     starsEl.className = 'result-stars';
@@ -345,18 +293,10 @@ function finish(sim, walls) {
       hp.textContent = `${plural(hintsUsed, 'hint')} used, \u2212${plural(hintsUsed, 'star')}.`;
       resultEl.appendChild(hp);
     }
-    if (gotHint) {
-      const hp = document.createElement('p');
-      hp.className = 'hint-used';
-      hp.id = 'hint-earned';
-      hp.textContent = `Daily done: +1 hint. You have ${hintCount()}.`;
-      resultEl.appendChild(hp);
-    }
     resultEl.appendChild(actions);
     const lastLevel = g.kind === 'level' && g.index === levels.length - 1;
     const lastLab = g.kind === 'lab' && g.index === labLevels.length - 1;
-    if (g.kind === 'daily') focusTarget = button('Back to levels', true, toSelect);
-    else if (g.kind === 'lab') focusTarget = lastLab ? button('All lab levels', true, toLab) : button('Next level', true, () => toLabLevel(g.index + 1));
+    if (g.kind === 'lab') focusTarget = lastLab ? button('All lab levels', true, toLab) : button('Next level', true, () => toLabLevel(g.index + 1));
     else if (lastLevel) focusTarget = button('All levels', true, toSelect);
     else focusTarget = button('Next level', true, () => toLevel(g.index + 1));
     button('Replay', false, () => replay());
