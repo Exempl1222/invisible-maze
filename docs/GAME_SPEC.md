@@ -95,7 +95,7 @@ A robot wants to reach the beacon and always takes the shortest route. Before it
 - Daily levels are generated offline in a batch (180 days) into `assets/levels/daily.json`, each verified like pack levels. Rules v4, 9x9, par 4 to 5 on weekdays and par 6 on Sundays (a weekly hard day). A single par answer is not required.
 - If today's date is outside the batch, the page says the daily is taking a break instead of erroring.
 - Best stars per date are saved like pack progress.
-- **Standalone daily (27 Oct):** the daily also ships as its own page, `/daily/`, with 3 tries a day, 1 free hint a day, streaks, stats and sharing. See `docs/DAILY_SPEC.md`.
+- **Standalone daily (27 Oct):** the daily also ships as its own page, `/daily/` (Easy and Hard, 5 tries a day, scored out of 100, a hint that costs 15 points, streaks, stats, sharing). Its rules live in `docs/DAILY_SPEC.md` ("Current rules"); they are not repeated here.
 
 ## Hints and ads
 

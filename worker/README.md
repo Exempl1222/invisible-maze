@@ -2,7 +2,7 @@
 
 This small server collects one score per player per day so the daily page can show everyone's spread. It runs free on Cloudflare. You do these steps once.
 
-Status: the Cloudflare account, the D1 database, the two GitHub secrets and the workers.dev subdomain are all done. What is left is the first deploy and one config line.
+Status: the Worker IS deployed (https://gnome-sweet-gnome-stats.gaoeric1234567890.workers.dev, first deployed 3 Nov 2026) and redeploys on every push to `main`. It is switched off on the page: `STATS_URL` in `assets/js/daily/config.js` is `null`, so nothing is sent or shown. Switching on is the last step below.
 
 1. **Account and database.** Done. The D1 database `gnome-stats` exists and its ID is in `worker/wrangler.toml`.
 2. **API token.** Done. It was made from the "Edit Cloudflare Workers" template, plus Account > D1 > Edit. The account ID is the second secret.
@@ -20,16 +20,16 @@ Notes
 
 ## Turn on bot protection (Cloudflare Turnstile)
 
-Built and switched off. Without it anyone can post made-up scores. You do these steps once, in this order:
+Built and switched off. Without it anyone can post made-up scores. While `STATS_URL` is `null` nothing posts at all, so the order below only matters once stats are on. Do the steps in this order (the Worker refuses posts without a token as soon as `TURNSTILE_SECRET` is set, so the page must be sending tokens by the time the secret is live):
 
 1. In Cloudflare, go to Turnstile > Add widget. Name it "Gnome Sweet Gnome daily", add the hostname `gnomesweetgnome.app`, and choose the Managed widget mode. Copy the **site key** (public) and the **secret key** (private).
-2. Give the secret to the Worker, either way:
-   - from your computer: `cd worker && npx wrangler@4.0.0 secret put TURNSTILE_SECRET`, then paste the secret key; or
-   - as a GitHub secret named `TURNSTILE_SECRET` (repo Settings, Secrets and variables, Actions). The `worker` job puts it on the Worker at every deploy when it is not empty.
-3. Set `TURNSTILE_SITE_KEY` in `assets/js/daily/config.js` to the site key, and push to `main`.
-4. Set `STATS_URL` in `assets/js/daily/config.js` to `https://gnome-sweet-gnome-stats.gaoeric1234567890.workers.dev` (in the same push, if you like). The page now sends a result only with a Turnstile token, and the Worker refuses one without a good token (403).
+2. In one change and one deploy, do both of these:
+   - set `TURNSTILE_SITE_KEY` in `assets/js/daily/config.js` to the site key, and
+   - give the secret to the Worker as a GitHub secret named `TURNSTILE_SECRET` (repo Settings, Secrets and variables, Actions). The `worker` job puts it on the Worker at every deploy when it is not empty. (Or from your computer: `cd worker && npx wrangler@4.0.0 secret put TURNSTILE_SECRET`.)
+   Add the GitHub secret first, then push the `config.js` change to `main`: that push deploys the page and the Worker together. Players with a cached old page may send without a token for a while and get 403; their results stay unsent and retry on a later load.
+3. Only then set `STATS_URL` in `assets/js/daily/config.js` to `https://gnome-sweet-gnome-stats.gaoeric1234567890.workers.dev` (it can go in the same push as step 2 once the secret exists). The page now sends a result only with a Turnstile token, and the Worker refuses one without a good token (403).
 
-Order matters: put the secret on the Worker first (step 2), then switch the page on (3). A page that sends a token to a Worker with no secret still works (the token is ignored). A Worker with a secret and an old page without a key refuses every post (403), so those players' results stay unsent.
+Why this order: a page that sends a token to a Worker with no secret still works (the token is ignored), but a Worker with a secret and a page without a site key refuses every post (403). Never set the secret while the live page can post without a token.
 
 To turn it off again: set `TURNSTILE_SITE_KEY` back to `null`, and delete the secret (`npx wrangler@4.0.0 secret delete TURNSTILE_SECRET` in `worker/`) and the GitHub secret.
 

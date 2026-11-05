@@ -1,4 +1,4 @@
-// The standalone daily page: two puzzles a day (Easy 7x7 and Hard 9x9), three tries, a score out
+// The standalone daily page: two puzzles a day (Easy 7x7 and Hard 9x9), five tries, a score out
 // of 100, one hint, a share button. Reuses the engine, the board and the sprites. It does not
 // import the full game's main.js or storage.
 import { simulate, cutsAllRoutes, wouldBreakCap } from '../../../src/game/index.js';
@@ -493,7 +493,7 @@ async function run() {
     walls: walls.map(lineKey),
   });
   if (g.day.tries.length >= MAX_TRIES) {
-    g.day.done = true; // after try 3 the day ends on its own
+    g.day.done = true; // after the last try (MAX_TRIES) the day ends on its own
     g.day.finishedOn = localDateString();
   }
   g.day.reviewing = win && !g.day.done; // a reload on the win screen shows the choice again

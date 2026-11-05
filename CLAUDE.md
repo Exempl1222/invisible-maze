@@ -39,6 +39,7 @@ src/game/             puzzle engine, pure JS, no DOM (Phase 3)
 tests/                Playwright browser tests (phone + desktop)
 docs/ROADMAP.md       phases and status
 docs/GAME_SPEC.md     rules; source of truth for game logic
+REVIEW_CONTEXT.md     what an independent review checks against: scope, rules, accepted limits, severity anchors
 .claude/skills/       project skills (maze-playtest)
 ```
 
@@ -61,6 +62,7 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 7. **Verify before claiming done.** Run `npm test`, and for UI changes run the maze-playtest skill and look at the screenshots.
 8. **Art is generated.** Change `tools/build-sprites.mjs` and rebuild, never hand-edit `assets/sprites/`.
 9. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
+10. **Keep REVIEW_CONTEXT.md current.** Any change to a game rule, daily rule, scope or deploy setup updates REVIEW_CONTEXT.md in the same PR. Independent reviews check against it.
 
 ## Agent roles
 
@@ -69,6 +71,7 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 | Orchestrator | Opus | Spec, architecture, reviews, merges | Grind out boilerplate |
 | Builder | Sonnet | Implements one roadmap parcel against the spec and tests | Change the spec |
 | QA | Sonnet, fresh context | Plays the build with maze-playtest, files findings | Fix what it finds (keeps it honest) |
+| Reviewer | Opus, fresh context | Independent read-only audit against REVIEW_CONTEXT.md before merge | Fix what it finds |
 
 Give a Builder one parcel, the spec section it needs, and the definition of done from the roadmap. Nothing else.
 
