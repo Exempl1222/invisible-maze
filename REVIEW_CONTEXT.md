@@ -16,7 +16,7 @@ Daily fence-building puzzle at gnomesweetgnome.app. Players place fences on grid
 - Easy is 7x7, Hard is 9x9, with separate streaks and stats.
 - No fence limit. Par is not shown during play. The answer is never shipped: the daily JSON has no `answer`, and the browser solver (`solve(level, { exactPar })` in a module worker) computes hint and solution on demand. Par IS in the data by accepted design.
 - 5 tries a day (`MAX_TRIES`), best try counts. Score out of 100: par = 100, down to 30 at 3x par. 5 losses = 0. Hint costs 15 points (no free hint), floor 15 on a hinted win.
-- Streak: a won day counts if finished on its own date, or if its first try was spent on that date (`startedOn`) and it was finished by the end of the next day. Archive catch-ups never count.
+- Streak: a won day counts if finished on its own date, or if the page opened it as the player's today (`startedOn`, the load-time date) and it was finished by the end of the next day. Archive catch-ups never count.
 - Archive covers the last 30 days (today plus 29). Future dates show "not ready".
 - "See optimal solution" only appears once the day is done.
 - The Worker re-checks every submitted fence layout and computes the score itself; client scores are never trusted. Date window: UTC-12 minus 6 hours to UTC+14.
