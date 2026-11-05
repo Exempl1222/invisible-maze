@@ -21,7 +21,7 @@ export function modeTabs(current, onPick) {
     a.href = href;
     a.textContent = label;
     if (id === current) a.setAttribute('aria-current', 'page');
-    if (id !== 'daily') { // Daily is its own page now (Easy and Hard); the old in-page daily stays reachable by deep link
+    if (id !== 'daily') { // Daily is its own page (Easy and Hard); the old in-page daily is gone
       a.addEventListener('click', (e) => {
         e.preventDefault();
         onPick(id);

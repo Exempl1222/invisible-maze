@@ -1,6 +1,7 @@
 // The home-page replay shows a real level. This checks every claim it makes against the engine.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { TEASER as T } from '../assets/js/teaser-data.js';
 import { parseLevel, findPath, simulate, solve, countAnswers, cutsAllRoutes, capViolation } from '../src/game/index.js';
 
@@ -51,4 +52,13 @@ test('teaser: the walls leave a route, and the replay walks it until the robot i
 test('teaser: its bridges span the river', async () => {
   const { invalidBridges } = await import('./generate.js');
   assert.deepEqual(invalidBridges(T.tiles), []);
+});
+
+test('teaser: its board is not any shipped daily (the page shows its answer, so a daily must never match)', () => {
+  const board = T.tiles.join('/');
+  for (const f of ['daily.json', 'daily-easy.json']) {
+    const file = JSON.parse(readFileSync(new URL(`../assets/levels/${f}`, import.meta.url), 'utf8'));
+    for (const l of file.levels) assert.notEqual(l.tiles.join('/'), board, `${f} ${l.id}`);
+    assert.ok(!file.levels.some((l) => l.id === T.id), 'the teaser id is not a daily id');
+  }
 });

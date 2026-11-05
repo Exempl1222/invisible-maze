@@ -7,7 +7,6 @@ import { parseLevel, solve, cutsAllRoutes, buildableLines, wouldBreakCap, capVio
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const pack = readJson('../assets/levels/pack-01.json');
 const labData = readJson('../assets/levels/lab.json');
-const dailyData = readJson('../assets/levels/daily.json');
 const levels = pack.levels.map((l) => parseLevel(l));
 const labLevels = labData.levels.map((l) => parseLevel(l));
 
@@ -344,19 +343,17 @@ test('hint: at 0 the button opens the out-of-hints panel with a disabled ad butt
   await tapOn(page, hintBtn(page), hasTouch);
   const panel = page.locator('#hint-panel');
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText("Out of hints. Finish today's daily for 1 more. More hints from ads are coming soon.");
+  await expect(panel).toContainText("Out of hints. More hints from ads are coming soon.");
   await expect(panel.getByRole('button', { name: 'Watch an ad' })).toBeDisabled();
   await expect(bars(page)).toHaveCount(0);
   await panel.getByRole('button', { name: 'Close' }).click();
   await expect(panel).toBeHidden();
 });
 
-test('hint: works on a daily level and on a lab level', async ({ page }) => {
-  await page.goto('/play/?daily&date=2026-10-28');
-  await expect(page.locator('#board .cell')).toHaveCount(81);
+test('hint: works on a pack level and on a lab level', async ({ page }) => {
+  await openPack(page, 1);
   await hintBtn(page).click();
-  const dailyLv = parseLevel(dailyData.levels[1]);
-  expect(answerKeys(dailyLv).has(await hintBars(page).getAttribute('data-line'))).toBe(true);
+  expect(answerKeys(levels[0]).has(await hintBars(page).getAttribute('data-line'))).toBe(true);
   await openLab(page, 5);
   await expect(hintBtn(page)).toHaveText('Hint (2)');
   await hintBtn(page).click();
@@ -378,64 +375,4 @@ test('hint: the inventory works in memory when storage is blocked', async ({ pag
   await expect(hintBars(page)).toHaveCount(1);
   await expect(hintBtn(page)).toHaveText('Hint (2)');
   expect(errors).toEqual([]);
-});
-
-/* ---------- earning hints from the daily ---------- */
-
-async function winDaily(page, date, idx) {
-  await page.goto(`/play/?daily&date=${date}`);
-  await expect(page.locator('#board .cell')).toHaveCount(81);
-  await placeAll(page, parseLevel(dailyData.levels[idx]).answer);
-  await go(page).click();
-  await expect(result(page)).toHaveAttribute('data-result', 'win');
-}
-
-test('daily: finishing a daily earns 1 hint, once per date', async ({ page, hasTouch }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await winDaily(page, '2026-10-28', 1);
-  await expect(page.locator('#hint-earned')).toHaveText('Daily done: +1 hint. You have 4.');
-  expect((await stored(page, HINTS)).count).toBe(4);
-  // the same date again: no second hint
-  await winDaily(page, '2026-10-28', 1);
-  await expect(page.locator('#hint-earned')).toHaveCount(0);
-  expect((await stored(page, HINTS)).count).toBe(4);
-  // a different date pays out
-  await winDaily(page, '2026-10-29', 2);
-  await expect(page.locator('#hint-earned')).toHaveText('Daily done: +1 hint. You have 5.');
-  expect((await stored(page, HINTS)).count).toBe(5);
-  // and the new count shows on a level
-  await openPack(page, 1);
-  await expect(hintBtn(page)).toHaveText('Hint (5)');
-  void hasTouch;
-});
-
-test('daily: a lost daily earns nothing, and the inventory stops at 10', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/play/?daily&date=2026-10-28');
-  await expect(page.locator('#board .cell')).toHaveCount(81);
-  await go(page).click(); // no walls: the robot gets through
-  await expect(result(page)).toHaveAttribute('data-result', 'lose');
-  expect(await page.evaluate((k) => localStorage.getItem(k), HINTS)).toBeNull();
-
-  await setStorage(page, HINTS, { v: 1, count: 10, earned: [] });
-  await page.reload();
-  await expect(hintBtn(page)).toHaveText('Hint (10)');
-  await placeAll(page, parseLevel(dailyData.levels[1]).answer);
-  await go(page).click();
-  await expect(result(page)).toHaveAttribute('data-result', 'win');
-  await expect(page.locator('#hint-earned')).toHaveCount(0);
-  expect((await stored(page, HINTS)).count).toBe(10);
-});
-
-test('hints: a hinted daily win still earns the daily hint and scores one star lower', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/play/?daily&date=2026-10-28');
-  await expect(page.locator('#board .cell')).toHaveCount(81);
-  const lv = parseLevel(dailyData.levels[1]);
-  await hintBtn(page).click();
-  const hinted = await hintBars(page).getAttribute('data-line');
-  await placeAll(page, lv.answer.filter((w) => w.join(',') !== hinted));
-  await go(page).click();
-  await expect(result(page).getByRole('img', { name: '2 of 3 stars' })).toBeVisible();
-  await expect(page.locator('#hint-earned')).toHaveText('Daily done: +1 hint. You have 3.'); // 3 - 1 spent + 1 earned
 });

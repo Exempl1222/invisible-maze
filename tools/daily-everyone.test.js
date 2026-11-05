@@ -80,14 +80,32 @@ test('utcDate is the UTC calendar day', () => {
   assert.equal(utcDate(new Date('2026-10-28T23:59:59Z')), '2026-10-28');
 });
 
-test('pendingResults: yesterday is only retried while the server would still take it (UTC day -1 to +1)', () => {
+test('pendingResults: a day is retried only while the server would still take it (window.js)', () => {
   const win = [W(3, 100, ['0,3,D'])];
   const days = { easy: { '2026-10-27': done({ tries: win, finishedOn: '2026-10-27' }), '2026-10-28': done({ tries: win, finishedOn: '2026-10-28' }) } };
-  const list = (utc) => pendingResults(days, '2026-10-28', utc).map((p) => p.date).sort();
-  assert.deepEqual(list('2026-10-28'), ['2026-10-27', '2026-10-28']);
-  assert.deepEqual(list('2026-10-27'), ['2026-10-27', '2026-10-28'], 'a player ahead of UTC: both are within a day');
-  assert.deepEqual(list('2026-10-29'), ['2026-10-28'], 'a player behind UTC: yesterday is too old now');
-  assert.deepEqual(list('2026-10-30'), [], 'and so is today, two UTC days on');
+  const list = (iso) => pendingResults(days, '2026-10-28', new Date(iso)).map((p) => p.date).sort();
+  assert.deepEqual(list('2026-10-28T12:00:00Z'), ['2026-10-27', '2026-10-28']);
+  assert.deepEqual(list('2026-10-27T12:00:00Z'), ['2026-10-27', '2026-10-28'], 'a player ahead of UTC');
+  assert.deepEqual(list('2026-10-28T17:59:00Z'), ['2026-10-27', '2026-10-28'], 'the 6 hour grace after UTC-12 is not over');
+  assert.deepEqual(list('2026-10-28T18:00:00Z'), ['2026-10-28'], 'yesterday is too old once the grace is over');
+  assert.deepEqual(list('2026-10-30T12:00:00Z'), [], 'and so is today, two days on');
+  assert.deepEqual(list('2026-10-26T09:59:00Z'), [], 'a clock behind a real one: not yet a date anyone has reached');
+});
+
+test('midnight: a day begun on its own date and finished after midnight is still sent, with the date it was begun on', () => {
+  const win = [W(3, 100, ['0,3,D'])];
+  const late = done({ tries: win, finishedOn: '2026-11-05', startedOn: '2026-11-04' });
+  const body = resultBody({ device: 'device-abc123', mode: 'easy', date: '2026-11-04', day: late });
+  assert.deepEqual(body, { device: 'device-abc123', mode: 'easy', date: '2026-11-04', fences: [[0, 3, 'D']], hint: false, tries: 1 });
+  // 00:01 on 5 Nov in Sydney is 13:01 UTC on 4 Nov
+  const got = pendingResults({ easy: { '2026-11-04': late } }, '2026-11-05', new Date('2026-11-04T13:01:00Z'));
+  assert.deepEqual(got.map((p) => p.date), ['2026-11-04']);
+  // an archive play of the 4th begun on the 5th, or a save with no startedOn, is still not sent
+  const archive = done({ tries: win, finishedOn: '2026-11-05', startedOn: '2026-11-05' });
+  const older = done({ tries: win, finishedOn: '2026-11-05' });
+  assert.equal(resultBody({ device: 'device-abc123', mode: 'easy', date: '2026-11-04', day: archive }), null);
+  assert.equal(resultBody({ device: 'device-abc123', mode: 'easy', date: '2026-11-04', day: older }), null);
+  assert.deepEqual(pendingResults({ easy: { '2026-11-04': archive, '2026-11-03': older } }, '2026-11-05', new Date('2026-11-04T13:01:00Z')), []);
 });
 
 const reply = (o = {}) => ({ players: 14, bands: { 100: 5, '80-99': 3, '60-79': 2, '30-59': 2, '1-29': 1, 0: 1 }, scores: { 100: 5, 88: 3, 70: 2, 40: 2, 20: 1, 0: 1 }, ...o });

@@ -2,7 +2,7 @@
 
 A mobile-first, fence-building puzzle. A garden gnome is heading home by the shortest path; build wooden fences on the lines between tiles so his walk is too long, using as few fences as you can. Rivers, bridges and hollow stumps (teleporters) get in the way. (The repo and the engine still say `invisible-maze`, robot and beacon.)
 
-**Status:** website live, rules locked, engine next. See [docs/ROADMAP.md](docs/ROADMAP.md).
+**Status:** live at https://gnomesweetgnome.app with the full game (rules v4, 30 levels) and the daily page (Easy and Hard, 5 tries, score out of 100, share card). The stats Worker is deployed but switched off on the page. A review-fix phase is in review. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Run it locally
 

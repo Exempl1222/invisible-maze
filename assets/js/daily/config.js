@@ -9,6 +9,13 @@ export const MAX_TRIES = 5;
 /** The old cap. A day lost on 3 tries was finished then and stays finished and sendable (score 0). */
 export const LEGACY_MAX_TRIES = 3;
 
+/**
+ * The first puzzle date played entirely under the 5-try rule. v3.1 went live on 3 Nov 2026 (about 18:00 Sydney),
+ * so a day dated up to 3 Nov may have been lost on 3 tries. The Worker accepts a no-win post with LEGACY_MAX_TRIES
+ * only for dates before this one.
+ */
+export const FIVE_TRIES_FROM = '2026-11-04';
+
 /** The one localStorage key for the daily, separate from the full game's. */
 export const STORAGE_KEY = 'gnome-sweet-gnome:daily:v2';
 
@@ -26,3 +33,9 @@ export const LEVEL_URL = { easy: '../assets/levels/daily-easy.json', hard: '../a
  * nothing is sent and nothing is shown. Leave it null until the Worker is deployed (see worker/README.md).
  */
 export const STATS_URL = null;
+
+/**
+ * Cloudflare Turnstile site key (public). `null` turns bot protection off: nothing changes and no external script
+ * loads. Set it only together with the Worker's TURNSTILE_SECRET (see worker/README.md, "Turn on bot protection").
+ */
+export const TURNSTILE_SITE_KEY = null;
