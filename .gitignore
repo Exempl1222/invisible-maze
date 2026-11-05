@@ -3,3 +3,5 @@ test-results/
 playwright-report/
 _site/
 .DS_Store
+_smoke_site/
+test-results-site/

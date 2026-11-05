@@ -29,11 +29,20 @@ jobs:
       - run: npm run test:e2e
         env:
           CI: "true"
+      - name: Smoke test the stamped site
+        # The deploy job's exact collect and stamp steps, served and loaded in a browser (home, daily, play).
+        run: |
+          tools/collect-site.sh _smoke_site "$GITHUB_SHA"
+          SITE_DIR=_smoke_site npx playwright test -c playwright.site.config.js
+        env:
+          CI: "true"
       - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-results
-          path: test-results/
+          path: |
+            test-results/
+            test-results-site/
           retention-days: 7
 
   deploy:
@@ -54,16 +63,8 @@ jobs:
         with:
           node-version: 22
       - name: Collect the public site
-        run: |
-          mkdir _site
-          cp -r index.html play daily assets _site/
-          if [ -d src/game ] && ls src/game/*.js >/dev/null 2>&1; then
-            mkdir -p _site/src && cp -r src/game _site/src/
-            find _site/src -name '*.test.js' -delete
-          fi
-          touch _site/.nojekyll
-          # Cache busting: no build step locally, so the deploy stamps ?v=<commit> on every own .js/.json/.css reference.
-          node tools/stamp-version.mjs _site "$GITHUB_SHA"
+        # Shared with the test job's smoke test. Stamps ?v=<commit> on every own .js/.json/.css reference (cache busting).
+        run: tools/collect-site.sh _site "$GITHUB_SHA"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -84,7 +85,6 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
     steps:
       - name: Check the Cloudflare secrets
         id: secrets
@@ -112,6 +112,9 @@ jobs:
       - name: Set the bot-protection secret (only if TURNSTILE_SECRET is a non-empty GitHub secret)
         if: steps.secrets.outputs.go == 'true'
         working-directory: worker
+        env:
+          # Only this step sees the secret, not the wrangler steps above (their npm dependencies are not locked).
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
         run: |
           if [ -n "$TURNSTILE_SECRET" ]; then
             printf '%s' "$TURNSTILE_SECRET" | npx --yes wrangler@4.0.0 secret put TURNSTILE_SECRET
