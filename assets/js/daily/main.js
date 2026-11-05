@@ -132,9 +132,19 @@ function showBreak(message, more) {
   breakEl.hidden = false;
 }
 
+/**
+ * The day as the player should see it. While the gnome walks, the try that started the walk is already
+ * saved (so a reload can't give it back) but stays hidden from Best and the pips until he stops.
+ */
+function shownDay() {
+  const { day, state } = game;
+  if (state !== 'running') return day;
+  return { ...day, tries: day.tries.slice(0, -1), done: false };
+}
+
 /** Filled pips are tries left; a won try is a tick; spent lost tries are empty. */
 function renderPips() {
-  const { tries, done } = game.day;
+  const { tries, done } = shownDay();
   [...pipsEl.children].forEach((pip, i) => {
     pip.className = i < tries.length ? (tries[i].won ? 'won' : '') : !done ? 'left' : '';
   });
@@ -159,7 +169,7 @@ function updateCounters() {
   const { board, day, state } = game;
   const used = board.wallList().length;
   fencesEl.textContent = String(used);
-  const best = dayScore(day);
+  const best = dayScore(shownDay());
   bestEl.textContent = best > 0 ? String(best) : '-';
   const mine = used - board.hintLines().length;
   const editing = state === 'editing';
@@ -167,7 +177,12 @@ function updateCounters() {
   hintBtn.disabled = !editing || day.hint !== null || solving;
   hintBtn.textContent = day.hint !== null ? 'Hint used' : `Hint (-${HINT_COST})`;
   goBtn.disabled = !editing;
-  goBtn.textContent = day.tries.length === 0 ? 'Try' : `Try again (${MAX_TRIES - day.tries.length} left)`;
+  const shown = shownDay(); // mid-walk: as if the try in flight hasn't happened yet (pips and Best match)
+  goBtn.textContent = shown.tries.length === 0 ? 'Try' : `Try again (${MAX_TRIES - shown.tries.length} left)`;
+  // Stats and Archive read the saved days, which already hold the try in flight (and on the last try,
+  // the finished day), so they would give the result away. Closed until the gnome stops.
+  const walking = state === 'running';
+  for (const id of ['stats-btn', 'archive-btn']) $(id).disabled = walking;
   renderPips();
 }
 
@@ -490,8 +505,9 @@ async function run() {
   const walls = g.board.wallList();
   const sim = simulate(g.level, walls);
   const win = sim.result === 'win';
-  // Settle the try before anything animates, so a reload can never give it back. adoptStored
-  // brought in tries spent in other tabs first, so this one goes on top of them.
+  // Settle (save) the try before anything animates, so a reload can never give it back. What the player
+  // sees holds it back until the walk ends: see shownDay() and the Stats/Archive lock in updateCounters.
+  // adoptStored brought in tries spent in other tabs first, so this one goes on top of them.
   // The first try on a puzzle the page opened as its today (realToday, read when the page loaded, not now) marks the
   // day as begun on its day, so a first try just after midnight and a finish by the end of the next day still count
   // for the streak and the stats (record.js startedOnFor, countsOnDay).

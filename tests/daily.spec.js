@@ -488,6 +488,106 @@ test.describe('with the walk animation on', () => {
     await expect(left(page)).toHaveCount(4);
     expect((await saved(page)).easy['2026-10-27'].tries).toHaveLength(1);
   });
+
+  /** Everything on screen that could give a try's result away, plus where the gnome is. */
+  const snapshot = (page) => page.evaluate(() => {
+    const $ = (id) => document.getElementById(id);
+    const r = $('robot');
+    return {
+      pos: `${r.dataset.x},${r.dataset.y}`,
+      pose: r.dataset.state,
+      busy: $('board').getAttribute('aria-busy'),
+      result: !$('result').hidden,
+      status: $('status').textContent,
+      best: $('best-score').textContent,
+      pips: [...$('pips').children].map((p) => p.className).join('|'),
+      pipsLabel: $('pips').getAttribute('aria-label'),
+      go: $('go').textContent,
+      dialogsOff: $('stats-btn').disabled && $('archive-btn').disabled,
+    };
+  });
+
+  /**
+   * Press Try on a paused clock and step it 50ms at a time until the walk is over (aria-busy goes off).
+   * For the whole walk nothing may change from before the press: no result panel, no verdict in the
+   * status line, Best, the pips and the Try label as they were, and Stats and Archive closed (they read
+   * the saved days, which already hold this try). Returns the snapshot from just after the walk.
+   */
+  async function tryAndWatch(page, { win }) {
+    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1000));
+    const base = await snapshot(page);
+    expect(base.dialogsOff, 'Stats and Archive should be open before the walk').toBe(false);
+    await tryBtn(page).click();
+    const walk = [];
+    let after = null;
+    for (let t = 0; t < 400; t++) { // 20s of faked time: the walk must be over well before this
+      const f = await snapshot(page);
+      if (f.busy === 'false') { after = f; break; }
+      walk.push(f);
+      await page.clock.runFor(50);
+    }
+    expect(after, 'the walk never ended').not.toBeNull();
+    expect(new Set(walk.map((f) => f.pos)).size, 'the gnome should have walked').toBeGreaterThan(3);
+    expect(walk.some((f) => f.pose === 'walk'), 'the walk should have animated').toBe(true);
+    for (const f of walk) {
+      expect(f.result, 'the result panel showed mid-walk').toBe(false);
+      expect(f.status, 'the status line gave the verdict mid-walk').not.toMatch(/out of 100|made it home|Fenced in/);
+      expect(f.best, 'Best changed mid-walk').toBe(base.best);
+      expect(f.pips, 'the pips changed mid-walk').toBe(base.pips);
+      expect(f.pipsLabel, 'the pips label changed mid-walk').toBe(base.pipsLabel);
+      expect(f.go, 'the Try label changed mid-walk').toBe(base.go);
+      expect(f.dialogsOff, 'Stats or Archive could be opened mid-walk').toBe(true);
+    }
+    // A win: the last walking frame has him stopped, shrugging, where the result shows him.
+    // (A loss with tries left sends him back to the start, so his position moves on purpose.)
+    if (win) {
+      expect(walk.at(-1).pose).toBe('shrug');
+      expect(after.pos).toBe(walk.at(-1).pos);
+    }
+    // Once he stops, everything catches up at once and the dialogs open again.
+    expect(after.pips).not.toBe(base.pips);
+    expect(after.dialogsOff).toBe(false);
+    if (win) {
+      expect(after.result).toBe(true);
+      expect(after.best).not.toBe(base.best);
+    } else {
+      expect(after.result).toBe(false);
+      expect(after.status).toMatch(/made it home/);
+    }
+    await expect(page.locator('#board')).toHaveAttribute('aria-busy', 'false');
+    await page.clock.resume();
+    return after;
+  }
+
+  test('a win: the score only shows once the gnome\'s walk has finished', async ({ page }) => {
+    await openDay(page);
+    await placeAll(page, level('easy').answer);
+    await tryAndWatch(page, { win: true });
+    await expect(page.locator('#board')).toHaveClass(/locked/);
+    await expect(result(page)).toBeVisible();
+    await expect(score(page)).toHaveText('100 / 100');
+  });
+
+  test('a loss with tries left: nothing says he made it home until he gets there', async ({ page }) => {
+    await openDay(page);
+    await tryAndWatch(page, { win: false }); // an empty board: he walks straight home
+    await expect(tryBtn(page)).toHaveText('Try again (4 left)');
+    await expect(left(page)).toHaveCount(4);
+  });
+
+  test('the last try: Day done and the score only show once the walk has finished', async ({ page }) => {
+    await openDay(page);
+    for (const label of ['Try', 'Try again (4 left)', 'Try again (3 left)', 'Try again (2 left)']) {
+      await expect(tryBtn(page)).toHaveText(label);
+      await tryBtn(page).click();
+      await page.clock.runFor(8000);
+      await settle(page);
+    }
+    await placeAll(page, level('easy').answer);
+    await tryAndWatch(page, { win: true });
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    await expect(page.locator('#status')).toContainText('Day done. 100 out of 100.');
+  });
 });
 
 test('the hint costs 15 points, can be used once, stays through Reset, and shows in the share text', async ({ page }) => {
