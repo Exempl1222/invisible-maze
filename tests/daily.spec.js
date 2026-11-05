@@ -1882,6 +1882,16 @@ test.describe('v3.5 time and deploy hardening', () => {
     await expect(statsCell(page, 'Best streak')).toHaveText('4');
   });
 
+  test('a page opened before midnight whose first try lands after midnight still records the puzzle date as startedOn', async ({ page }) => {
+    await page.clock.setSystemTime(new Date('2026-10-30T23:58:00+11:00'));
+    await openDay(page, url('easy'));
+    await expect(page.locator('h1')).toHaveText('Daily #4');
+    await placeAll(page, level('easy', 3).answer);
+    await page.clock.setSystemTime(new Date('2026-10-31T00:01:00+11:00')); // midnight passes before the first try
+    await tryNow(page);
+    expect((await saved(page)).easy['2026-10-30']).toMatchObject({ startedOn: '2026-10-30' });
+  });
+
   test('an archive day begun after its own date does not count toward the streak, even when finished before midnight', async ({ page }) => {
     await page.clock.setSystemTime(new Date('2026-10-28T10:00:00+11:00'));
     await winDay(page, 'easy', 0, url('easy', '2026-10-27'));

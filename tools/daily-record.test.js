@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { bestScore } from '../assets/js/daily/score.js';
 import { MAX_TRIES } from '../assets/js/daily/config.js';
-import { cleanDevice, countsOnDay, freshDay, emptySaved, cleanDay, parseSaved, serialize, parseLineKey, mergeDay, mergeSaved, migrateV1 } from '../assets/js/daily/record.js';
+import { cleanDevice, countsOnDay, startedOnFor, freshDay, emptySaved, cleanDay, parseSaved, serialize, parseLineKey, mergeDay, mergeSaved, migrateV1 } from '../assets/js/daily/record.js';
 
 const W = (fences, base) => ({ fences, won: true, base });
 const L = (fences = 3) => ({ fences, won: false, base: 0 });
@@ -340,4 +340,20 @@ test('countsOnDay: finished on the day, or begun on it and finished by the next 
   assert.equal(countsOnDay(fin({ finishedOn: null }), '2026-11-04'), true, 'no finishedOn: an older save');
   assert.equal(countsOnDay(cleanDay({ tries: [L()] }), '2026-11-04'), false, 'not done');
   assert.equal(countsOnDay(null, '2026-11-04'), false);
+});
+
+test('startedOnFor: the page\'s load-time today decides, so a first try just after midnight still records the puzzle date', () => {
+  const fresh = freshDay();
+  // page opened 23:50 on 4 Nov (loadToday), first try at 00:01 on 5 Nov: the clock now says 5 Nov, the rule does not look
+  assert.equal(startedOnFor(fresh, '2026-11-04', '2026-11-04'), '2026-11-04');
+  // the same record finished at 00:30 on 5 Nov counts, and one finished after the end of 5 Nov does not
+  const done = (finishedOn) => cleanDay({ tries: [L()], done: true, finishedOn, startedOn: startedOnFor(fresh, '2026-11-04', '2026-11-04') });
+  assert.equal(countsOnDay(done('2026-11-05'), '2026-11-04'), true);
+  assert.equal(countsOnDay(done('2026-11-06'), '2026-11-04'), false);
+  // a page that opened an older day (archive) or a later one never marks a start
+  assert.equal(startedOnFor(fresh, '2026-11-03', '2026-11-04'), null, 'archive day');
+  assert.equal(startedOnFor(fresh, '2026-11-05', '2026-11-04'), null, 'a future day is not playable anyway');
+  // an existing startedOn is kept; a record that already has tries and no startedOn stays without (an older save or an archive day)
+  assert.equal(startedOnFor(cleanDay({ tries: [L()], startedOn: '2026-11-04' }), '2026-11-04', '2026-11-05'), '2026-11-04');
+  assert.equal(startedOnFor(cleanDay({ tries: [L()] }), '2026-11-04', '2026-11-04'), null);
 });

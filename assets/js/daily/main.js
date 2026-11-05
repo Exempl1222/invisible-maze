@@ -10,7 +10,7 @@ import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL, TURNSTILE_SITE_KEY } from './config.js';
 import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './score.js';
 import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
-import { freshDay, parseLineKey, mergeDay } from './record.js';
+import { freshDay, parseLineKey, mergeDay, startedOnFor } from './record.js';
 import { levelWithoutLimit } from './judge.js';
 import { solveInWorker } from './solver.js';
 
@@ -486,9 +486,10 @@ async function run() {
   const win = sim.result === 'win';
   // Settle the try before anything animates, so a reload can never give it back. adoptStored
   // brought in tries spent in other tabs first, so this one goes on top of them.
-  // The first try on the puzzle's own date, while it is the player's today, marks the day as begun on its day, so
-  // finishing it just after midnight still counts for the streak and the stats (record.js countsOnDay).
-  if (g.day.tries.length === 0 && !g.day.startedOn && date === localDateString()) g.day.startedOn = date;
+  // The first try on a puzzle the page opened as its today (realToday, read when the page loaded, not now) marks the
+  // day as begun on its day, so a first try just after midnight and a finish by the end of the next day still count
+  // for the streak and the stats (record.js startedOnFor, countsOnDay).
+  g.day.startedOn = startedOnFor(g.day, date, realToday);
   g.day.tries.push({
     fences: walls.length,
     won: win,

@@ -78,13 +78,27 @@ export function cleanDay(d) {
  * Did this finished record (for puzzle date `date`) count as played on its own day? Yes if it was finished on
  * `date`, or if the first try was spent on `date` (startedOn) and the day was finished by the end of the next
  * calendar day (a finish just after midnight). A record with no finishedOn is an older save, taken as on the day.
- * SPEC-QUESTION: the one-day limit on a started-on-the-day finish is mine; the brief only says started on its own day.
+ * The one-day limit is the rule (decided 5 Nov): the day must be finished by the end of the next local day. A
+ * finish late on that next day can keep the streak yet fall outside the Worker's posting window (UTC-12 minus 6 h,
+ * window.js), so the result is not posted; the streak is local and does not depend on the post.
  */
 export function countsOnDay(day, date) {
   if (!day || !day.done) return false;
   if (!day.finishedOn || day.finishedOn === date) return true;
   const t = parseDate(date);
   return day.startedOn === date && t !== null && day.finishedOn === new Date(t + 86400000).toISOString().slice(0, 10);
+}
+
+/**
+ * The `startedOn` a record should have when a try is about to be spent. `loadToday` is the player's local date when the
+ * page loaded, not the date now: a page that opened this puzzle as its today keeps that even if the first try lands
+ * just after midnight. An existing startedOn stays, a record with tries already has its answer, and an archive day
+ * (a date other than the page's today) never gets one.
+ */
+export function startedOnFor(day, date, loadToday) {
+  if (day.startedOn) return day.startedOn;
+  if (day.tries.length > 0) return null;
+  return date === loadToday ? date : null;
 }
 
 /**
