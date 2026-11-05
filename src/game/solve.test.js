@@ -357,3 +357,25 @@ test('v4: the cap prunes the search (three sides of the start is never an answer
     assert.ok(near.length <= 2);
   }
 });
+
+test('exactPar: searches only at that par and returns the same answer as the full solve, every time', () => {
+  const lv = parseLevel(SPEC_LEVEL);
+  const full = solve(lv);
+  const at = solve(lv, { exactPar: full.par });
+  assert.deepEqual(at, full);
+  assert.deepEqual(solve(lv, { exactPar: full.par }), at, 'same input, same answer');
+  assert.equal(solve(lv, { exactPar: full.par - 1 }), null, 'nothing wins in fewer walls');
+  assert.equal(simulate(lv, at.answer).result, 'win');
+});
+
+test('exactPar 0: a level that is already a win gives the empty answer; otherwise null', () => {
+  const longWay = parseLevel(makeLevel(['R...B', '#####', '#####', '#####', '#####'], { moveLimit: 2 }));
+  assert.deepEqual(solve(longWay, { exactPar: 0 }), { par: 0, answer: [] });
+  assert.equal(solve(parseLevel(SPEC_LEVEL), { exactPar: 0 }), null);
+});
+
+test('exactPar must be a non-negative integer', () => {
+  const lv = parseLevel(SPEC_LEVEL);
+  assert.throws(() => solve(lv, { exactPar: -1 }), /exactPar/);
+  assert.throws(() => solve(lv, { exactPar: 2.5 }), /exactPar/);
+});

@@ -87,13 +87,18 @@ function toWalls(level, idxs) {
 
 /**
  * @param {object} level parsed level
- * @param {{maxPar?: number, maxNodes?: number}} [opts] give up (return null) beyond this many walls, or after
- *   exploring this many search states (a deterministic work budget for the offline generator; null then means "not found")
+ * @param {{maxPar?: number, maxNodes?: number, exactPar?: number}} [opts] give up (return null) beyond this many walls, or after
+ *   exploring this many search states (a deterministic work budget for the offline generator; null then means "not found").
+ *   `exactPar`: search only at this many walls, skipping the shallower searches (for a client that already knows par, so
+ *   the answer is not shipped). At the true par it returns exactly what the full solve returns; below it, null.
  * @returns {{par:number, answer:number[][]} | null} answer is [x, y, "R"|"D"] walls; null if no wall set wins
  */
 export function solve(level, opts = {}) {
+  if (opts.exactPar !== undefined && (!Number.isInteger(opts.exactPar) || opts.exactPar < 0)) {
+    throw new Error(`exactPar must be a non-negative integer, got ${opts.exactPar}`);
+  }
   const { buildable, pool, take, drop } = setup(level);
-  const limit = Math.min(pool.length, opts.maxPar ?? Infinity);
+  const limit = Math.min(pool.length, opts.exactPar ?? opts.maxPar ?? Infinity);
   const mask = new Uint8Array(level.size * level.size * 2);
   const chosen = [];
   let seen;
@@ -125,7 +130,7 @@ export function solve(level, opts = {}) {
   }
 
   try {
-    for (let k = 0; k <= limit; k++) {
+    for (let k = opts.exactPar ?? 0; k <= limit; k++) {
       seen = new Set();
       if (dfs(k)) return { par: chosen.length, answer: toWalls(level, chosen) };
     }
