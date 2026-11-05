@@ -12,6 +12,7 @@ import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './
 import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
 import { freshDay, parseLineKey, mergeDay } from './record.js';
 import { levelWithoutLimit } from './judge.js';
+import { solveInWorker } from './solver.js';
 
 import { loadStore, getDay, saveDay, getDevice, markSent, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
 import { classifyDate, archiveRows } from './archive.js';
@@ -78,6 +79,7 @@ let villain = null; // Sir Croakwell under the board: { setMood, cast }, or null
 let cardBlob = null; // the latest score card PNG, ready before the player taps Share
 let cardKey = ''; // what the card in cardBlob (or being drawn) was made from
 let cardBlobInfo = null; // { key, beat }: what cardBlob was drawn from, so the shared text always matches the image
+let solving = false; // the solver worker is running for a hint or the solution: those buttons wait
 let playToken = 0; // bumps whenever the board replays, so a walk cut short by a toggle stops drawing
 
 /* ---------- page chrome ---------- */
@@ -158,7 +160,7 @@ function updateCounters() {
   const mine = used - board.hintLines().length;
   const editing = state === 'editing';
   clearBtn.disabled = mine === 0 || !editing;
-  hintBtn.disabled = !editing || day.hint !== null;
+  hintBtn.disabled = !editing || day.hint !== null || solving;
   hintBtn.textContent = day.hint !== null ? 'Hint used' : `Hint (-${HINT_COST})`;
   goBtn.disabled = !editing;
   goBtn.textContent = day.tries.length === 0 ? 'Try' : `Try again (${MAX_TRIES - day.tries.length} left)`;
@@ -291,7 +293,7 @@ async function boot() {
 function startDay(raw, number) {
   const level = levelWithoutLimit(raw);
   const day = getDay(mode, date) || freshDay();
-  game = { level, number, day, state: 'editing', board: null, solution: false, beat: null };
+  game = { level, raw, answer: null, number, day, state: 'editing', board: null, solution: false, beat: null };
   titleEl.textContent = `Daily #${number}`;
   if (isArchive) {
     const tag = document.createElement('span');
@@ -400,18 +402,53 @@ function fits(line) {
   return !wouldBreakCap(level, walls, line) && !cutsAllRoutes(level, [...walls, line]);
 }
 
-function useHint() {
-  if (!game || game.state !== 'editing' || game.day.hint !== null) return;
+const THINKING = 'Croakwell is thinking...';
+const SOLVE_FAILED = 'The hint could not be worked out just now. Nothing was spent. Try again.';
+const SOLUTION_FAILED = 'The solution could not be worked out just now. Try again.';
+
+/**
+ * The par answer for the game on screen, worked out in the browser on first need (the hint or the solution
+ * button) and then kept for this page load. Rejects if the solver fails or takes too long.
+ */
+async function answerFor(g) {
+  if (g.answer) return g.answer;
+  g.answer = await solveInWorker(g.raw);
+  return g.answer;
+}
+
+async function useHint() {
+  if (!game || game.state !== 'editing' || game.day.hint !== null || solving) return;
   statusEl.classList.remove('refused');
   if (adoptStored()) return;
   if (game.day.hint !== null) {
     setStatus('The hint was already used in another tab.');
     return;
   }
-  const { board, level, day } = game;
-  const answer = level.answer;
+  const g = game;
+  let answer;
+  solving = true;
+  hintBtn.disabled = true;
+  setStatus(THINKING);
+  try {
+    answer = await answerFor(g);
+  } catch {
+    solving = false;
+    if (game === g && g.state === 'editing') { refused(SOLVE_FAILED); updateCounters(); } // the hint is not spent
+    return;
+  }
+  solving = false;
+  // The player may have pressed Try, or another tab may have used the hint, while the solver worked.
+  if (game !== g || g.state !== 'editing') return;
+  if (adoptStored()) return;
+  if (g.day.hint !== null) {
+    updateCounters();
+    setStatus('The hint was already used in another tab.');
+    return;
+  }
+  const { board, level, day } = g;
   if (!Array.isArray(answer) || answer.length === 0) {
     refused('Today has no hint.');
+    updateCounters();
     return;
   }
   // Hint = one fence of the stored answer. If every answer fence is already down, one of the player's
@@ -420,6 +457,7 @@ function useHint() {
   const line = missing.length === 0 ? answer[0] : missing.find(fits);
   if (!line || (missing.length > 0 && !fits(line))) {
     refused(NO_ROOM); // generic on purpose: it must not say which fences are right
+    updateCounters();
     return;
   }
   if (missing.length === 0) board.setWall(line, false);
@@ -586,6 +624,28 @@ async function toggleSolution(button, note) {
   const g = game;
   if (!g || g.state !== 'done') return;
   const { board, level, day } = g;
+  if (!g.solution && solving) return;
+  if (!g.solution) {
+    // First time: work the answer out in the browser (nothing of it is in the page before this).
+    solving = true;
+    button.disabled = true;
+    setStatus(THINKING);
+    note.textContent = THINKING;
+    try {
+      await answerFor(g);
+    } catch {
+      solving = false;
+      button.disabled = false;
+      note.textContent = SOLUTION_FAILED;
+      setStatus(SOLUTION_FAILED);
+      return;
+    }
+    solving = false;
+    button.disabled = false;
+    setStatus('');
+    if (game !== g || g.state !== 'done' || g.solution) return;
+    note.textContent = '';
+  }
   const token = ++playToken;
   g.solution = !g.solution;
   board.resetRun();
@@ -593,7 +653,7 @@ async function toggleSolution(button, note) {
   const instant = g.solution ? reducedMotion() : true;
   let walls;
   if (g.solution) {
-    walls = level.answer.map((w) => [...w]);
+    walls = g.answer.map((w) => [...w]);
     for (const w of walls) board.setWall(w, true, { hint: true });
     button.textContent = 'Hide the solution';
     note.textContent = `Par ${level.par}: one way to fence him in with ${plural(level.par, 'fence')}.`;

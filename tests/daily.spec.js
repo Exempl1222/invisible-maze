@@ -5,11 +5,12 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { handle } from '../worker/src/handle.js';
 import { fakeD1 } from '../tools/worker-fake-d1.js';
+import { withAnswer } from './answers.js';
 import { parseLevel, buildableLines, capViolation, cutsAllRoutes } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const data = { easy: readJson('../assets/levels/daily-easy.json'), hard: readJson('../assets/levels/daily.json') };
-const level = (mode, i = 0) => data[mode].levels[i]; // i = day index, 0 is 27 Oct 2026, #1
+const level = (mode, i = 0) => withAnswer(data[mode].levels[i]); // i = day index, 0 is 27 Oct 2026, #1; the answer is solved by the engine (the files hold none)
 const KEY = 'gnome-sweet-gnome:daily:v2';
 const V1_KEY = 'gnome-sweet-gnome:daily:v1';
 const NOON = (date) => new Date(`${date}T12:00:00+11:00`);
@@ -1104,6 +1105,120 @@ test.describe('the optimal solution toggle', () => {
     await solBtn(page).click();
     await expect(bars(page)).toHaveCount(lv.answer.length);
     await expect(hintBars(page)).toHaveCount(1);
+  });
+});
+
+/* ---------- answers off the page (v3.4) ---------- */
+
+test.describe('the answer is solved in the browser, on demand', () => {
+  const solBtn = (page) => page.locator('#solution-btn');
+  const status = (page) => page.locator('#status');
+  const THINKING = 'Croakwell is thinking...';
+  const solverRequests = (page) => {
+    const urls = [];
+    page.on('request', (r) => { if (r.url().includes('solver-worker')) urls.push(r.url()); });
+    return urls;
+  };
+
+  test('the level files are served without an answer, and no solver is fetched until Hint', async ({ page }) => {
+    const urls = solverRequests(page);
+    const bodies = [];
+    page.on('response', async (r) => { if (/assets\/levels\/daily(-easy)?\.json/.test(r.url())) bodies.push(await r.text()); });
+    await openDay(page, url('hard'));
+    await expect.poll(() => bodies.length).toBeGreaterThan(0);
+    for (const b of bodies) {
+      expect(b).not.toMatch(/"answer"/);
+      expect(Object.keys(JSON.parse(b).levels[0])).not.toContain('answer');
+    }
+    await placeAll(page, level('hard').answer.slice(0, 1)); // playing does not need the solver either
+    expect(urls).toEqual([]);
+    await hintBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(1);
+    expect(urls.length).toBeGreaterThan(0);
+  });
+
+  test('the hint waits for the solver: the button is disabled and the status says Croakwell is thinking, then the hint lands', async ({ page }) => {
+    await page.route('**/solver-worker.js', async (route) => {
+      await new Promise((r) => setTimeout(r, 700)); // a slow phone
+      await route.continue();
+    });
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(hintBtn(page)).toBeDisabled();
+    await expect(status(page)).toHaveText(THINKING);
+    await expect(hintBars(page)).toHaveCount(0); // nothing yet, nothing spent
+    await expect(hintBars(page)).toHaveCount(1);
+    await expect(hintBtn(page)).toHaveText('Hint used');
+    await expect(status(page)).toContainText('Hint placed');
+    const lv = level('easy');
+    expect(lv.answer.map((w) => w.join(','))).toContain(await hintBars(page).getAttribute('data-line'));
+    expect((await saved(page)).easy['2026-10-27'].hint).not.toBeNull();
+  });
+
+  test('if the solver fails the hint is not spent and a retry works', async ({ page }) => {
+    await page.route('**/solver-worker.js', (route) => route.abort());
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(status(page)).toContainText('Nothing was spent');
+    await expect(hintBtn(page)).toBeEnabled();
+    await expect(hintBtn(page)).toHaveText('Hint (-15)');
+    await expect(hintBars(page)).toHaveCount(0);
+    expect((await saved(page)).easy['2026-10-27']?.hint ?? null).toBeNull();
+    await page.unroute('**/solver-worker.js');
+    await hintBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(1);
+    await expect(hintBtn(page)).toHaveText('Hint used');
+  });
+
+  test('if the solver takes over 20 seconds the hint gives up, says so, and is not spent', async ({ page }) => {
+    await page.route('**/solver-worker.js', () => {}); // never answers
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(status(page)).toHaveText(THINKING);
+    await page.clock.runFor(20500);
+    await expect(status(page)).toContainText('Nothing was spent');
+    await expect(hintBtn(page)).toBeEnabled();
+    await expect(hintBars(page)).toHaveCount(0);
+  });
+
+  test('the solution is solved when asked for: after the day is done, the button waits for the solver, then shows the answer', async ({ page }) => {
+    const urls = solverRequests(page);
+    const lv = level('easy');
+    const extra = extraFences(lv, 1);
+    await openDay(page);
+    await placeAll(page, [...lv.answer, ...extra]);
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    expect(urls).toEqual([]); // finishing the day does not solve anything
+    await page.route('**/solver-worker.js', async (route) => {
+      await new Promise((r) => setTimeout(r, 700));
+      await route.continue();
+    });
+    await solBtn(page).click();
+    await expect(solBtn(page)).toBeDisabled();
+    await expect(status(page)).toHaveText(THINKING);
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    await expect(solBtn(page)).toBeEnabled();
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    for (const w of lv.answer) await expect(page.locator(`#board .wall-bar[data-hint="1"][data-line="${w.join(',')}"]`)).toHaveCount(1);
+  });
+
+  test('if the solver fails after the day, the solution says so and the button can be pressed again', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await placeAll(page, [...lv.answer, ...extraFences(lv, 1)]);
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    await page.route('**/solver-worker.js', (route) => route.abort());
+    await solBtn(page).click();
+    await expect(page.locator('#solution-note')).toContainText('could not be worked out');
+    await expect(solBtn(page)).toBeEnabled();
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await page.unroute('**/solver-worker.js');
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
   });
 });
 
