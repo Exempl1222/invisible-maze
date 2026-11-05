@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseLevel, buildableLines, capViolation, cutsAllRoutes, simulate, solve } from '../src/game/index.js';
-import { handle, summarize, ALLOWED_ORIGINS } from '../worker/src/handle.js';
+import { handle, summarize, ALLOWED_ORIGINS, TURNSTILE_HOSTNAME } from '../worker/src/handle.js';
 import { FIVE_TRIES_FROM } from '../assets/js/daily/config.js';
 import { scoreFor, shownScore } from '../assets/js/daily/score.js';
 import { judgeFences, levelWithoutLimit } from '../assets/js/daily/judge.js';
@@ -523,7 +523,7 @@ test('Turnstile: a token Cloudflare refuses is a 403 and writes nothing', async 
 });
 
 test('Turnstile: a good token is checked with the secret at siteverify, then the result is saved', async () => {
-  const f = fakeSiteverify({ success: true });
+  const f = fakeSiteverify({ success: true, hostname: TURNSTILE_HOSTNAME });
   const { res, db } = await postWith({ TURNSTILE_SECRET: 's3cret' }, payload({ turnstile: 'good-token' }), { fetch: f });
   assert.equal(res.status, 200);
   assert.equal(db.results.size, 1);
@@ -536,12 +536,23 @@ test('Turnstile: a good token is checked with the secret at siteverify, then the
   assert.equal(form.get('remoteip'), null, 'the caller address is never forwarded');
 });
 
+test('Turnstile: a token solved on another site (or with no hostname reported) is a 403 and writes nothing', async () => {
+  assert.equal(TURNSTILE_HOSTNAME, 'gnomesweetgnome.app');
+  for (const hostname of ['evil.example', 'exempl1222.github.io', 'www.gnomesweetgnome.app', 'gnomesweetgnome.app.evil.example', undefined]) {
+    const f = fakeSiteverify({ success: true, ...(hostname === undefined ? {} : { hostname }) });
+    const { res, db } = await postWith({ TURNSTILE_SECRET: 's3cret' }, payload({ turnstile: 'good-token' }), { fetch: f });
+    assert.equal(res.status, 403, String(hostname));
+    assert.equal((await bodyOf(res)).error, 'bot check failed');
+    assert.equal(db.results.size, 0);
+  }
+});
+
 test('Turnstile: an invalid result is refused before any lookup, and Cloudflare being down is a 503 (the page retries)', async () => {
-  const f = fakeSiteverify({ success: true });
+  const f = fakeSiteverify({ success: true, hostname: TURNSTILE_HOSTNAME });
   const bad = await postWith({ TURNSTILE_SECRET: 's' }, payload({ date: '2026-10-20', turnstile: 't' }), { fetch: f });
   assert.equal(bad.res.status, 400);
   assert.equal(f.calls.length, 0);
-  for (const f2 of [fakeSiteverify({}, { throws: true }), fakeSiteverify({ success: true }, { status: 500 })]) {
+  for (const f2 of [fakeSiteverify({}, { throws: true }), fakeSiteverify({ success: true, hostname: TURNSTILE_HOSTNAME }, { status: 500 })]) {
     const { res, db } = await postWith({ TURNSTILE_SECRET: 's' }, payload({ turnstile: 't' }), { fetch: f2 });
     assert.equal(res.status, 503);
     assert.equal(db.results.size, 0);

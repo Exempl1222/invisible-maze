@@ -22,7 +22,7 @@ Notes
 
 Built and switched off. Without it anyone can post made-up scores. While `STATS_URL` is `null` nothing posts at all, so the order below only matters once stats are on. Do the steps in this order (the Worker refuses posts without a token as soon as `TURNSTILE_SECRET` is set, so the page must be sending tokens by the time the secret is live):
 
-1. In Cloudflare, go to Turnstile > Add widget. Name it "Gnome Sweet Gnome daily", add the hostname `gnomesweetgnome.app`, and choose the Managed widget mode. Copy the **site key** (public) and the **secret key** (private).
+1. In Cloudflare, go to Turnstile > Add widget. Name it "Gnome Sweet Gnome daily", add the hostname `gnomesweetgnome.app`, and choose the Managed widget mode. Copy the **site key** (public) and the **secret key** (private). The Worker also requires Cloudflare to report the token's `hostname` as `gnomesweetgnome.app` (`TURNSTILE_HOSTNAME` in `src/handle.js`).
 2. In one change and one deploy, do both of these:
    - set `TURNSTILE_SITE_KEY` in `assets/js/daily/config.js` to the site key, and
    - give the secret to the Worker as a GitHub secret named `TURNSTILE_SECRET` (repo Settings, Secrets and variables, Actions). The `worker` job puts it on the Worker at every deploy when it is not empty. (Or from your computer: `cd worker && npx wrangler@4.0.0 secret put TURNSTILE_SECRET`.)

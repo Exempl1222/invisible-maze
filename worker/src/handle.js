@@ -27,6 +27,9 @@ const NO_RESULT = `a day with no win takes all ${MAX_TRIES} tries`;
 const MAX_FENCES = 400;
 const DEVICE = /^[A-Za-z0-9_-]{8,64}$/;
 const MAX_TOKEN = 2048; // Turnstile tokens are up to 2048 characters
+// The only site a Turnstile token may have been solved on (siteverify reports it as `hostname`). The old github.io
+// address is left out on purpose: GitHub redirects it to the custom domain, so no page can show the widget there.
+export const TURNSTILE_HOSTNAME = 'gnomesweetgnome.app';
 export const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 /** The stats bands as the server names them, best first. */
@@ -93,7 +96,7 @@ async function checkTurnstile(token, secret, doFetch) {
     const res = await doFetch(SITEVERIFY_URL, { method: 'POST', body: new URLSearchParams({ secret, response: token }) });
     if (!res.ok) return 'down';
     const out = await res.json();
-    return out && out.success === true ? 'ok' : 'bad';
+    return out && out.success === true && out.hostname === TURNSTILE_HOSTNAME ? 'ok' : 'bad';
   } catch {
     return 'down';
   }
