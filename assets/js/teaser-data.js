@@ -1,10 +1,10 @@
-// Data for the home-page hero replay: one real level (a daily level, rules v4) with its true par
+// Data for the home-page hero replay: one real level (rules v4; it was made as a daily once, but it is not any shipped daily now, tools/teaser.test.js checks that) with its true par
 // answer, the robot's true free route and the long walk it takes once the walls are down. Computed
 // with the engine in Node and checked against it by tools/teaser.test.js, so the replay can't drift
 // from the rules. Walls are [x, y, "R" | "D"]: the line right of / below tile [x, y]. The two walls at
 // the beacon are rules v4 at work: a beacon may be walled on up to 2 sides.
 export const TEASER = {
-  id: 'd-2026-12-15',
+  id: 'home-teaser',
   size: 9,
   rules: 'v4',
   tiles: [

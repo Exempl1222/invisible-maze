@@ -2,8 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseLevel, buildableLines, capViolation, cutsAllRoutes, simulate } from '../src/game/index.js';
-import { handle, summarize, ALLOWED_ORIGINS } from '../worker/src/handle.js';
+import { parseLevel, buildableLines, capViolation, cutsAllRoutes, simulate, solve } from '../src/game/index.js';
+import { handle, summarize, ALLOWED_ORIGINS, TURNSTILE_HOSTNAME } from '../worker/src/handle.js';
+import { FIVE_TRIES_FROM } from '../assets/js/daily/config.js';
 import { scoreFor, shownScore } from '../assets/js/daily/score.js';
 import { judgeFences, levelWithoutLimit } from '../assets/js/daily/judge.js';
 import { fakeD1 } from './worker-fake-d1.js';
@@ -13,7 +14,13 @@ const LEVELS = { easy: readJson('../assets/levels/daily-easy.json'), hard: readJ
 const ORIGIN = 'https://gnomesweetgnome.app';
 const at = (date) => Date.parse(`${date}T12:00:00Z`);
 const NOW = at('2026-10-27'); // day #1, index 0
-const raw = (mode, i = 0) => LEVELS[mode].levels[i];
+// The files hold no answer (v3.4), so the tests solve each day at its stored par, once, and keep it beside the level.
+const solved = new Map();
+const raw = (mode, i = 0) => {
+  const lv = LEVELS[mode].levels[i];
+  if (!solved.has(lv)) solved.set(lv, { ...lv, answer: solve(levelWithoutLimit(lv), { exactPar: lv.par }).answer });
+  return solved.get(lv);
+};
 const dateOf = (i) => new Date(Date.parse('2026-10-27T00:00:00Z') + i * 86400000).toISOString().slice(0, 10);
 
 function setup() {
@@ -424,4 +431,137 @@ test('judgeFences needs nothing but the engine and the level (the page imports t
   assert.deepEqual(judgeFences(r, r.answer, true), { ok: true, score: 85 });
   assert.equal(judgeFences(r, [], false).ok, false);
   assert.equal(judgeFences(r, 'x', false).ok, false);
+});
+
+/* ---------- v3.5: date window, legacy shape, bot check ---------- */
+
+const ans = (i) => raw('easy', i).answer;
+const open = async (date, i, iso) => (await setup().post(payload({ date, fences: ans(i) }), { now: Date.parse(iso) })).status === 200;
+
+test('date window: from the local date at UTC-12 minus a 6 hour grace, up to the local date at UTC+14, at the exact instants', async () => {
+  // Oldest open date: 28 Oct stays open until 18:00:00 UTC on 29 Oct (the UTC-12 clock leaves the 28th at 12:00 UTC on the 29th, plus 6 hours' grace).
+  assert.equal(await open('2026-10-28', 1, '2026-10-29T17:59:59Z'), true);
+  assert.equal(await open('2026-10-28', 1, '2026-10-29T18:00:00Z'), false);
+  // Newest open date: 29 Oct opens at 10:00:00 UTC on 28 Oct (UTC+14 reaches midnight on the 29th).
+  assert.equal(await open('2026-10-29', 2, '2026-10-28T09:59:59Z'), false);
+  assert.equal(await open('2026-10-29', 2, '2026-10-28T10:00:00Z'), true);
+  // The old plus or minus one UTC day rule took these; nobody has reached them yet or any more.
+  assert.equal(await open('2026-10-29', 2, '2026-10-28T00:00:00Z'), false, 'tomorrow, UTC midnight: nobody is there yet');
+  assert.equal(await open('2026-10-27', 0, '2026-10-28T13:00:00Z'), true, 'a late finish just after UTC-12 left the 27th: the grace');
+  assert.equal(await open('2026-10-27', 0, '2026-10-29T12:00:00Z'), false, 'a day and a half after: gone');
+  // a rejected date writes nothing and says why
+  const { post, db } = setup();
+  const res = await post(payload({ date: '2026-10-29', fences: ans(2) }), { now: Date.parse('2026-10-28T09:59:59Z') });
+  assert.equal(res.status, 400);
+  assert.match((await bodyOf(res)).error, /not open/);
+  assert.equal(db.results.size, 0);
+});
+
+test('date window: a Date or a number for now both work, and the midnight finish from Sydney posts', async () => {
+  const { post } = setup();
+  // 00:01 on 5 Nov in Sydney (UTC+11) is 13:01 UTC on 4 Nov; the page posts the 4th
+  const res = await post(payload({ date: '2026-11-04', fences: ans(8) }), { now: new Date('2026-11-04T13:01:00Z') });
+  assert.equal(res.status, 200);
+});
+
+test('legacy lost-day shape (fences null, 3 tries) is accepted only for dates before 4 Nov 2026 (the 5-try change)', async () => {
+  assert.equal(FIVE_TRIES_FROM, '2026-11-04');
+  const lost3 = (date, now) => setup().post(payload({ date, fences: null, tries: 3 }), { now: Date.parse(now) });
+  assert.equal((await lost3('2026-11-03', '2026-11-03T12:00:00Z')).status, 200, 'last legacy date');
+  const after = await lost3('2026-11-04', '2026-11-04T12:00:00Z');
+  assert.equal(after.status, 400, 'first 5-try date');
+  assert.match((await bodyOf(after)).error, /takes all 5 tries/);
+  assert.equal((await lost3('2026-11-09', '2026-11-09T12:00:00Z')).status, 400);
+  // the proper shape is fine on both sides
+  for (const [date, now] of [['2026-11-03', '2026-11-03T12:00:00Z'], ['2026-11-04', '2026-11-04T12:00:00Z']]) {
+    assert.equal((await setup().post(payload({ date, fences: null, tries: 5 }), { now: Date.parse(now) })).status, 200, date);
+  }
+});
+
+/** A fake of fetch for Cloudflare's siteverify. `reply` is the JSON it answers with; calls are recorded. */
+function fakeSiteverify(reply, { status = 200, throws = false } = {}) {
+  const calls = [];
+  const fn = async (url, init) => {
+    calls.push({ url, init });
+    if (throws) throw new Error('offline');
+    return new Response(JSON.stringify(reply), { status });
+  };
+  fn.calls = calls;
+  return fn;
+}
+const postWith = (env, body, deps) => {
+  const db = fakeD1();
+  return handle(new Request('https://stats.example/result', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), { DB: db, LEVELS, ...env }, NOW, deps).then((res) => ({ res, db }));
+};
+
+test('Turnstile: no TURNSTILE_SECRET means no check, a token or not, and no call to Cloudflare', async () => {
+  const f = fakeSiteverify({ success: false });
+  for (const body of [payload(), payload({ turnstile: 'whatever' })]) {
+    const { res } = await postWith({}, body, { fetch: f });
+    assert.equal(res.status, 200);
+  }
+  assert.equal(f.calls.length, 0);
+});
+
+test('Turnstile: with a secret, a missing, empty, non-string or oversized token is a 403 and writes nothing', async () => {
+  const f = fakeSiteverify({ success: true });
+  for (const turnstile of [undefined, '', 5, null, 'x'.repeat(2049)]) {
+    const { res, db } = await postWith({ TURNSTILE_SECRET: 's3cret' }, payload({ turnstile }), { fetch: f });
+    assert.equal(res.status, 403, String(turnstile).slice(0, 10));
+    assert.equal((await bodyOf(res)).error, 'bot check failed');
+    assert.equal(db.results.size, 0);
+  }
+  assert.equal(f.calls.length, 0, 'no token, no lookup');
+});
+
+test('Turnstile: a token Cloudflare refuses is a 403 and writes nothing', async () => {
+  const f = fakeSiteverify({ success: false, 'error-codes': ['invalid-input-response'] });
+  const { res, db } = await postWith({ TURNSTILE_SECRET: 's3cret' }, payload({ turnstile: 'bad-token' }), { fetch: f });
+  assert.equal(res.status, 403);
+  assert.equal(db.results.size, 0);
+  assert.equal(f.calls.length, 1);
+});
+
+test('Turnstile: a good token is checked with the secret at siteverify, then the result is saved', async () => {
+  const f = fakeSiteverify({ success: true, hostname: TURNSTILE_HOSTNAME });
+  const { res, db } = await postWith({ TURNSTILE_SECRET: 's3cret' }, payload({ turnstile: 'good-token' }), { fetch: f });
+  assert.equal(res.status, 200);
+  assert.equal(db.results.size, 1);
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].url, 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
+  assert.equal(f.calls[0].init.method, 'POST');
+  const form = new URLSearchParams(f.calls[0].init.body);
+  assert.equal(form.get('secret'), 's3cret');
+  assert.equal(form.get('response'), 'good-token');
+  assert.equal(form.get('remoteip'), null, 'the caller address is never forwarded');
+});
+
+test('Turnstile: a token solved on another site (or with no hostname reported) is a 403 and writes nothing', async () => {
+  assert.equal(TURNSTILE_HOSTNAME, 'gnomesweetgnome.app');
+  for (const hostname of ['evil.example', 'exempl1222.github.io', 'www.gnomesweetgnome.app', 'gnomesweetgnome.app.evil.example', undefined]) {
+    const f = fakeSiteverify({ success: true, ...(hostname === undefined ? {} : { hostname }) });
+    const { res, db } = await postWith({ TURNSTILE_SECRET: 's3cret' }, payload({ turnstile: 'good-token' }), { fetch: f });
+    assert.equal(res.status, 403, String(hostname));
+    assert.equal((await bodyOf(res)).error, 'bot check failed');
+    assert.equal(db.results.size, 0);
+  }
+});
+
+test('Turnstile: an invalid result is refused before any lookup, and Cloudflare being down is a 503 (the page retries)', async () => {
+  const f = fakeSiteverify({ success: true, hostname: TURNSTILE_HOSTNAME });
+  const bad = await postWith({ TURNSTILE_SECRET: 's' }, payload({ date: '2026-10-20', turnstile: 't' }), { fetch: f });
+  assert.equal(bad.res.status, 400);
+  assert.equal(f.calls.length, 0);
+  for (const f2 of [fakeSiteverify({}, { throws: true }), fakeSiteverify({ success: true, hostname: TURNSTILE_HOSTNAME }, { status: 500 })]) {
+    const { res, db } = await postWith({ TURNSTILE_SECRET: 's' }, payload({ turnstile: 't' }), { fetch: f2 });
+    assert.equal(res.status, 503);
+    assert.equal(db.results.size, 0);
+  }
+});
+
+test('Turnstile: CORS lets the page send the token (it is a body field, Content-Type is all the preflight needs)', async () => {
+  const { call } = setup();
+  const res = await call('/result', { method: 'OPTIONS' });
+  assert.equal(res.status, 204);
+  assert.match(res.headers.get('Access-Control-Allow-Headers'), /Content-Type/);
 });

@@ -2,8 +2,9 @@
 // days still need sending, how to read the server's spread, and "you beat X%". No DOM, no network, no storage.
 import { STATS_URL } from './config.js';
 import { BANDS } from './score.js';
-import { parseLineKey } from './record.js';
-import { parseDate, dayIndex } from '../play/daily.js';
+import { parseLineKey, countsOnDay } from './record.js';
+import { isOpenDate } from './window.js';
+import { parseDate } from '../play/daily.js';
 
 /** Players needed before "You beat X%" is shown. */
 export const MIN_PLAYERS = 10;
@@ -42,11 +43,11 @@ function bestWin(day) {
 
 /**
  * The body to POST for one finished day, or null if it can't be sent: the day isn't done, wasn't finished on
- * its own date (an archive play), or its best win has no saved fences to prove it.
+ * its own day (an archive play; a day begun on its date and finished just after midnight still counts), or its best win has no saved fences to prove it.
  *   { device, mode, date, fences: [[x, y, "R"|"D"], ...] | null, hint, tries }
  */
 export function resultBody({ device, mode, date, day }) {
-  if (!day || !day.done || day.finishedOn !== date || day.tries.length < 1) return null;
+  if (!day || !day.done || !countsOnDay(day, date) || day.tries.length < 1) return null;
   const win = bestWin(day);
   let fences = null;
   if (win) {
@@ -58,19 +59,16 @@ export function resultBody({ device, mode, date, day }) {
 }
 
 /**
- * Finished days that still need sending: done, finished on their own date, not yet sent, and dated today or
- * yesterday, and still within a day of the server's UTC date (it refuses anything older or later).
+ * Finished days that still need sending: done, played on their own day (see countsOnDay), not yet sent, dated
+ * today or yesterday, and inside the window the server takes (window.js). `now` is the current time (a Date or ms).
  * `days` is { easy: { date: record }, hard: { ... } }.
  */
-export function pendingResults(days, realToday, serverToday = utcDate()) {
-  const open = [realToday, dayBefore(realToday)].filter((d) => {
-    const away = d === null ? null : dayIndex(d, serverToday);
-    return away !== null && Math.abs(away) <= 1;
-  });
+export function pendingResults(days, realToday, now = new Date()) {
+  const open = [realToday, dayBefore(realToday)].filter((d) => d !== null && isOpenDate(d, now));
   const out = [];
   for (const mode of Object.keys(days)) {
     for (const [date, day] of Object.entries(days[mode] ?? {})) {
-      if (open.includes(date) && day.done && !day.sent && day.finishedOn === date) out.push({ mode, date, day });
+      if (open.includes(date) && day.done && !day.sent && countsOnDay(day, date)) out.push({ mode, date, day });
     }
   }
   return out;

@@ -5,11 +5,12 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { handle } from '../worker/src/handle.js';
 import { fakeD1 } from '../tools/worker-fake-d1.js';
+import { withAnswer } from './answers.js';
 import { parseLevel, buildableLines, capViolation, cutsAllRoutes } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const data = { easy: readJson('../assets/levels/daily-easy.json'), hard: readJson('../assets/levels/daily.json') };
-const level = (mode, i = 0) => data[mode].levels[i]; // i = day index, 0 is 27 Oct 2026, #1
+const level = (mode, i = 0) => withAnswer(data[mode].levels[i]); // i = day index, 0 is 27 Oct 2026, #1; the answer is solved by the engine (the files hold none)
 const KEY = 'gnome-sweet-gnome:daily:v2';
 const V1_KEY = 'gnome-sweet-gnome:daily:v1';
 const NOON = (date) => new Date(`${date}T12:00:00+11:00`);
@@ -1107,6 +1108,153 @@ test.describe('the optimal solution toggle', () => {
   });
 });
 
+/* ---------- answers off the page (v3.4) ---------- */
+
+test.describe('the answer is solved in the browser, on demand', () => {
+  const solBtn = (page) => page.locator('#solution-btn');
+  const status = (page) => page.locator('#status');
+  const THINKING = 'Croakwell is thinking...';
+  const solverRequests = (page) => {
+    const urls = [];
+    page.on('request', (r) => { if (r.url().includes('solver-worker')) urls.push(r.url()); });
+    return urls;
+  };
+
+  test('the level files are served without an answer, and no solver is fetched until Hint', async ({ page }) => {
+    const urls = solverRequests(page);
+    const bodies = [];
+    page.on('response', async (r) => { if (/assets\/levels\/daily(-easy)?\.json/.test(r.url())) bodies.push(await r.text()); });
+    await openDay(page, url('hard'));
+    await expect.poll(() => bodies.length).toBeGreaterThan(0);
+    for (const b of bodies) {
+      expect(b).not.toMatch(/"answer"/);
+      expect(Object.keys(JSON.parse(b).levels[0])).not.toContain('answer');
+    }
+    await placeAll(page, level('hard').answer.slice(0, 1)); // playing does not need the solver either
+    expect(urls).toEqual([]);
+    await hintBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(1);
+    expect(urls.length).toBeGreaterThan(0);
+  });
+
+  test('the hint waits for the solver: the button is disabled and the status says Croakwell is thinking, then the hint lands', async ({ page }) => {
+    await page.route('**/solver-worker.js', async (route) => {
+      await new Promise((r) => setTimeout(r, 700)); // a slow phone
+      await route.continue();
+    });
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(hintBtn(page)).toBeDisabled();
+    await expect(status(page)).toHaveText(THINKING);
+    await expect(hintBars(page)).toHaveCount(0); // nothing yet, nothing spent
+    await expect(hintBars(page)).toHaveCount(1);
+    await expect(hintBtn(page)).toHaveText('Hint used');
+    await expect(status(page)).toContainText('Hint placed');
+    const lv = level('easy');
+    expect(lv.answer.map((w) => w.join(','))).toContain(await hintBars(page).getAttribute('data-line'));
+    expect((await saved(page)).easy['2026-10-27'].hint).not.toBeNull();
+  });
+
+  test('if the solver fails the hint is not spent and a retry works', async ({ page }) => {
+    await page.route('**/solver-worker.js', (route) => route.abort());
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(status(page)).toContainText('Nothing was spent');
+    await expect(hintBtn(page)).toBeEnabled();
+    await expect(hintBtn(page)).toHaveText('Hint (-15)');
+    await expect(hintBars(page)).toHaveCount(0);
+    expect((await saved(page)).easy['2026-10-27']?.hint ?? null).toBeNull();
+    await page.unroute('**/solver-worker.js');
+    await hintBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(1);
+    await expect(hintBtn(page)).toHaveText('Hint used');
+  });
+
+  test('if the solver takes over 20 seconds the hint gives up, says so, and is not spent', async ({ page }) => {
+    await page.route('**/solver-worker.js', () => {}); // never answers
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(status(page)).toHaveText(THINKING);
+    await page.clock.runFor(20500);
+    await expect(status(page)).toContainText('Nothing was spent');
+    await expect(hintBtn(page)).toBeEnabled();
+    await expect(hintBars(page)).toHaveCount(0);
+  });
+
+  test('the solution is solved when asked for: after the day is done, the button waits for the solver, then shows the answer', async ({ page }) => {
+    const urls = solverRequests(page);
+    const lv = level('easy');
+    const extra = extraFences(lv, 1);
+    await openDay(page);
+    await placeAll(page, [...lv.answer, ...extra]);
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    expect(urls).toEqual([]); // finishing the day does not solve anything
+    await page.route('**/solver-worker.js', async (route) => {
+      await new Promise((r) => setTimeout(r, 700));
+      await route.continue();
+    });
+    await solBtn(page).click();
+    await expect(solBtn(page)).toBeDisabled();
+    await expect(status(page)).toHaveText(THINKING);
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    await expect(solBtn(page)).toBeEnabled();
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    for (const w of lv.answer) await expect(page.locator(`#board .wall-bar[data-hint="1"][data-line="${w.join(',')}"]`)).toHaveCount(1);
+  });
+
+  const answerKeys = (page) => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('gnome-sweet-gnome:daily:answer:')));
+
+  test('a hint never leaves the answer in storage: nothing is cached until the day is done', async ({ page }) => {
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(1);
+    expect(await answerKeys(page)).toEqual([]);
+    await page.reload();
+    await expect(page.locator('#board .cell').first()).toBeVisible();
+    expect(await answerKeys(page)).toEqual([]);
+  });
+
+  test('after the day is done the solved answer is cached: the solution after a reload does not start the solver', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await placeAll(page, [...lv.answer, ...extraFences(lv, 1)]);
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    expect(await answerKeys(page)).toEqual([]); // finishing the day stores nothing
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    expect(await answerKeys(page)).toEqual(['gnome-sweet-gnome:daily:answer:easy:2026-10-27']);
+    await page.reload();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    const urls = solverRequests(page);
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    for (const w of lv.answer) await expect(page.locator(`#board .wall-bar[data-hint="1"][data-line="${w.join(',')}"]`)).toHaveCount(1);
+    expect(urls).toEqual([]);
+  });
+
+  test('if the solver fails after the day, the solution says so and the button can be pressed again', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await placeAll(page, [...lv.answer, ...extraFences(lv, 1)]);
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    await page.route('**/solver-worker.js', (route) => route.abort());
+    await solBtn(page).click();
+    await expect(page.locator('#solution-note')).toContainText('could not be worked out');
+    await expect(solBtn(page)).toBeEnabled();
+    await expect(solBtn(page)).toHaveText('See the optimal solution');
+    await page.unroute('**/solver-worker.js');
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+  });
+});
+
 /* ---------- everyone's scores (v3) ---------- */
 
 // The page only talks to a stats server when config.js STATS_URL is set. Tests turn it on with the localhost-only
@@ -1725,4 +1873,98 @@ test('when the beat line arrives after the first draw, a second card is drawn an
   expect(calls).toHaveLength(1);
   const beat = (await result(page).getAttribute('data-card-key')).match(/Beat (\d+)% of players/)[0];
   expect(calls[0].text).toContain(beat);
+});
+
+/* ---------- v3.5: midnight, bot check off, one reload on a mixed deploy ---------- */
+
+test.describe('v3.5 time and deploy hardening', () => {
+  const STATS = '/__stats';
+  const win = (date) => ({ tries: [{ fences: 3, won: true, base: 100, walls: [] }], hint: null, walls: [], done: true, finishedOn: date, startedOn: date, reviewing: false, sent: true });
+
+  test('a day begun at 23:59 and finished at 00:01 keeps the streak and still sends its result, dated the day it was begun', async ({ page }) => {
+    // Three Easy wins on 27 to 29 Oct, each finished on its own day. The player is on the 30th (day #4) at 23:58 Sydney.
+    await page.addInitScript(([key, days]) => {
+      try {
+        if (sessionStorage.getItem('seeded')) return;
+        sessionStorage.setItem('seeded', '1');
+        localStorage.setItem(key, JSON.stringify({ v: 2, easy: days, hard: {}, lastMode: 'easy', seenHowTo: true, device: 'device-midnight1' }));
+      } catch { /* storage blocked */ }
+    }, [KEY, { '2026-10-27': win('2026-10-27'), '2026-10-28': win('2026-10-28'), '2026-10-29': win('2026-10-29') }]);
+    const posts = [];
+    await page.route(`**${STATS}/**`, async (route) => {
+      const req = route.request();
+      if (req.method() === 'POST') posts.push(JSON.parse(req.postData()));
+      const reply = req.method() === 'POST' ? { ok: true, duplicate: false } : { players: 0, bands: { '100': 0, '80-99': 0, '60-79': 0, '30-59': 0, '1-29': 0, '0': 0 }, scores: {} };
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(reply) });
+    });
+    await page.clock.setSystemTime(new Date('2026-10-30T23:58:00+11:00'));
+    await openDay(page, `${url('easy')}&stats=${STATS}`);
+    await expect(page.locator('h1')).toHaveText('Daily #4');
+    await placeAll(page, level('easy', 3).answer);
+    await tryNow(page); // the first try is spent before midnight
+    expect((await saved(page)).easy['2026-10-30']).toMatchObject({ startedOn: '2026-10-30', done: false });
+    await page.clock.setSystemTime(new Date('2026-10-31T00:01:00+11:00')); // midnight passes while the player decides
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    expect((await saved(page)).easy['2026-10-30']).toMatchObject({ startedOn: '2026-10-30', finishedOn: '2026-10-31', done: true });
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0]).toMatchObject({ mode: 'easy', date: '2026-10-30', hint: false, tries: 1 });
+    await expect.poll(async () => (await saved(page)).easy['2026-10-30'].sent).toBe(true);
+    await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
+    await expect(statsCell(page, 'Streak')).toHaveText('4');
+    await expect(statsCell(page, 'Best streak')).toHaveText('4');
+  });
+
+  test('a page opened before midnight whose first try lands after midnight still records the puzzle date as startedOn', async ({ page }) => {
+    await page.clock.setSystemTime(new Date('2026-10-30T23:58:00+11:00'));
+    await openDay(page, url('easy'));
+    await expect(page.locator('h1')).toHaveText('Daily #4');
+    await placeAll(page, level('easy', 3).answer);
+    await page.clock.setSystemTime(new Date('2026-10-31T00:01:00+11:00')); // midnight passes before the first try
+    await tryNow(page);
+    expect((await saved(page)).easy['2026-10-30']).toMatchObject({ startedOn: '2026-10-30' });
+  });
+
+  test('an archive day begun after its own date does not count toward the streak, even when finished before midnight', async ({ page }) => {
+    await page.clock.setSystemTime(new Date('2026-10-28T10:00:00+11:00'));
+    await winDay(page, 'easy', 0, url('easy', '2026-10-27'));
+    const rec = (await saved(page)).easy['2026-10-27'];
+    expect(rec.startedOn).toBeNull();
+    await page.getByRole('button', { name: 'Stats', exact: true }).first().click();
+    await expect(statsCell(page, 'Played')).toHaveText('1');
+    await expect(statsCell(page, 'Streak')).toHaveText('0');
+  });
+
+  test('with no Turnstile site key (the default), finishing a day with stats on never touches Cloudflare', async ({ page }) => {
+    const external = [];
+    page.on('request', (r) => { if (/challenges\.cloudflare\.com/.test(r.url())) external.push(r.url()); });
+    const posts = [];
+    await page.route(`**${STATS}/**`, async (route) => {
+      const req = route.request();
+      if (req.method() === 'POST') posts.push(JSON.parse(req.postData()));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(req.method() === 'POST' ? { ok: true } : { players: 0, bands: { '100': 0, '80-99': 0, '60-79': 0, '30-59': 0, '1-29': 0, '0': 0 }, scores: {} }) });
+    });
+    await winDay(page, 'easy', 0, `${url('easy')}&stats=${STATS}`);
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0]).not.toHaveProperty('turnstile');
+    expect(external).toEqual([]);
+    expect(await page.locator('script[src*="cloudflare"]').count()).toBe(0);
+  });
+
+  test('a module that fails to load (a mixed deploy) reloads the page once and then works', async ({ page }) => {
+    let hits = 0;
+    await page.route('**/assets/js/daily/streak.js*', (route) => (++hits === 1 ? route.abort() : route.continue()));
+    await page.goto(url('easy'));
+    await expect(page.locator('#board .cell').first()).toBeVisible();
+    expect(hits).toBe(2);
+  });
+
+  test('if the module still fails after the one reload, the page does not reload again (no loop)', async ({ page }) => {
+    let hits = 0;
+    await page.route('**/assets/js/daily/streak.js*', (route) => { hits++; return route.abort(); });
+    await page.goto(url('easy'));
+    await expect.poll(() => hits).toBe(2);
+    await page.waitForTimeout(1500);
+    expect(hits).toBe(2);
+  });
 });

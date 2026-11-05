@@ -22,12 +22,15 @@ assets/css/sprites.css tile, wall and gnome art placement
 assets/sprites/        generated art (36 SVGs: 35 sprites incl. 6 Sir Croakwell toads, plus icon-gnome.svg; and manifest.json). Never hand-edit
 tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mjs`
 tools/sprites.html     dev gallery of every sprite
+tools/stamp-version.mjs  deploy-only cache busting: appends ?v=<commit> to own .js/.json/.css references in _site (never run on the repo)
+tools/collect-site.sh   collects (and with a sha, stamps) the public site into a folder; the deploy job and the CI smoke test both use it
 tools/build-og.mjs     renders the link-preview image with Playwright: `npm run build:og` writes assets/og/daily.png (generated, never hand-edit)
 assets/og/             daily.png, the 1200x630 og:image
 docs/ART_SPEC.md, docs/MENU_SPEC.md  art and menu specs
 assets/js/play/       game UI (main, board, select, storage, lines, daily); calls the engine
 assets/js/daily/      standalone daily: main, config (APP_LINK switch, modes), pure score/record (v2, merge, v1 migration)/streak (per-mode stats)/share/countdown/archive, store, dialogs
 assets/js/daily/card.js  pure `cardModel(...)`: what the score card says (unit tested); card-draw.js draws it as a 1080x1080 PNG on a canvas and keeps the Save image download
+assets/js/daily/answer-cache.js  caches a finished day's solved answer in localStorage (never before the day is done)
 assets/js/daily/judge.js, everyone.js  shared pure judge (page and server score identically), stats send/spread helpers
 worker/               stats Worker (Cloudflare + D1): src/handle.js pure handler, src/index.js entry, schema.sql, wrangler.toml, README.md (setup)
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
@@ -36,8 +39,10 @@ assets/js/teaser.js   hero replay (canned, not game logic)
 assets/js/teaser-data.js  the replay's level, route and par walls; tools/teaser.test.js checks them against the engine
 src/game/             puzzle engine, pure JS, no DOM (Phase 3)
 tests/                Playwright browser tests (phone + desktop)
+tests-site/           smoke test of the stamped site (playwright.site.config.js; CI test job only)
 docs/ROADMAP.md       phases and status
 docs/GAME_SPEC.md     rules; source of truth for game logic
+REVIEW_CONTEXT.md     what an independent review checks against: scope, rules, accepted limits, severity anchors
 .claude/skills/       project skills (maze-playtest)
 ```
 
@@ -60,6 +65,7 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 7. **Verify before claiming done.** Run `npm test`, and for UI changes run the maze-playtest skill and look at the screenshots.
 8. **Art is generated.** Change `tools/build-sprites.mjs` and rebuild, never hand-edit `assets/sprites/`.
 9. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
+10. **Keep REVIEW_CONTEXT.md current.** Any change to a game rule, daily rule, scope or deploy setup updates REVIEW_CONTEXT.md in the same PR. Independent reviews check against it.
 
 ## Agent roles
 
@@ -68,6 +74,7 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 | Orchestrator | Opus | Spec, architecture, reviews, merges | Grind out boilerplate |
 | Builder | Sonnet | Implements one roadmap parcel against the spec and tests | Change the spec |
 | QA | Sonnet, fresh context | Plays the build with maze-playtest, files findings | Fix what it finds (keeps it honest) |
+| Reviewer | Opus, fresh context | Independent read-only audit against REVIEW_CONTEXT.md before merge | Fix what it finds |
 
 Give a Builder one parcel, the spec section it needs, and the definition of done from the roadmap. Nothing else.
 

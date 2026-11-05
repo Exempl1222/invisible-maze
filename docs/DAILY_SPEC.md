@@ -1,236 +1,110 @@
 # Standalone daily spec
 
-The daily as its own page, so it can ship alone with a link to the full game later. Decided by Eric, 27 Oct 2026. Rules of play are unchanged (`docs/GAME_SPEC.md`, rules v4); this spec covers only what is new around them.
+The daily as its own page, so it can ship alone with a link to the full game later. Decided by Eric, 27 Oct 2026. Game rules are in `docs/GAME_SPEC.md` (rules v4); this spec covers what is built around them. **"Current rules" is the one section to trust.** "History" below it only records how we got here; where it disagrees with "Current rules", "Current rules" wins (and the code wins over both).
 
-## v3.2: score card share and the custom domain (Eric, 3 Nov)
+## Current rules (as of 5 Nov 2026)
 
-Adds to v3; the share text format does not change.
-
-### Score card image
-- A 1080x1080 PNG drawn on a `<canvas>` by the page. **No board, no fences** (a spoiler). Drawn once when the result panel shows, and again if anything on it changes (e.g. `beat` arrives), so a tap on Share never waits on drawing (iOS drops the share sheet if the tap's user activation is spent on slow async work).
-- Layout, top to bottom, on the site's cream garden background with the outline colour `#3b2618` for every shape:
-  1. Wordmark: gnome icon + `Gnome Sweet Gnome`.
-  2. `#N Easy` / `#N Hard`, plus `(archive)` on archive days.
-  3. The score, large: `82/100`. A `💡`-style bulb icon beside it if the hint was used (drawn, not an emoji).
-  4. One rounded square per try used, in order: win = bush green `#3f7a34`, loss = hat red `#c94a32` (the share text's 🟩/🟥).
-  5. One caption line: 100 `Fenced in perfectly.`, 1 to 99 `Fenced in.`, 0 `He made it home.`
-  6. `Beat X% of players` only when the share text has that line. `🔥 N-day streak` (drawn flame) when the current streak for this mode is 2 or more, not on archive days.
-  7. Sir Croakwell, front view, bottom right: `toad-front-smug.svg` on a 0 (he won), `toad-front-point.svg` otherwise.
-  8. Footer: `gnomesweetgnome.app`.
-- Fonts: Grandstander for headings and the score, Nunito for the rest (wait for `document.fonts.load` before drawing; draw anyway after 1.5 s).
-- The layout is chosen by a **pure, unit-tested** function `cardModel({ number, mode, score, tries, hint, archive, beat, streak })` in `assets/js/daily/card.js` that returns the strings, square colours and toad file. Drawing lives in `assets/js/daily/card-draw.js` (DOM, not unit tested).
-
-### Share button
-1. If `navigator.canShare?.({ files: [png] })` is true: `navigator.share({ files: [png], text })`. File name `gnome-sweet-gnome-<N>-<mode>.png`, type `image/png`.
-2. Else if `navigator.share` exists: `navigator.share({ text })` (as today).
-3. Else copy the text, say `Copied` (as today), and show a quiet **`Save image`** button that downloads the PNG. If the clipboard fails, the selectable box as today.
-- `AbortError` (player closed the sheet) does nothing, as today. Any other share error falls through to the next step.
-- `Save image` appears only on the copy path; phones with file sharing never see it.
-
-### Link previews and the domain
-- The site lives at `https://gnomesweetgnome.app/` (custom domain on GitHub Pages). The share link already comes from `location.href`, so it follows the domain with no code change.
-- `daily/index.html`: `og:url` `https://gnomesweetgnome.app/daily/`, `og:image` `https://gnomesweetgnome.app/assets/og/daily.png` (1200x630), `og:image:width`/`height`, `og:image:alt` `Sir Croakwell the toad and a runaway gnome`, `twitter:card` `summary_large_image`. `index.html` gets the same image and `og:url` `https://gnomesweetgnome.app/`.
-- The preview image is generated, never hand-edited: `node tools/build-og.mjs` renders it with Playwright from the existing sprites (gnome, toadstool house, a few fences, Croakwell front view, title `Gnome Sweet Gnome`, line `One new fence puzzle a day`).
-- The stats Worker also accepts `https://gnomesweetgnome.app` and `https://www.gnomesweetgnome.app` (CORS). `github.io` stays allowed while the old address redirects.
-- **Later (not this parcel):** a personalised preview (`I scored 82 on today's Hard`) served by the Worker.
-
-## v3: optimal solution and everyone's scores (Eric, 28 Oct)
-
-Adds to v2; nothing in v2 changes unless stated.
-
-### See the optimal solution
-- Shown only once the day is done (Submitted, or all 5 tries used). Never before.
-- Button `See the optimal solution` in the result panel, under the score. It toggles: `Hide the solution`. The changing label alone announces the state (no `aria-pressed`).
-- Showing it scrolls the board into view (smoothly, or at once with reduced motion), draws the stored par answer on the board in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk with those fences (respecting reduced motion). Hiding it puts the player's own final fences back.
-- This is where par is revealed, and only here. Still never shown during play.
-- Seeing it changes nothing saved: score, share, streaks and stats stay as they were. A reload shows the player's fences, with the button.
-- Works the same on archive days.
-
-### Everyone's scores
-A small server (a Cloudflare Worker with a D1 database) collects one result per device per mode per day and serves the spread.
-
-**What the page sends** (once, when the day is done, only for a day finished on its own date; archive plays are never sent):
-```
-POST {STATS_URL}/result
-{ "device": "<random id>", "mode": "easy|hard", "date": "YYYY-MM-DD", "fences": [[x,y,"D"], ...] | null, "hint": true|false, "tries": 1..5 }
-```
-- `device` is a random id made once per browser and kept in the v2 save (`device`). It is not tied to anything personal.
-- `fences` is the best winning try's fences, or `null` for a day with no win.
-- If the send fails (offline, server down), the page keeps a `sent: false` flag on the record and retries on the next load. Never more than one result per device, mode and date.
-
-**What the server does**
-- Loads the day's level from its own bundled copy of `daily.json` / `daily-easy.json` (the same files the site serves), so the client can't send a different level.
-- **Re-checks the fences** with the game engine (`src/game/`): every fence buildable, no duplicates, side cap respected, at least one route left, and the result is a win. If any check fails, the result is rejected (400). It then computes the score itself with the v2 formula (par from the level, the hint taken from the request; the hint only lowers a score). `fences: null` scores 0.
-- Accepts a date only if it is today somewhere in the world (server UTC date minus 1 to plus 1 day), so old or future days can't be posted.
-- One row per (device, mode, date); a repeat post is ignored (200, `duplicate: true`), never an overwrite.
-- Stores no IP addresses or other personal data. Abuse limits: the one-row-per-(device, mode, date) key, a body cap (413 above 8 KB), and a Workers Rate Limiting binding on `POST /result` (10 a minute per caller address, answered 429). The IP is used only for that in-memory limit and is never stored or logged. There is no stored posts-a-day counter, because counting every post would spend D1's free write allowance (100k rows a day) faster than it protects it. With no binding (tests, local runs) there is no limit.
-- `fences: null` (a day with no win) is accepted only with `tries: 5`, or `tries: 3` for a day lost before v3.1 (see the v3.1 note).
-- **Accepted limitations:** the `hint` flag is the client's word, so a player could drop it for +15; `tries` can't be verified; a determined script using many IPs and device ids can still add rows. The stats are for fun, not a leaderboard with prizes.
-- **Page side:** only a 400 marks a result as settled (refused for good); 403, 404, 413, 429 and 5xx retry on a later load. An unsent day is retried only while its date is still within the server's window (UTC date minus 1 to plus 1). "You beat X%" counts the player as included only when the send succeeded, and `/stats` is fetched with `cache: 'no-cache'` right after a send.
-- **Cheap reads:** an accepted result is one `INSERT OR IGNORE` into `results`, and an AFTER INSERT trigger bumps a pre-counted `counts(mode, date, score, n)` row in the same statement; `GET /stats` reads only `counts` (at most 101 rows) and is sent with `Cache-Control: public, max-age=60`.
-- `GET {STATS_URL}/stats?mode=easy&date=YYYY-MM-DD` returns `{ players, bands: { "100": n, "80-99": n, "60-79": n, "30-59": n, "1-29": n, "0": n }, scores: { "<score>": n, ... } }`.
-- CORS: only `https://gnomesweetgnome.app` (and `www.`), the old `https://exempl1222.github.io`, and `http://localhost:4173` (and the test port).
-
-**What the page shows** in the result panel, once the day is done (today only; archive days show `Player stats are kept for each day's own date only.`):
-- **Score spread:** six bars (same bands as personal stats), the player's band highlighted, with `N players today`.
-- **`You beat X% of players`**, where X = share of other players with a lower score, rounded down. Shown only when at least 10 players have posted; below that, `Only N players so far. Check back later.`
-- The share text gains a line `Beat X% of players` when X is shown.
-- If stats can't load: `Player stats are taking a break.` The rest of the page is unaffected.
-- **Switch:** `STATS_URL` in `assets/js/daily/config.js`. `null` turns the feature off entirely (nothing sent, nothing shown). It stays `null` until the Worker is deployed.
-
-**Where the server lives**
-- `worker/` in this repo: `worker/src/index.js` (handler), `worker/schema.sql`, `worker/wrangler.toml`. It imports the engine from `src/game/` and the two level files, so the server and the site always agree.
-- Unit tests in `tools/worker-*.test.js` run the handler against an in-memory fake of D1 (no network).
-- Deployed by a `worker` job in the GitHub workflow on pushes to `main` that change `worker/`, `src/game/` or `assets/levels/`, using repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The job is skipped when the secrets aren't set.
-
-## v2: Easy and Hard, scored out of 100 (Eric, 27 Oct)
-
-**v3.1: 5 tries.** The daily (Easy and Hard) gives 5 tries a day instead of 3 (`MAX_TRIES` in `assets/js/daily/config.js`, the one source for the page, the saved-record cap and the Worker). Nothing else changes: every Try spends one, best try counts, score out of 100, hint -15, all tries lost = 0, Retry/Submit after a win. Existing saves: a day marked `done` stays done (a 3-lost-try day stays 3 tries, score 0); an unfinished day keeps the tries it spent and simply has more left (2 used = 3 left). A v1 day with 3 spent tries still migrates as finished. The Worker accepts `tries` 1 to 5, and `fences: null` with `tries: 5` or the legacy `tries: 3`, so a lost day finished before the change still sends. Where the text below says 3 tries, read 5.
-
-**This section supersedes the rest of the spec wherever they disagree** (tries as lives, wall budget, stars, par shown, answer reveal, one shared streak). Everything not mentioned here (archive, countdown, how-to-play, app link, cross-tab merge, storage safety, date handling) stays as written below.
-
-### Two dailies
-- **Easy:** 7x7, par 3 Monday to Saturday, par 4 Sunday. New batch `assets/levels/daily-easy.json`, built by `tools/build-daily.js --size 7` with the same start date (2026-10-27) and 180 days, verified like every level (rules v4, unique boards).
-- **Hard:** the existing 9x9 `daily.json`, unchanged.
-- Both share the day number (`#N`). Tabs `Easy | Hard` under the title; `?mode=easy|hard`. With no mode in the URL, the page opens the mode the player last chose, Easy on a first visit.
-- Each mode has its own record per date, its own hint, its own streak and its own stats.
+### Two dailies, one day number
+- **Easy:** 7x7, `assets/levels/daily-easy.json`, par 3 Monday to Saturday, par 4 Sunday (`node tools/build-daily.js --size 7`).
+- **Hard:** 9x9, `assets/levels/daily.json`, par 4 Monday to Wednesday, 5 Thursday to Saturday, 6 Sunday.
+- Both start 2026-10-27, 180 days, rules v4, `wallBudget = par + 2`. Day number `#N` = index + 1 (27 Oct 2026 is #1), shared by both modes.
+- Tabs `Easy | Hard`; `?mode=easy|hard`. With no mode in the URL the page opens the mode last chosen, Easy on a first visit. Each mode has its own record per date, hint, streak and stats.
+- The weekday is taken from the date string in UTC, so every timezone gets the same puzzle for the same date.
 
 ### Play
-- **No fence limit.** The player can place as many fences as they like. Still refused: cutting every route, more than 2 sides of the gnome or of his house (rules v4), unbuildable lines. In code the page gives the engine a budget equal to the number of buildable lines; the engine and the level files don't change.
-- Shown: `Fences` (count only), `Move limit`, `Moves left`, `Best` (best score so far today, `-` before a win). **Par is never shown**, and nothing reveals the answer, including on a lost day.
+- **No fence limit** (the page gives the engine a budget equal to the number of buildable lines). Still refused: cutting every route, more than 2 sides of the gnome or of his house, unbuildable lines. Fences may go next to bridges and teleporters (see `GAME_SPEC.md`).
+- Shown: `Fences` (count), `Move limit`, `Moves left`, `Best` (best score today, `-` before a win). **Par is never shown during play**, and nothing reveals the answer, including on a lost day.
 - Buttons: **Try** (sends the gnome), **Reset** (removes the player's fences; a hint fence stays), **Hint**.
-- **5 tries a day** (v3.1; was 3). Every Try spends one, win or lose.
-  - Win: the try's score shows. Buttons `Retry for a better score (N left)` (keeps the fences) and `Submit`. Submit ends the day.
+- **5 tries a day** (`MAX_TRIES` in `assets/js/daily/config.js`, the one source for the page, the saved-record cap and the Worker). Every Try spends one, win or lose, and a reload never gives one back.
+  - Win: the try's score shows; buttons `Retry for a better score (N left)` (keeps the fences) and `Submit`. Submit ends the day. When a try can't be beaten (100, or 85 with the hint), Submit is the only button.
   - Loss: `He made it home`; with tries left, `Try again (N left)`, fences stay.
-  - After try 3 the day ends on its own.
-- **Day score = the best winning try** (best of 3). A day with no win scores 0.
+  - After the fifth try the day ends on its own. Done is done: the board locks and a reload shows the finished state.
+- **Best try counts.** Day score = the best winning try. No win = 0.
 - **Score:** `max(30, round(100 - 70 * (fences - par) / (2 * par)))`. Par scores 100, 3x par or more scores 30. Fences can't be fewer than par.
-- **Hint:** 1 per mode per date. It places one fence from the stored answer (as now) and takes 15 points off every winning try that day after the floor, so the lowest hinted win is 15. The button reads `Hint (-15)`, then `Hint used`.
+- **Hint:** 1 per mode per date, **costs 15 points** (`HINT_COST`; there is no free hint). It places one fence of a par answer and takes 15 off every winning try that day, with a floor: the lowest hinted win is 15 (`max(15, base - 15)`). So the best possible hinted score is 85. The button reads `Hint (-15)`, then `Hint used`.
+  - The hint can't be a free answer check: if every answer fence is already down, one of the player's own answer fences becomes the hint fence and the hint is still spent. If a hint fence can't go down (side cap, or it would cut every route) the message is generic, `No room for a hint right now. Take a fence back.`, and the hint is not spent.
+  - Tries are stored without the hint (`base`); the shown score is computed at read time, so the cost survives reloads and tab merges.
+- **Easy levels can't be won at par using only fences on the sides of the gnome and his house** (the generator rejects those).
 
-### Review fixes (v2, 27 Oct)
-- **Hint can't be used as a free answer check.** If every answer fence is already on the board, the hint marks one of the player's answer fences as the hint fence and is still spent. If a hint fence can't go down (side cap or it would cut every route), the message is generic, `No room for a hint right now. Take a fence back.`, and the hint is not spent.
-- **Scores are stored without the hint** (per try `base`); the shown score is `base - 15` when the hint was used (floor 15). This keeps the hint cost through reloads and tab merges.
-- **When a try can't be beaten** (100, or 85 with the hint), Submit is the only button. Otherwise Retry and Submit both show, with `Fewer fences score higher.` under the try list.
-- **A reload while editing after Retry** reopens in editing with the player's current fences, not the review screen.
-- **Easy levels can't be won at par using only fences on the sides of the gnome and his house**; the generator rejects those.
-- A player whose saves came from v1 (Hard only) opens on Hard the first time.
+### Answers are not on the page (v3.4)
+- The daily JSON files carry **no `answer`**. `par` and `parAnswers` (a count) are in the data by accepted design: par is needed for scoring, and a bundled solver could derive it.
+- Hint and "See the optimal solution" are **solved in the browser on demand**: `assets/js/daily/solver.js` starts the module worker `solver-worker.js`, which calls `solve(level, { exactPar })` from `src/game/` (deploy copies `src/game`). Only when the player presses the button. While it works the button is disabled and `#status` says "Croakwell is thinking...". If the worker fails or takes over 20 s the page says so and the hint is not spent. The generator only keeps a remade day if `solve(level, { exactPar, maxNodes: SOLVE_NODE_BUDGET })` finishes within the budget (50000 nodes, about 0.9 s in Node on the dev machine; `tools/build-daily.js`, unit-tested for every remade day; the 12 pinned days from before 8 Nov are not budget-checked, worst 1.3 s), so a day takes under about a second on a laptop and the 20 s timeout has a wide margin on a phone. Before the budget the worst Hard Sundays took about 6 s. Once a day is **done**, the solved answer is cached in localStorage (`assets/js/daily/answer-cache.js`, key `gnome-sweet-gnome:daily:answer:<mode>:<date>`, checked against the level before use) so "See the optimal solution" after a reload does not solve again. The hint never stores anything. The engine search is deterministic, so a level always gives the same answer.
+- Days from **2026-11-08** on were remade with a salted seed (`DAILY_REFRESH` in `tools/build-daily.js`), for both sizes. The original batch carried each day's answer in `assets/levels/*.json`, and that file is in the public git history; so the cutover is the first date nobody could reach when this change merged (UTC+14 reaches 8 Nov at 7 Nov 10:00 UTC, which is 21:00 Sydney on 7 Nov, so the deploy must be live before then). Days 27 Oct to 7 Nov (12 days) keep their original layouts, and their answers in history are harmless because every player has already reached them. Days from 8 Nov have layouts that never carried an answer. A hash test pins the playable fields of the 12 kept days. To remake again, change the salt and build the pieces with `--from 12`.
+- `tools/build-daily.js` never writes `answer` (`withoutAnswer`). The pack and lab files keep theirs.
+- **`/play/?daily` is retired:** any `?daily` on the play page goes to `../daily/`, keeping `mode` and `date`. `assets/js/play/daily.js` stays (date helpers shared with the daily page and the Worker).
 
-### Results, share, streaks
-- Result panel: the day score large (`82 / 100`), then one line per try (`Try 1  65`, `Try 2  82`, `Try 3  He made it home`), Share, Stats, countdown.
-- Share (pure function, unit tested):
+### See the optimal solution
+- Only once the day is done (Submitted or all 5 tries used), also on archive days. Button `See the optimal solution` under the score, toggling to `Hide the solution`.
+- Solves in the browser (above), scrolls the board into view, draws the par answer in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk (respecting reduced motion). Hiding puts the player's own fences back. It changes nothing saved. This is where par is revealed, and only here.
+
+### Where it lives, dates, archive
+- Page: `daily/index.html`, served at `/daily/` on gnomesweetgnome.app; the shared link. Code in `assets/js/daily/`. It reuses the engine (`src/game/`), `assets/js/play/board.js`, `lines.js`, `icons.js`, `daily.js` and `assets/js/sprites.js`, and must not import `assets/js/play/main.js` or `storage.js`.
+- No query: plays the player's **local** date (today). `?date=YYYY-MM-DD` is the **archive**: today minus 1 to minus 29 plays for real and is saved (today's date is the same as no query). A future date shows `Not ready yet. This gnome is still packing.` with a button to today; older than the archive, or not a real date, shows `That day is out of the archive.`; outside the batch shows `The daily is taking a break.`
+- **Archive dialog:** the last 30 days (today plus 29), newest first, today marked; each row shows `#N`, the date and both scores (`Easy 88 · Hard -`). Days before the batch start are left out.
+- Header: wordmark (a link to the full game only when `APP_LINK.enabled`, which is `false`), `?` how to play (opens on the first visit, sets `seenHowTo`), archive and stats buttons. Countdown after the day is done (`Next gnome in 5h 12m`, to local midnight; `A new gnome is here` with `Play` after).
+
+### Saved on the device
+- Key `gnome-sweet-gnome:daily:v2`: `{ easy: { date: record }, hard: { date: record }, device, lastMode, seenHowTo }`. Record: `tries` (array of `{ fences, won, base, walls }`), `hint`, `walls` (current fences), `done`, `finishedOn`, `startedOn`, `reviewing`, `sent`. Every storage access is wrapped; memory is the fallback; corrupt data is ignored.
+- Before every write, re-read storage and merge per date (longer `tries` list, `done` and `won` stay true, existing `hint` and `finishedOn` kept, earlier `startedOn` kept). The `storage` event re-renders if the day on screen changed.
+- v1 records (`gnome-sweet-gnome:daily:v1`) are read once and become Hard records; v1 is then left alone. A day lost on the old 3-try cap stays finished.
+- **Streaks and stats live only on the device** (localStorage). Clearing site data loses them; the page can't recover them.
+
+### Streaks and stats (per mode)
+- **A day counts** when it is won (score above 0) **and** played on its own date: `finishedOn` equals the date, or `startedOn` equals the date and the day was finished by the end of the next calendar day (`countsOnDay` in `record.js`). `startedOn` is set when the first try is spent on a puzzle that **the page opened as its today** (the date read when the page loaded, `realToday` in `main.js`, `startedOnFor` in `record.js`), even if that first try lands just after midnight. So a page opened at 23:50 whose first try is at 00:01 still records the puzzle date. An archive day begun later has no `startedOn` and never counts; an older save without the field behaves as before. **The one-day limit is the rule** (decided 5 Nov): a started-on-the-day finish counts until the end of the next local day. **Known gap (N4):** a finish late on that next day can keep the streak but may fall outside the Worker's posting window (UTC-12 minus 6 h, `window.js`), so the result is not posted to the stats. The streak is local and does not depend on the post.
+- **Current streak:** consecutive counting days ending today, or yesterday if today isn't done yet. A lost or missed day ends it; archive catch-ups don't repair it. **Best streak:** longest run ever.
+- **Stats dialog** (Easy | Hard tabs): played, win %, average score, best score, current and best streak, and bars for 100, 80 to 99, 60 to 79, 30 to 59, 1 to 29, 0. Archive plays count in played, win % and the bars, not in streaks.
+- Streak logic is pure and unit tested (dates in, numbers out).
+
+### Share and score card
+- Share text (pure function, unit tested):
   ```
   Gnome Sweet Gnome #1 Hard 🍄
   82/100 💡
   🟥🟩🟩
   https://gnomesweetgnome.app/daily/?mode=hard
   ```
-  One square per try used: 🟥 loss, 🟩 win. ` 💡` only if the hint was used. Lost day: `0/100 🏠`. Archive days keep `(archive)` after the number.
-- **Streak per mode:** consecutive days with a score above 0, finished on their own date (as before).
-- **Stats per mode** (the dialog has the same Easy | Hard tabs): played, win %, average score, best score, current and best streak, and bars for 100, 80 to 99, 60 to 79, 30 to 59, 1 to 29, and 0.
-- **Archive dialog:** each row shows both scores (`Easy 88 · Hard -`).
+  One square per try used: 🟥 loss, 🟩 win. ` 💡` only if the hint was used. Lost day: `0/100 🏠`. Archive days keep `(archive)` after the number. A line `Beat X% of players` is added when stats show it.
+- **Score card:** a 1080x1080 PNG drawn on a `<canvas>` (`card-draw.js`), laid out by the pure, unit-tested `cardModel({ number, mode, score, tries, hint, archive, beat, streak })` in `card.js`. **No board, no fences** (a spoiler). Wordmark; `#N Easy|Hard` (plus `(archive)`); the score large with a drawn bulb if the hint was used; one rounded square per try (win `#3f7a34`, loss `#c94a32`); one caption (100 `Fenced in perfectly.`, 1 to 99 `Fenced in.`, 0 `He made it home.`); `Beat X% of players` only when the share text has it; a drawn flame with `N-day streak` when the mode's streak is 2 or more (not on archive days); Sir Croakwell bottom right (`toad-front-smug.svg` on a 0, `toad-front-point.svg` otherwise); footer `gnomesweetgnome.app`. Fonts Grandstander and Nunito. Drawn once when the result shows (and redrawn if it changes) so a tap on Share never waits.
+- **Share button:** `navigator.share({ files, text })` if `canShare` allows the file (`gnome-sweet-gnome-<N>-<mode>.png`); else `navigator.share({ text })`; else copy the text, say `Copied`, and show `Save image`. `AbortError` does nothing; other errors fall through to the next step.
+- **Link previews:** `og:url` `https://gnomesweetgnome.app/daily/`, `og:image` `assets/og/daily.png` (1200x630, generated by `npm run build:og`, never hand-edited). The share link comes from `location.href`.
 
-### Saved data
-- New key `gnome-sweet-gnome:daily:v2`, `{ easy: { date: record }, hard: { date: record }, lastMode, seenHowTo }`. A record holds `tries` (array of `{ fences, won, base, walls }`; `base` is the score before the hint), `hint`, `walls` (current fences), `done`, `finishedOn`, `reviewing` (the last try won and Retry was not pressed yet). A try saved with only `score` is read as already docked: `base = hint ? min(100, score + 15) : score`. The cross-tab merge keeps the longer `tries` list.
-- On first load, v1 records become Hard records: one try, scored from their walls, the level's par and the hint, `done` and `finishedOn` kept. v1 is then left in place, unused.
+### Everyone's scores: the Worker (built and deployed, switched off on the page)
+- **Switch:** `STATS_URL` in `assets/js/daily/config.js` is **`null`**: nothing is sent and nothing is shown. The Worker is deployed at `https://gnome-sweet-gnome-stats.gaoeric1234567890.workers.dev` but unused until `STATS_URL` is set. Setup and the safe order of steps are in `worker/README.md`.
+- **Code:** `worker/src/index.js` is the entry, `worker/src/handle.js` the pure handler (with `store.js`, `levels.js`), `worker/schema.sql`, `worker/wrangler.toml`. It imports the engine from `src/game/`, the level files and the shared `config.js`, `judge.js` and `window.js`, so server and site always agree. Tests: `tools/worker-*.test.js` against an in-memory fake of D1.
+- **What the page sends** (once per device, mode and date, only for a day finished on its own date; archive plays never):
+  ```
+  POST {STATS_URL}/result
+  { "device": "<random id>", "mode": "easy|hard", "date": "YYYY-MM-DD", "fences": [[x,y,"D"], ...] | null, "hint": true|false, "tries": 1..5, "turnstile": "<token>" (only when Turnstile is on) }
+  ```
+  `fences` is the best winning try's fences, or `null` for a day with no win. On failure the record keeps `sent: false` and the page retries on a later load.
+- **What the Worker does:** loads the level from its own bundled copy of the daily files; re-checks the fences with the engine (buildable, no duplicates, at least one route, side cap, a win), else 400; computes the score itself (par from the level, hint from the request; the hint only lowers a score; `fences: null` scores 0). One row per (device, mode, date); a repeat is ignored (200, `duplicate: true`). No IP or personal data stored. Limits: body cap 8 KB (413), Workers Rate Limiting binding on `POST /result` (10 a minute per caller address, 429; none locally). `GET /stats` reads pre-counted `counts` rows (kept by an AFTER INSERT trigger) with `Cache-Control: public, max-age=60`.
+- **Date window:** a post is accepted only for a date from the local date at UTC-12 minus a 6 hour grace (so a finish after midnight still posts) up to the local date at UTC+14. In `assets/js/daily/window.js`, shared by the Worker and the page, so the page never retries a day the server refuses.
+- **No-win shape:** `fences: null` is accepted with `tries: 5`; with `tries: 3` only for dates before `FIVE_TRIES_FROM` (`2026-11-04`, `config.js`), because v3.1 went live on 3 Nov.
+- **Page side:** only a 400 settles a result as refused for good; 403, 404, 413, 429, 503 and other 5xx retry on a later load, while the date is still in the window. `You beat X%` counts the player only when the send succeeded; `/stats` is fetched with `cache: 'no-cache'` right after a send.
+- **Bot protection (Cloudflare Turnstile): built, off.** `TURNSTILE_SITE_KEY` in `config.js` is `null`: no external script loads and nothing changes. When set, the page loads Cloudflare's script only when about to send, adds the token as `turnstile`, and sends nothing if there is no token (as if the Worker were down; play is never blocked). When the Worker has a `TURNSTILE_SECRET` it verifies the token with siteverify before writing: missing or refused is 403, Cloudflare unreachable is 503 (the page retries). No secret, no check.
+- **Accepted limits:** the `hint` flag and `tries` are the client's word (a player could drop the hint for +15); a script with many IPs and device ids can still add rows; stats are for fun, not a leaderboard with prizes.
+- CORS: `https://gnomesweetgnome.app` (and `www.`), the old `https://exempl1222.github.io`, and `http://localhost:4173` (and the test port).
+- **What the page shows** in the result panel once the day is done (today only; archive days say `Player stats are kept for each day's own date only.`): six score bars with the player's band highlighted and `N players today`; `You beat X% of players` (share of other players with a lower score, rounded down) only when at least 10 have posted, else `Only N players so far. Check back later.`; if stats can't load, `Player stats are taking a break.` and the rest is unaffected. `GET {STATS_URL}/stats?mode=easy&date=YYYY-MM-DD` returns `{ players, bands: { "100": n, "80-99": n, "60-79": n, "30-59": n, "1-29": n, "0": n }, scores: { "<score>": n } }`.
 
-## Where it lives
+### Deploy
+- The Pages deploy collects the site into `_site` (including `daily/` and a copy of `src/game/`) and runs `node tools/stamp-version.mjs _site "$GITHUB_SHA"`, which appends `?v=<first 8 of the commit>` to every relative reference to our own `.js`, `.json` and `.css` (script and link tags, static and dynamic imports, `new URL(..., import.meta.url)`, string constants such as `LEVEL_URL`). External and root-relative URLs are untouched; running it twice changes nothing. Locally there is no build step.
+- If a module fails to load on the daily page (old and new files mixed during a deploy), `reload-guard.js` reloads the page once (a `sessionStorage` flag stops any loop).
+- **The Worker always deploys:** the `worker` job runs on every push to `main` and every manual run, after the tests pass, when the Cloudflare secrets exist (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`; otherwise skipped). It also sets `TURNSTILE_SECRET` on the Worker when that GitHub secret is non-empty. There is no change filter. Pull requests never deploy.
 
-- Page: `daily/index.html`, served at `/daily/` on gnomesweetgnome.app. This is the link that gets shared.
-- Without a query, the page plays the player's local date (**today**).
-- `?date=YYYY-MM-DD` is the **archive** (Eric, 27 Oct): any of the 29 days before today (today minus 1 to today minus 29) plays for real and is saved. Today's date in `?date` is the same as no query. A future date shows `Not ready yet. This gnome is still packing.` with a button to today. A date older than 29 days, or not a real date, shows `That day is out of the archive.` with a button to today. Dates outside the batch still show the break message.
-- Code: `assets/js/daily/` (new). Reuses the engine (`src/game/`), `assets/js/play/board.js`, `lines.js`, `icons.js`, `daily.js` (date maths) and `assets/js/sprites.js`. It must not import `assets/js/play/main.js` or `storage.js`.
-- The deploy workflow copies `daily/` into the site.
-- `/play/?daily` (the in-app Daily tab) is left as it is for now.
+### Planned, not built
+- **"Can you beat it?" landing banner** (a friend's shared link opens the daily with a banner to beat their score). Specced on branch `feat/beat-friend` (v3.3) and **not built**; it is not on `main`.
+- A personalised link preview (`I scored 82 on today's Hard`) served by the Worker.
+- Named leaderboards; the app link on (`APP_LINK.enabled`).
 
-## The day
+## History
 
-- **Daily number:** `#N`, where N is the day's index in `daily.json` plus 1 (27 Oct 2026 is #1).
-- **5 tries a day** (v3.1; was 3). A try is spent when the player presses Go.
-  - Win on any try: the day is done, won on try N.
-  - Lose with tries left: walls stay, the button reads `Try again (2 left)` / `(1 left)`.
-  - Lose on try 3: the day is done, lost. The board shows one par answer in the hint (gold ribbon) style with the note `One way to fence him in (par N).`
-- **Stars** are scored exactly as now (`stars(par, walls, budget, hints)`). Tries do not change stars; they show in the result and the share.
-- **1 free hint a day**, its own inventory, separate from the full game's. It works like a normal hint (one par-answer wall, costs 1 star, minimum 1). The button reads `Hint (1)`, then `Hint used` and is disabled. No ad panel.
-- **Done is done.** Once the day is won or lost, the board is locked and shows the final walls. A reload shows the same finished state, not a fresh board.
-- **Reload mid-day** restores tries used, the hint (and its wall) and the walls on the board. Reloading must never give back a try.
-- Outside the batch: the existing break message (`The daily is taking a break.`), with no link to the levels unless the app link is on.
+Condensed. Each entry lists what it added and what it later lost.
 
-## Saved on the device
-
-- One localStorage key, `gnome-sweet-gnome:daily:v1`, separate from the full game. Same pattern as `storage.js`: every access wrapped, memory is the fallback, corrupt data is ignored.
-- Per date: `{ tries, won, stars, walls, hint, done, finishedOn }` (walls as line keys).
-- **Never lose a spent try across tabs:** before every write, re-read storage and merge per date (highest `tries`, `done` and `won` stay true once set, keep an existing `hint` and `finishedOn`). Listen for the `storage` event and re-render if the day on screen changed.
-- Plus `seenHowTo: true` once the how-to-play card has been closed.
-
-## Archive
-
-- A calendar button in the header opens an **Archive** dialog: the last 30 days, newest first (today at the top, marked `Today`), each row showing `#N`, the date and its result (stars, `Lost`, `In progress` or `Not played`). Days before the batch start are left out. Tapping a row goes to that day.
-- An archive day plays exactly like today (5 tries, 1 hint, locked when done) and is saved under its own date.
-- The title line says `Daily #N` plus an `Archive` tag on past days, with a `Today's gnome` link back.
-- **Archive plays don't count toward the streak** (only a day finished on its own date does). They do count in played, win % and the star bars. Each record stores `finishedOn` (local date the day was finished) to tell them apart.
-- Share text for an archive day is the same, with `(archive)` after the number.
-
-## Streak and stats
-
-- **Current streak:** consecutive dates won on the day itself (`finishedOn` equals the date), ending today, or yesterday if today isn't done yet. A lost day or a missed day ends it; catching up in the archive does not repair it.
-- **Best streak:** longest run ever.
-- **Stats card:** played, win %, current streak, best streak, and a bar chart of results: 3 stars, 2 stars, 1 star, lost. Today's result is highlighted.
-- Streak logic is pure and unit tested (dates in, numbers out).
-
-## Share
-
-Plain text, built by a pure function (unit tested). Won:
-
-```
-Gnome Sweet Gnome #1 🍄
-⭐⭐⭐ 4 fences (par 4)
-🟥🟩 2/3
-https://gnomesweetgnome.app/daily/
-```
-
-- One square per try used: 🟥 a loss, 🟩 the win. Lost day: `🟥🟥🟥 X/3` and the star line becomes `🏠 He made it home`.
-- Hint used: append ` 💡` to the star line.
-- The link is the page URL with no query string.
-- Share button: `navigator.share` when available, otherwise copy to clipboard and say `Copied`. If both fail, show the text in a selectable box.
-
-## Countdown
-
-- After the day is done: `Next gnome in 5h 12m`, counting to local midnight, updated each minute.
-- At midnight it says `A new gnome is here` with a `Play` button that reloads.
-- The countdown maths is a pure function (unit tested).
-
-## How to play
-
-- A dialog that opens on the first visit and from a `?` button in the header.
-- Three short steps, each with a small sprite:
-  1. The gnome walks the shortest way home.
-  2. Tap the lines between tiles to build fences. You can't cut off every way through.
-  3. Make his walk longer than his move limit. Fewer fences, more stars. 5 tries a day.
-- Button: `Let's go`. Closing it sets `seenHowTo`.
-
-## Page
-
-- Mobile first, 390px wide, same art, fonts and colour tokens as the game. Touch targets at least 44px. Dialogs are `<dialog>` with focus kept inside and Escape to close.
-- Header: wordmark (not a link while the app link is off), `?` (how to play) and a stats button.
-- Title line: `Daily #1` with the date `Tue 27 Oct` under it. Stats row (walls, par, move limit, moves left) and controls as in the game, plus a tries indicator (five pips).
-- Result panel when done: heading, stars, `Won on try 2 of 3` (or lost), walls vs par, Share (primary), Stats, countdown.
-- Meta for link previews: `og:title` `Gnome Sweet Gnome: daily puzzle`, `og:description` `Fence in the runaway gnome. One new puzzle a day.`, `og:url`, `twitter:card` `summary`. A preview image comes later.
-
-## App link (built, switched off)
-
-- `assets/js/daily/config.js` exports `APP_LINK = { enabled: false, href: '../play/', label: 'More gnome puzzles' }`.
-- When `enabled` is true: the wordmark links to `href`, the result panel shows a card `Want more? Play the full game.` with that link, and the break message links there too.
-- When false, nothing on the page links to the full game.
-
-## Review fixes (27 Oct)
-
-- Tries indicator reads `Tries left` with filled pips for tries remaining (won try shown as a done tick, lost tries as empty).
-- When the day ends live, focus moves to Share. `#result` loses `role="status"`; `#status` announces one line (`Fenced in on try 1, 3 stars.` / `He made it home. Out of tries.`) and the empty status line takes no space.
-- On a lost day the walls stat is labelled `Answer` and shows the answer's wall count.
-- Countdown re-ticks on `visibilitychange`; a tab left open past midnight on an unfinished today shows `A new gnome is here` with Play.
-- Footer: `A new gnome every day.` (no "in development").
-- No hard-coded colours in daily.css; use tokens.
-
-## Not in this pass
-
-Preview image, named leaderboards, retiring `/play/?daily`.
+- **v1 (27 Oct): one daily, 3 tries, stars.** One 9x9 puzzle a day, scored in stars (3 at par, 2 at par + 1, 1 otherwise, hint cost 1 star), a free hint a day, lost day shows the answer, wall budget, one shared streak, share with star line. **Superseded by v2** for scoring, tries, hint, answer reveal and streaks. Still true from v1: archive, countdown, how-to-play, app-link flag, cross-tab merge, storage safety, local-date handling. Record key `daily:v1` (migrated into Hard).
+- **v2 (27 Oct): Easy and Hard, score out of 100.** Added Easy 7x7, the score formula, hint -15 (floor 15), best try counts, Retry or Submit, no fence limit, par hidden in play, per-mode records, streaks and stats, key `daily:v2`. Review fixes the same day: the hint is never a free answer check, scores stored as `base`, generic `No room for a hint` message. Best of 3 became best of 5 in v3.1.
+- **v3 (28 Oct): optimal solution and everyone's scores.** Added the `See the optimal solution` button and the Cloudflare Worker + D1 stats (re-check, spread, `You beat X%`). Changed later: the date window (was UTC date plus or minus one, now v3.5), the deploy (was filtered to changes in `worker/`, `src/game/`, `assets/levels/`, now always), the solution (was drawn from a stored answer, now solved in the browser, v3.4).
+- **v3.1 (3 Nov): 5 tries.** `MAX_TRIES` 3 to 5. A day lost on 3 tries stays finished and sendable for dates up to 3 Nov. Unfinished days keep spent tries and gain the rest.
+- **v3.2 (3 Nov): score card and custom domain.** The 1080x1080 card, file sharing, `Save image`, `og:image`, `gnomesweetgnome.app` meta and Worker CORS.
+- **v3.3: "Can you beat it?" banner.** Specced on `feat/beat-friend`, never built, not on `main` (see Planned).
+- **v3.4 (5 Nov): answers off the page.** A review found every day's answer (180 days, future ones too) in the level files and the old in-page daily showing any date. Removed `answer` from the daily files, remade days from 8 Nov (first planned as 12 Nov), added `solve(level, { exactPar })`, moved hint and solution to a browser worker, retired `play/?daily`.
+- **v3.5 (5 Nov): time, stats and deploy hardening.** Review fixes F3 (`startedOn` midnight rule), F5 (new date window), F11 (legacy no-win shape cutover), F4 (Turnstile, off), F6 (Worker always deploys), F7 (`?v=` stamping and the reload guard). No game rules, scoring or levels changed.

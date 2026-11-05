@@ -1,4 +1,4 @@
-// The standalone daily page: two puzzles a day (Easy 7x7 and Hard 9x9), three tries, a score out
+// The standalone daily page: two puzzles a day (Easy 7x7 and Hard 9x9), five tries, a score out
 // of 100, one hint, a share button. Reuses the engine, the board and the sprites. It does not
 // import the full game's main.js or storage.
 import { simulate, cutsAllRoutes, wouldBreakCap } from '../../../src/game/index.js';
@@ -7,11 +7,13 @@ import { capMessage, lineKey } from '../play/lines.js';
 import { localDateString, parseDate, dayIndex, formatDaily } from '../play/daily.js';
 import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
 import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
-import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL } from './config.js';
+import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL, TURNSTILE_SITE_KEY } from './config.js';
 import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './score.js';
 import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
-import { freshDay, parseLineKey, mergeDay } from './record.js';
+import { readCachedAnswer, writeCachedAnswer } from './answer-cache.js';
+import { freshDay, parseLineKey, mergeDay, startedOnFor } from './record.js';
 import { levelWithoutLimit } from './judge.js';
+import { solveInWorker } from './solver.js';
 
 import { loadStore, getDay, saveDay, getDevice, markSent, allDays, seenHowTo, lastMode, setLastMode, pendingV1, adoptV1, refresh, onExternalChange } from './store.js';
 import { classifyDate, archiveRows } from './archive.js';
@@ -21,6 +23,9 @@ import { cardModel, cardFileName } from './card.js';
 import { drawCard, downloadBlob } from './card-draw.js';
 import { nextGnome, msToNextMinute } from './countdown.js';
 import { setupHowTo, setupStats, setupArchive } from './dialogs.js';
+
+// Tells reload-guard.js the modules linked and this one is running (a link error leaves it unset, and the guard reloads once).
+window.__gsgBooted = true;
 
 const STEP_MS = 220;
 /** The stats server, or null when everyone's scores are off (see config.js STATS_URL). */
@@ -78,6 +83,7 @@ let villain = null; // Sir Croakwell under the board: { setMood, cast }, or null
 let cardBlob = null; // the latest score card PNG, ready before the player taps Share
 let cardKey = ''; // what the card in cardBlob (or being drawn) was made from
 let cardBlobInfo = null; // { key, beat }: what cardBlob was drawn from, so the shared text always matches the image
+let solving = false; // the solver worker is running for a hint or the solution: those buttons wait
 let playToken = 0; // bumps whenever the board replays, so a walk cut short by a toggle stops drawing
 
 /* ---------- page chrome ---------- */
@@ -158,7 +164,7 @@ function updateCounters() {
   const mine = used - board.hintLines().length;
   const editing = state === 'editing';
   clearBtn.disabled = mine === 0 || !editing;
-  hintBtn.disabled = !editing || day.hint !== null;
+  hintBtn.disabled = !editing || day.hint !== null || solving;
   hintBtn.textContent = day.hint !== null ? 'Hint used' : `Hint (-${HINT_COST})`;
   goBtn.disabled = !editing;
   goBtn.textContent = day.tries.length === 0 ? 'Try' : `Try again (${MAX_TRIES - day.tries.length} left)`;
@@ -291,7 +297,7 @@ async function boot() {
 function startDay(raw, number) {
   const level = levelWithoutLimit(raw);
   const day = getDay(mode, date) || freshDay();
-  game = { level, number, day, state: 'editing', board: null, solution: false, beat: null };
+  game = { level, raw, answer: null, number, day, state: 'editing', board: null, solution: false, beat: null };
   titleEl.textContent = `Daily #${number}`;
   if (isArchive) {
     const tag = document.createElement('span');
@@ -400,18 +406,58 @@ function fits(line) {
   return !wouldBreakCap(level, walls, line) && !cutsAllRoutes(level, [...walls, line]);
 }
 
-function useHint() {
-  if (!game || game.state !== 'editing' || game.day.hint !== null) return;
+const THINKING = 'Croakwell is thinking...';
+const SOLVE_FAILED = 'The hint could not be worked out just now. Nothing was spent. Try again.';
+const SOLUTION_FAILED = 'The solution could not be worked out just now. Try again.';
+
+/**
+ * The par answer for the game on screen, worked out in the browser on first need (the hint or the solution
+ * button) and then kept for this page load. A finished day may have it in localStorage from an earlier load
+ * (answer-cache.js; stored only by the solution button, once the day is done). Rejects if the solver fails or takes too long.
+ */
+async function answerFor(g) {
+  if (g.answer) return g.answer;
+  if (g.day.done) {
+    const cached = readCachedAnswer(g.raw, mode, date);
+    if (cached) { g.answer = cached; return g.answer; }
+  }
+  g.answer = await solveInWorker(g.raw);
+  return g.answer;
+}
+
+async function useHint() {
+  if (!game || game.state !== 'editing' || game.day.hint !== null || solving) return;
   statusEl.classList.remove('refused');
   if (adoptStored()) return;
   if (game.day.hint !== null) {
     setStatus('The hint was already used in another tab.');
     return;
   }
-  const { board, level, day } = game;
-  const answer = level.answer;
+  const g = game;
+  let answer;
+  solving = true;
+  hintBtn.disabled = true;
+  setStatus(THINKING);
+  try {
+    answer = await answerFor(g);
+  } catch {
+    solving = false;
+    if (game === g && g.state === 'editing') { refused(SOLVE_FAILED); updateCounters(); } // the hint is not spent
+    return;
+  }
+  solving = false;
+  // The player may have pressed Try, or another tab may have used the hint, while the solver worked.
+  if (game !== g || g.state !== 'editing') return;
+  if (adoptStored()) return;
+  if (g.day.hint !== null) {
+    updateCounters();
+    setStatus('The hint was already used in another tab.');
+    return;
+  }
+  const { board, level, day } = g;
   if (!Array.isArray(answer) || answer.length === 0) {
     refused('Today has no hint.');
+    updateCounters();
     return;
   }
   // Hint = one fence of the stored answer. If every answer fence is already down, one of the player's
@@ -420,6 +466,7 @@ function useHint() {
   const line = missing.length === 0 ? answer[0] : missing.find(fits);
   if (!line || (missing.length > 0 && !fits(line))) {
     refused(NO_ROOM); // generic on purpose: it must not say which fences are right
+    updateCounters();
     return;
   }
   if (missing.length === 0) board.setWall(line, false);
@@ -445,6 +492,10 @@ async function run() {
   const win = sim.result === 'win';
   // Settle the try before anything animates, so a reload can never give it back. adoptStored
   // brought in tries spent in other tabs first, so this one goes on top of them.
+  // The first try on a puzzle the page opened as its today (realToday, read when the page loaded, not now) marks the
+  // day as begun on its day, so a first try just after midnight and a finish by the end of the next day still count
+  // for the streak and the stats (record.js startedOnFor, countsOnDay).
+  g.day.startedOn = startedOnFor(g.day, date, realToday);
   g.day.tries.push({
     fences: walls.length,
     won: win,
@@ -452,7 +503,7 @@ async function run() {
     walls: walls.map(lineKey),
   });
   if (g.day.tries.length >= MAX_TRIES) {
-    g.day.done = true; // after try 3 the day ends on its own
+    g.day.done = true; // after the last try (MAX_TRIES) the day ends on its own
     g.day.finishedOn = localDateString();
   }
   g.day.reviewing = win && !g.day.done; // a reload on the win screen shows the choice again
@@ -586,6 +637,29 @@ async function toggleSolution(button, note) {
   const g = game;
   if (!g || g.state !== 'done') return;
   const { board, level, day } = g;
+  if (!g.solution && solving) return;
+  if (!g.solution) {
+    // First time: work the answer out in the browser (nothing of it is in the page before this).
+    solving = true;
+    button.disabled = true;
+    setStatus(THINKING);
+    note.textContent = THINKING;
+    try {
+      await answerFor(g);
+    } catch {
+      solving = false;
+      button.disabled = false;
+      note.textContent = SOLUTION_FAILED;
+      setStatus(SOLUTION_FAILED);
+      return;
+    }
+    solving = false;
+    button.disabled = false;
+    setStatus('');
+    if (g.state === 'done') writeCachedAnswer(mode, date, g.answer); // the day is done: from now on a reload need not solve again
+    if (game !== g || g.state !== 'done' || g.solution) return;
+    note.textContent = '';
+  }
   const token = ++playToken;
   g.solution = !g.solution;
   board.resetRun();
@@ -593,7 +667,7 @@ async function toggleSolution(button, note) {
   const instant = g.solution ? reducedMotion() : true;
   let walls;
   if (g.solution) {
-    walls = level.answer.map((w) => [...w]);
+    walls = g.answer.map((w) => [...w]);
     for (const w of walls) board.setWall(w, true, { hint: true });
     button.textContent = 'Hide the solution';
     note.textContent = `Par ${level.par}: one way to fence him in with ${plural(level.par, 'fence')}.`;
@@ -784,6 +858,12 @@ function sendResult(m, d, day) {
   if (!body) return Promise.resolve(false);
   const p = (async () => {
     try {
+      if (TURNSTILE_SITE_KEY) { // bot protection on: no token, no send (like the server being down; the next load retries)
+        const { getToken } = await import('./turnstile.js'); // only loads when a result is about to be sent
+        const token = await getToken();
+        if (!token) return false;
+        body.turnstile = token;
+      }
       const res = await fetch(`${STATS}/result`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const outcome = postOutcome(res.status);
       if (outcome !== 'retry') {

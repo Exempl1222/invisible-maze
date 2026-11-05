@@ -7,7 +7,6 @@ import { parseLevel, solve, simulate, findPath, buildableLines, cutsAllRoutes } 
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const pack = readJson('../assets/levels/pack-01.json');
-const dailyData = readJson('../assets/levels/daily.json');
 const levels = pack.levels.map((l) => parseLevel(l));
 const num = (i) => i + 1; // pack index -> level number in the URL
 
@@ -353,64 +352,53 @@ test('the game works when storage is blocked', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-/* ---------- daily ---------- */
+/* ---------- the old in-page daily is retired (v3.4: answers off the page) ---------- */
 
-const dailyLevel = (i) => parseLevel(dailyData.levels[i]);
+const NOON = (date) => new Date(`${date}T12:00:00+11:00`);
 
-test('daily: a given date loads that day\'s level, shows the date, and the par answer wins', async ({ page }) => {
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/play/?daily&date=2026-10-28');
-  await expect(page.locator('h1')).toHaveText('Daily, Wed 28 Oct');
-  await expect(page.locator('#board .cell')).toHaveCount(81);
-  const lv = dailyLevel(1);
-  await expect(page.locator('#par')).toHaveText(String(lv.par));
-  await expect(page.locator('#move-limit')).toHaveText(String(lv.moveLimit));
-  await placeAll(page, solve(lv).answer);
-  await go(page).click();
-  // A too-far win walks the whole move limit (about 300ms a move), so give a long daily room.
-  await expect(result(page)).toHaveAttribute('data-result', 'win', { timeout: 20000 });
-  await expect(result(page).getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Next level' })).toHaveCount(0);
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('invisible-maze:progress:v1')).best);
-  expect(saved[lv.id]).toBe(3);
-  await page.getByRole('button', { name: 'Back to levels' }).click();
-  await expect(page.locator('#select-view .level-btn')).toHaveCount(30);
-  expect(errors).toEqual([]);
-});
+test.describe('play/?daily goes to the daily page', () => {
+  test.use({ timezoneId: 'Australia/Sydney' });
 
-test('daily: the first day of the batch is level 0, and Levels | Daily tabs reach it', async ({ page }) => {
-  await page.goto('/play/');
-  const tabs = page.getByRole('navigation', { name: 'Mode' });
-  await expect(tabs.getByRole('link', { name: 'Levels' })).toHaveAttribute('aria-current', 'page');
-  // The Daily tab is the standalone daily page now (Easy and Hard), not the old in-page daily.
-  await expect(tabs.getByRole('link', { name: 'Daily' })).toHaveAttribute('href', '../daily/');
-  await tabs.getByRole('link', { name: 'Daily' }).click();
-  await expect(page).toHaveURL(/\/daily\/$/);
-  // Whatever today is, the page doesn't error: it shows a level or the break message.
-  await expect(page.locator('h1')).toHaveText(/^Daily/);
-  await page.goto('/play/?daily&date=2026-10-27');
-  await expect(page.locator('h1')).toHaveText('Daily, Tue 27 Oct');
-  await expect(page.locator('#board')).toBeVisible();
-});
-
-for (const date of ['2020-01-01', '2026-10-26', '2099-12-31']) {
-  test(`daily: ${date} is outside the batch, so the break message shows with a way back`, async ({ page }) => {
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`/play/?daily&date=${date}`);
-    await expect(page.getByText('The daily is taking a break')).toBeVisible();
-    await expect(page.locator('#game-view')).toBeHidden();
-    await page.getByRole('link', { name: 'Back to levels' }).click();
-    await expect(page.locator('#select-view .level-btn')).toHaveCount(30);
-    expect(errors).toEqual([]);
+  test('?daily alone lands on today\'s daily', async ({ page }) => {
+    await page.clock.install({ time: NOON('2026-11-05') });
+    await page.goto('/play/?daily');
+    await expect(page).toHaveURL(/\/daily\/$/);
+    await expect(page.locator('h1')).toHaveText('Daily #10');
+    await expect(page.locator('#board .cell').first()).toBeVisible();
   });
-}
 
-test('daily: the last day of the batch still loads', async ({ page }) => {
-  const last = dailyData.levels.at(-1).id.slice(2);
-  await page.goto(`/play/?daily&date=${last}`);
-  await expect(page.locator('#board .cell')).toHaveCount(81);
+  test('tomorrow\'s date lands on the daily page, which says it is not ready, and nothing of the puzzle shows', async ({ page }) => {
+    await page.clock.install({ time: NOON('2026-11-05') });
+    await page.goto('/play/?daily&date=2026-11-06');
+    await expect(page).toHaveURL(/\/daily\/\?date=2026-11-06$/);
+    await expect(page.locator('#daily-break')).toContainText('Not ready yet');
+    await expect(page.locator('#game-view')).toBeHidden();
+    await expect(page.locator('#board .cell')).toHaveCount(0);
+    await expect(page.locator('#par')).toHaveCount(0);
+  });
+
+  test('mode and date are kept; the other play params are dropped', async ({ page }) => {
+    await page.clock.install({ time: NOON('2026-11-05') });
+    await page.goto('/play/?daily&mode=hard&date=2026-11-03&level=4');
+    await expect(page).toHaveURL(/\/daily\/\?mode=hard&date=2026-11-03$/);
+    await expect(page.locator('h1')).toContainText('Daily #8');
+    await expect(page.locator('#board .cell')).toHaveCount(81);
+  });
+
+  test('a ?daily=1 style value and an unknown mode still go to the daily page', async ({ page }) => {
+    await page.clock.install({ time: NOON('2026-11-05') });
+    await page.goto('/play/?daily=1&mode=nope');
+    await expect(page).toHaveURL(/\/daily\/\?mode=nope$/);
+    await expect(page.locator('h1')).toHaveText('Daily #10');
+  });
+
+  test('the Daily tab on the level select is a plain link to the daily page, and play never draws a daily', async ({ page }) => {
+    await page.goto('/play/');
+    const tabs = page.getByRole('navigation', { name: 'Mode' });
+    await expect(tabs.getByRole('link', { name: 'Daily' })).toHaveAttribute('href', '../daily/');
+    await expect(page.locator('#daily-break')).toHaveCount(0);
+    await expect(page.locator('#select-view .level-btn')).toHaveCount(30);
+  });
 });
 
 /* ---------- layout and motion ---------- */

@@ -1,10 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { parseLevel, buildableLines, findPath, solve, countAnswers, simulate, cutsAllRoutes, capViolation } from '../src/game/index.js';
 import { isRingAnswer, invalidBridges } from './generate.js';
-import { addDays, buildDaily, winsAtParFromEnds, dailyPar, easyPar, weekdayUTC, DAILY_DEFAULTS } from './build-daily.js';
+import { levelWithoutLimit } from '../assets/js/daily/judge.js';
+import { SOLVE_NODE_BUDGET, solvesWithinBudget, addDays, buildDaily, buildDay, daySeed, withoutAnswer, winsAtParFromEnds, dailyPar, easyPar, weekdayUTC, DAILY_DEFAULTS, DAILY_REFRESH } from './build-daily.js';
 
 const file = fileURLToPath(new URL('../assets/levels/daily.json', import.meta.url));
 const daily = JSON.parse(readFileSync(file, 'utf8'));
@@ -63,29 +65,24 @@ test('daily: every level is consistent with the engine under v4 (all of them are
     assert.equal(lv.rules, 'v4', raw.id);
     // Proving par is slow (par 6 about 10 s a level), so the exact solve and answer count run on the first
     // 14 days (two of each weekday, Sundays included) and every 5th day after; the build proved the rest.
-    // Every level is still checked through its stored answer below.
+    // No answer is stored (v3.4), so the other days only get the cheap checks; the exactPar test below solves a sample.
     const exact = idx++ < 14 || (idx - 1) % 5 === 0;
-    const s = exact ? solve(lv, { maxPar: raw.par }) : { par: raw.par, answer: raw.answer };
+    assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot reaches the beacon with no walls`);
+    assert.equal(raw.wallBudget, raw.par + 2, `${raw.id} wallBudget`);
+    assert.ok(findPath(lv, []).positions.length - 1 >= raw.size, `${raw.id} route length`);
+    if (!exact) {
+      assert.ok(raw.parAnswers >= 1 && raw.parAnswers <= 50, `${raw.id} parAnswers range`);
+      continue;
+    }
+    const s = solve(lv, { maxPar: raw.par });
     assert.ok(s, raw.id);
     assert.equal(raw.par, s.par, `${raw.id} par`);
-    if (exact) assert.equal(raw.parAnswers, countAnswers(lv, s.par, 50), `${raw.id} countAnswers`);
-    else assert.ok(raw.parAnswers >= 1 && raw.parAnswers <= 50, `${raw.id} parAnswers range`);
-    assert.equal(raw.wallBudget, raw.par + 2, `${raw.id} wallBudget`);
-    assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot reaches the beacon with no walls`);
+    assert.equal(raw.parAnswers, countAnswers(lv, s.par, 50), `${raw.id} countAnswers`);
     assert.equal(cutsAllRoutes(lv, s.answer), false, `${raw.id} par answer leaves a route`);
     const won = simulate(lv, s.answer);
     assert.equal(won.result, 'win', `${raw.id} par answer stops the robot`);
     assert.equal(won.reason, 'too-far', `${raw.id} every win is out of moves`);
-    // stored answer (hints): within the side cap, par-sized, legal and winning
-    assert.ok(Array.isArray(raw.answer), `${raw.id} has an answer`);
-    assert.equal(raw.answer.length, raw.par, `${raw.id} stored answer length is par`);
-    assert.equal(capViolation(lv, raw.answer), null, `${raw.id} stored answer within the side cap`);
-    assert.equal(cutsAllRoutes(lv, raw.answer), false, `${raw.id} stored answer leaves a route`);
-    const stored = simulate(lv, raw.answer); // throws if illegal
-    assert.equal(stored.result, 'win', `${raw.id} stored answer is legal and wins`);
-    assert.equal(stored.reason, 'too-far', `${raw.id} stored answer is out of moves`);
     assert.equal(isRingAnswer(lv, s.answer), false, `${raw.id} ring`);
-    assert.ok(findPath(lv, []).positions.length - 1 >= raw.size, `${raw.id} route length`);
   }
 });
 
@@ -128,25 +125,85 @@ test('daily-easy: every bridge spans a river', () => {
   for (const l of easy.levels) assert.deepEqual(invalidBridges(l.tiles), [], `${l.id}\n${l.tiles.join('\n')}`);
 });
 
-test('daily-easy: every stored answer wins under the Easy page rules (budget = buildable lines), par is exact on a sample', () => {
+test('daily-easy: every level is consistent under the Easy page rules (budget = buildable lines), par is exact on a sample', () => {
   easy.levels.forEach((raw, idx) => {
     const base = parseLevel(raw);
     const lv = parseLevel({ ...raw, wallBudget: buildableLines(base).length });
     assert.equal(simulate(lv, []).result, 'lose', `${raw.id} robot reaches the beacon with no walls`);
-    assert.ok(Array.isArray(raw.answer) && raw.answer.length === raw.par, `${raw.id} answer is par-sized`);
     assert.ok(raw.parAnswers >= 1 && raw.parAnswers <= 50, `${raw.id} parAnswers range`);
-    assert.equal(capViolation(lv, raw.answer), null, `${raw.id} answer within the side cap`);
-    assert.equal(cutsAllRoutes(lv, raw.answer), false, `${raw.id} answer leaves a route`);
-    const won = simulate(lv, raw.answer);
-    assert.equal(won.result, 'win', `${raw.id} stored answer wins`);
+    // the browser solves at the stored par: that answer must be legal and win (and nothing wins in fewer walls)
+    const s = solve(lv, { exactPar: raw.par });
+    assert.ok(s, `${raw.id} has an answer at par`);
+    assert.equal(s.answer.length, raw.par, `${raw.id} answer is par-sized`);
+    assert.equal(capViolation(lv, s.answer), null, `${raw.id} answer within the side cap`);
+    assert.equal(cutsAllRoutes(lv, s.answer), false, `${raw.id} answer leaves a route`);
+    const won = simulate(lv, s.answer);
+    assert.equal(won.result, 'win', `${raw.id} answer wins`);
     assert.equal(won.reason, 'too-far', `${raw.id} win is out of moves`);
-    assert.equal(isRingAnswer(lv, raw.answer), false, `${raw.id} ring`);
+    assert.equal(isRingAnswer(lv, s.answer), false, `${raw.id} ring`);
     if (idx % 3 === 0) {
-      const s = solve(lv, { maxPar: raw.par });
-      assert.equal(s.par, raw.par, `${raw.id} par is the true par`);
-      assert.equal(countAnswers(lv, s.par, 50), raw.parAnswers, `${raw.id} countAnswers`);
+      assert.equal(solve(lv, { exactPar: raw.par - 1 }), null, `${raw.id} nothing wins in par-1 walls`);
+      assert.equal(solve(lv, { maxPar: raw.par }).par, raw.par, `${raw.id} par is the true par`);
+      assert.equal(countAnswers(lv, raw.par, 50), raw.parAnswers, `${raw.id} countAnswers`);
     }
   });
+});
+
+test('daily (Hard): a sample of days solves at the stored par, wins under the engine, and nothing wins at par-1', () => {
+  // Days spread over the batch: before and after the refresh, every weekday (Sundays are par 6, the slow ones).
+  const sample = [0, 5, 12, 16, 19, 40, 60, 90, 120, 150, 179];
+  for (const i of sample) {
+    const raw = daily.levels[i];
+    const lv = levelWithoutLimit(raw);
+    const s = solve(lv, { exactPar: raw.par });
+    assert.ok(s, `${raw.id} has an answer at par`);
+    assert.equal(s.answer.length, raw.par, `${raw.id} answer is par-sized`);
+    assert.deepEqual(solve(lv, { exactPar: raw.par }), s, `${raw.id} same input, same answer`);
+    const won = simulate(lv, s.answer);
+    assert.equal(won.result, 'win', `${raw.id} wins`);
+    assert.equal(won.reason, 'too-far', `${raw.id} out of moves`);
+    assert.equal(solve(lv, { exactPar: raw.par - 1 }), null, `${raw.id} nothing wins in par-1 walls`);
+  }
+});
+
+// ---- v3.4: answers off the page ----
+
+test('shipped daily files have no "answer" key anywhere (v3.4)', () => {
+  for (const [name, file] of [['daily', daily], ['daily-easy', easy]]) {
+    assert.ok(!/"answer"/.test(JSON.stringify(file)), `${name} holds no answer`);
+    for (const l of file.levels) assert.equal('answer' in l, false, l.id);
+  }
+  assert.deepEqual(withoutAnswer({ id: 'x', par: 3, answer: [[0, 0, 'R']] }), { id: 'x', par: 3 });
+});
+
+/** The fields a player's saved results depend on. */
+const playable = (l) => ({ id: l.id, size: l.size, tiles: l.tiles, rules: l.rules, moveLimit: l.moveLimit, wallBudget: l.wallBudget, par: l.par, parAnswers: l.parAnswers });
+const PRE_CUTOVER_SHA = {
+  daily: 'ccb9a50478011fed9d1e11009c74eb1ec6afcebf1a1032cd20ea2b2ec471d2e4',
+  'daily-easy': '027573636920cad4cda073cb03edead9c37e93456aa0f21d95d350c2bcd95097',
+};
+
+test('days before the refresh date never change: their playable fields are pinned by hash (v3.4)', () => {
+  assert.equal(DAILY_REFRESH.from, '2026-11-08');
+  for (const [name, file] of [['daily', daily], ['daily-easy', easy]]) {
+    const before = file.levels.filter((l) => l.id.slice(2) < DAILY_REFRESH.from);
+    assert.equal(before.length, 12, `${name} has 12 days before 8 Nov (27 Oct to 7 Nov)`);
+    assert.equal(before.at(-1).id.slice(2), '2026-11-07');
+    const sha = createHash('sha256').update(JSON.stringify(before.map(playable))).digest('hex');
+    assert.equal(sha, PRE_CUTOVER_SHA[name], `${name}: a day before ${DAILY_REFRESH.from} changed`);
+  }
+});
+
+test('daySeed: unchanged before the refresh date, salted from it on', () => {
+  const start = DAILY_DEFAULTS.start;
+  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 11, 0), `${DAILY_DEFAULTS.seed}-11-0`); // 2026-11-07
+  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 12, 0), `${DAILY_DEFAULTS.seed}-${DAILY_REFRESH.salt}-12-0`); // 2026-11-08
+  assert.equal(daySeed(DAILY_DEFAULTS.seed, start, 12, 3, null), `${DAILY_DEFAULTS.seed}-12-3`);
+});
+
+test('the refreshed days rebuild identically from the seed (Easy and Hard, the first refreshed day)', () => {
+  assert.deepEqual(buildDay(12, { size: 7 }).level, easy.levels[12]);
+  assert.deepEqual(buildDay(12, { size: 9 }).level, daily.levels[12]);
 });
 
 test('daily-easy: reproducible from the seed (the first days rebuild identically)', () => {
@@ -156,4 +213,23 @@ test('daily-easy: reproducible from the seed (the first days rebuild identically
 
 test('daily-easy: no level can be won at par using only fences beside the gnome or his house', () => {
   for (const l of easy.levels) assert.equal(winsAtParFromEnds(l), false, l.id);
+});
+
+test('every remade day solves at its par within the node budget (the exact call the browser worker makes)', () => {
+  assert.ok(SOLVE_NODE_BUDGET > 0 && SOLVE_NODE_BUDGET <= 50000, 'budget keeps the worst day near a second in Node');
+  for (const [name, file] of [['daily', daily], ['daily-easy', easy]]) {
+    const remade = file.levels.filter((l) => l.id.slice(2) >= DAILY_REFRESH.from);
+    assert.equal(remade.length, file.levels.length - 12, name);
+    for (const raw of remade) {
+      const s = solve(levelWithoutLimit(raw), { exactPar: raw.par, maxNodes: SOLVE_NODE_BUDGET });
+      assert.ok(s, `${raw.id} needs more than ${SOLVE_NODE_BUDGET} nodes to solve at par ${raw.par}`);
+      assert.equal(s.answer.length, raw.par, raw.id);
+      assert.equal(solvesWithinBudget(raw), true, raw.id);
+    }
+  }
+});
+
+test('solvesWithinBudget: a budget that is too small says no', () => {
+  const sunday = daily.levels.find((l) => l.par === 6 && l.id.slice(2) >= DAILY_REFRESH.from);
+  assert.equal(solvesWithinBudget(sunday, 5), false);
 });

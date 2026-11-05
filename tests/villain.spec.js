@@ -2,10 +2,11 @@
 // Daily answers come from the level files and are pressed into the real page, like daily.spec.js.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { withAnswer } from './answers.js';
 import { parseLevel, buildableLines, capViolation, cutsAllRoutes } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
-const easy = readJson('../assets/levels/daily-easy.json').levels[0]; // day 0 is 27 Oct 2026
+const easy = withAnswer(readJson('../assets/levels/daily-easy.json').levels[0]); // day 0 is 27 Oct 2026
 const KEY = 'gnome-sweet-gnome:daily:v2';
 const NOON = new Date('2026-10-27T12:00:00+11:00');
 
