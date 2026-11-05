@@ -128,3 +128,23 @@ test('stats read the shown score: a hinted day counts its base less 15', () => {
   assert.equal(s.average, 85);
   assert.equal(s.today, '80');
 });
+
+test('midnight: wins on 1 to 3 Nov, then 4 Nov begun on the 4th and finished at 00:01 on the 5th, keeps the streak', () => {
+  const days = {
+    '2026-11-01': won(), '2026-11-02': won(), '2026-11-03': won(),
+    '2026-11-04': { ...late(won(), '2026-11-05'), startedOn: '2026-11-04' },
+  };
+  const s = computeStats(days, '2026-11-05');
+  assert.equal(s.current, 4);
+  assert.equal(s.bestStreak, 4);
+  // the same day with no startedOn (an older save) behaves as before: finished on a later date, so it does not count
+  const older = computeStats({ ...days, '2026-11-04': late(won(), '2026-11-05') }, '2026-11-05');
+  assert.equal(older.current, 0);
+  // an archive day begun on a later date still does not count, even with a startedOn
+  const archive = computeStats({ ...days, '2026-11-04': { ...late(won(), '2026-11-05'), startedOn: '2026-11-05' } }, '2026-11-05');
+  assert.equal(archive.current, 0);
+  assert.equal(archive.bestStreak, 3);
+  // and begun on the day but left for days before finishing does not count either
+  const slow = computeStats({ ...days, '2026-11-04': { ...late(won(), '2026-11-07'), startedOn: '2026-11-04' } }, '2026-11-07');
+  assert.equal(slow.bestStreak, 3);
+});

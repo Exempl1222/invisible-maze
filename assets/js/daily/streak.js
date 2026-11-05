@@ -9,6 +9,7 @@ export function addDays(date, n) {
 }
 
 import { bestScore, bandOf, BANDS } from './score.js';
+import { countsOnDay } from './record.js';
 
 /**
  * Stats for one mode's saved `days` (date -> record), as seen on `today`:
@@ -16,7 +17,7 @@ import { bestScore, bandOf, BANDS } from './score.js';
  * A day is played when it is done; its score is the best winning try (0 for a day with no win) and a
  * win is a score above 0. `average` is over played days, lost days counting 0. `dist` counts days per
  * score band (see BANDS). Current streak: consecutive dates with a score above 0, finished on the
- * day itself (`finishedOn` is the date; archive catch-ups don't count), ending today, or yesterday if
+ * day itself (`finishedOn` is the date, or `startedOn` is, with a finish by the next day; archive catch-ups don't count), ending today, or yesterday if
  * today isn't done yet. A lost or missed day ends it. `today` in the result is today's band key, or
  * null if today isn't done.
  */
@@ -34,7 +35,7 @@ export function computeStats(days, today) {
     top = Math.max(top, score);
     if (score > 0) {
       wins++;
-      if (!d.finishedOn || d.finishedOn === date) streakDates.add(date); // no finishedOn: an older save, taken as on the day
+      if (countsOnDay(d, date)) streakDates.add(date); // finished on the day, or begun on it and finished just after midnight (no finishedOn: an older save, taken as on the day)
     }
   }
   const played = done.length;
