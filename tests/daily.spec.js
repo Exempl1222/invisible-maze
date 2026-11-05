@@ -1204,6 +1204,39 @@ test.describe('the answer is solved in the browser, on demand', () => {
     for (const w of lv.answer) await expect(page.locator(`#board .wall-bar[data-hint="1"][data-line="${w.join(',')}"]`)).toHaveCount(1);
   });
 
+  const answerKeys = (page) => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('gnome-sweet-gnome:daily:answer:')));
+
+  test('a hint never leaves the answer in storage: nothing is cached until the day is done', async ({ page }) => {
+    await openDay(page);
+    await hintBtn(page).click();
+    await expect(hintBars(page)).toHaveCount(1);
+    expect(await answerKeys(page)).toEqual([]);
+    await page.reload();
+    await expect(page.locator('#board .cell').first()).toBeVisible();
+    expect(await answerKeys(page)).toEqual([]);
+  });
+
+  test('after the day is done the solved answer is cached: the solution after a reload does not start the solver', async ({ page }) => {
+    const lv = level('easy');
+    await openDay(page);
+    await placeAll(page, [...lv.answer, ...extraFences(lv, 1)]);
+    await tryNow(page);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    expect(await answerKeys(page)).toEqual([]); // finishing the day stores nothing
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    expect(await answerKeys(page)).toEqual(['gnome-sweet-gnome:daily:answer:easy:2026-10-27']);
+    await page.reload();
+    await expect(result(page)).toHaveAttribute('data-state', 'done');
+    const urls = solverRequests(page);
+    await solBtn(page).click();
+    await expect(solBtn(page)).toHaveText('Hide the solution');
+    await expect(hintBars(page)).toHaveCount(lv.answer.length);
+    for (const w of lv.answer) await expect(page.locator(`#board .wall-bar[data-hint="1"][data-line="${w.join(',')}"]`)).toHaveCount(1);
+    expect(urls).toEqual([]);
+  });
+
   test('if the solver fails after the day, the solution says so and the button can be pressed again', async ({ page }) => {
     const lv = level('easy');
     await openDay(page);

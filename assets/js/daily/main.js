@@ -10,6 +10,7 @@ import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 import { APP_LINK, MAX_TRIES, MODES, MODE_LABEL, DEFAULT_MODE, LEVEL_URL, TURNSTILE_SITE_KEY } from './config.js';
 import { scoreFor, shownScore, bestScore, maxScore, bandOf, HINT_COST } from './score.js';
 import { statsUrl, resultBody, pendingResults, postOutcome, parseStats, bandRows, beatPercent } from './everyone.js';
+import { readCachedAnswer, writeCachedAnswer } from './answer-cache.js';
 import { freshDay, parseLineKey, mergeDay, startedOnFor } from './record.js';
 import { levelWithoutLimit } from './judge.js';
 import { solveInWorker } from './solver.js';
@@ -411,10 +412,15 @@ const SOLUTION_FAILED = 'The solution could not be worked out just now. Try agai
 
 /**
  * The par answer for the game on screen, worked out in the browser on first need (the hint or the solution
- * button) and then kept for this page load. Rejects if the solver fails or takes too long.
+ * button) and then kept for this page load. A finished day may have it in localStorage from an earlier load
+ * (answer-cache.js; stored only by the solution button, once the day is done). Rejects if the solver fails or takes too long.
  */
 async function answerFor(g) {
   if (g.answer) return g.answer;
+  if (g.day.done) {
+    const cached = readCachedAnswer(g.raw, mode, date);
+    if (cached) { g.answer = cached; return g.answer; }
+  }
   g.answer = await solveInWorker(g.raw);
   return g.answer;
 }
@@ -650,6 +656,7 @@ async function toggleSolution(button, note) {
     solving = false;
     button.disabled = false;
     setStatus('');
+    if (g.state === 'done') writeCachedAnswer(mode, date, g.answer); // the day is done: from now on a reload need not solve again
     if (game !== g || g.state !== 'done' || g.solution) return;
     note.textContent = '';
   }
