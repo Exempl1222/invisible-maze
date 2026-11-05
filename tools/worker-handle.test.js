@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseLevel, buildableLines, capViolation, cutsAllRoutes, simulate } from '../src/game/index.js';
+import { parseLevel, buildableLines, capViolation, cutsAllRoutes, simulate, solve } from '../src/game/index.js';
 import { handle, summarize, ALLOWED_ORIGINS } from '../worker/src/handle.js';
 import { scoreFor, shownScore } from '../assets/js/daily/score.js';
 import { judgeFences, levelWithoutLimit } from '../assets/js/daily/judge.js';
@@ -13,7 +13,13 @@ const LEVELS = { easy: readJson('../assets/levels/daily-easy.json'), hard: readJ
 const ORIGIN = 'https://gnomesweetgnome.app';
 const at = (date) => Date.parse(`${date}T12:00:00Z`);
 const NOW = at('2026-10-27'); // day #1, index 0
-const raw = (mode, i = 0) => LEVELS[mode].levels[i];
+// The files hold no answer (v3.4), so the tests solve each day at its stored par, once, and keep it beside the level.
+const solved = new Map();
+const raw = (mode, i = 0) => {
+  const lv = LEVELS[mode].levels[i];
+  if (!solved.has(lv)) solved.set(lv, { ...lv, answer: solve(levelWithoutLimit(lv), { exactPar: lv.par }).answer });
+  return solved.get(lv);
+};
 const dateOf = (i) => new Date(Date.parse('2026-10-27T00:00:00Z') + i * 86400000).toISOString().slice(0, 10);
 
 function setup() {

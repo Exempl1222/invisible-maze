@@ -5,8 +5,9 @@
 //                             [--jobs 2] [--from 0 --to 180] [--size 7]   (build days [from, to) and merge into --out; for pieces under a time limit)
 //
 // One 9x9 level per calendar day: levels[0] is the start date, levels[i] is start + i days.
-// Rules v4 (docs/GAME_SPEC.md): "rules": "v4", wallBudget = par + 2, par, parAnswers (counted up
-// to 50, a single par answer is not required) and one par answer ("answer"). The weekday comes from
+// Rules v4 (docs/GAME_SPEC.md): "rules": "v4", wallBudget = par + 2, par and parAnswers (counted up
+// to 50, a single par answer is not required). No "answer" is written (v3.4: the page solves hints in the
+// browser at the stored par). Days from DAILY_REFRESH.from use a salted sub-seed. The weekday comes from
 // the YYYY-MM-DD string in UTC (never the build machine's time zone) and sets the par:
 // Monday to Wednesday par 4, Thursday to Saturday par 5, Sunday par 6 (the weekly hard day).
 // `--size 7` builds the Easy batch (assets/levels/daily-easy.json, ids e-YYYY-MM-DD): 7x7, par 3
@@ -24,6 +25,26 @@ import { generateLevels, formatStats } from './generate.js';
 import { parseLevel, buildableLines, simulate, capViolation, cutsAllRoutes } from '../src/game/index.js';
 
 export const DAILY_DEFAULTS = { days: 180, start: '2026-10-27', seed: 20261027 };
+
+/**
+ * Days from `from` onward are built with `salt` in their sub-seed, so they differ from the first version of the
+ * batch. v3.4: the first version's answers for these days had shipped to the page and sit in git history, so the
+ * days that had not been played yet were remade. Days before `from` keep their original sub-seed and stay as
+ * they were (players and the stats server already hold results for them).
+ */
+export const DAILY_REFRESH = { from: '2026-11-12', salt: 'r2' };
+
+/** The sub-seed for day i, attempt a. Unchanged for days before the refresh date. */
+export function daySeed(seed, start, i, attempt, refresh = DAILY_REFRESH) {
+  const salted = refresh && addDays(start, i) >= refresh.from;
+  return salted ? `${seed}-${refresh.salt}-${i}-${attempt}` : `${seed}-${i}-${attempt}`;
+}
+
+/** The level as shipped: the generator's par answer is dropped (v3.4: no answer in the page or in git). */
+export function withoutAnswer(level) {
+  const { answer, ...rest } = level;
+  return rest;
+}
 
 /** YYYY-MM-DD plus n days, in UTC (no time zone surprises). */
 export function addDays(date, n) {
@@ -97,7 +118,7 @@ export function buildDay(i, { start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULT
   const stats = { tried: 0, rejected: {}, usesTeleporter: 0 };
   for (let attempt = 0; attempt < 20; attempt++) {
     const gen = generateLevels({
-      size, count: 1, seed: `${seed}-${i}-${attempt}`, minPar: par, maxPar: par, minSlack: cfg.slack[0], maxSlack: cfg.slack[1],
+      size, count: 1, seed: daySeed(seed, start, i, attempt), minPar: par, maxPar: par, minSlack: cfg.slack[0], maxSlack: cfg.slack[1],
       maxTries: cfg.tries, maxNodes: cfg.maxNodes, rules: 'v4', unique: false, budgetExtra: 2, answerCap: 50,
     });
     stats.tried += gen.stats.tried;
@@ -106,7 +127,7 @@ export function buildDay(i, { start = DAILY_DEFAULTS.start, seed = DAILY_DEFAULT
     if (easy && winsAtParFromEnds(gen.levels[0])) { stats.rejected['par-from-ends'] = (stats.rejected['par-from-ends'] ?? 0) + 1; continue; }
     if (gen.meta[0].usesTeleporter) stats.usesTeleporter++;
     const { id, ...rest } = gen.levels[0]; // drop the generator's temporary id
-    return { level: { id: `${easy ? 'e' : 'd'}-${addDays(start, i)}`, ...rest }, stats };
+    return { level: withoutAnswer({ id: `${easy ? 'e' : 'd'}-${addDays(start, i)}`, ...rest }), stats };
   }
   return { level: null, stats };
 }
@@ -174,7 +195,7 @@ async function main() {
   const t0 = performance.now();
   // days already in --out (when building in pieces) are kept for indices outside [from, to)
   let existing = [];
-  if (from > 0 && existsSync(out)) existing = JSON.parse(readFileSync(out, 'utf8')).levels.slice(0, from);
+  if (from > 0 && existsSync(out)) existing = JSON.parse(readFileSync(out, 'utf8')).levels.slice(0, from).map(withoutAnswer);
   if (existing.length !== from) throw new Error(`--from ${from} needs ${out} to hold at least ${from} levels (found ${existing.length})`);
   const built = await buildRange({ from, to, start: opts.start, seed: opts.seed, size, jobs });
   const total = { tried: 0, kept: 0, rejected: {}, usesTeleporter: 0 };
