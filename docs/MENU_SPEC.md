@@ -9,7 +9,7 @@ Visual reference: `docs/art/reference-board.html` (open it in a browser). Match 
 - Product name **Gnome Sweet Gnome**, tagline **a fence-building puzzle**. Use both on the home page hero; the name alone in the header wordmark.
 - Page titles: `Gnome Sweet Gnome` (home), `Play · Gnome Sweet Gnome` (game). `theme-color` becomes the new page background.
 - Wordmark icon and favicon: the gnome's head (hat, face, beard) cropped from the down-facing gnome art. Add it to `tools/build-sprites.mjs` as `icon-gnome.svg` (64 x 64, no animation) so it stays generated, and point `assets/favicon.svg` at the same drawing.
-- Footer: `Gnome Sweet Gnome is in development.`
+- Footer: `A new gnome every day.` (all pages; was `Gnome Sweet Gnome is in development.` before the site went live)
 
 ## M2. Daylight garden palette and type
 
