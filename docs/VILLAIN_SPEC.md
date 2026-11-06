@@ -14,7 +14,7 @@ No rule changes. Nothing in `src/game/` changes.
 
 - Round olive toad, soft radial shading, a few pale freckles (no lumpy warts), big golden eyes.
 - Face-on: big round pupils with two white catchlights, pink cheeks, small grin with one buck tooth and a tongue tip. `smug` winks his right eye (viewer's left).
-- Purple wizard hat, slightly crooked, with a coiled spring tip and an orange striped pom-pom, an orange band with gold dots, a lilac stitched patch, a gold star, a joker card tucked in the band, and a tiny snail on the brim.
+- Purple wizard hat, cocked well over to his right (over his right eye) in the back view so it stays below the board's bottom edge: idle 40°, cast 34°, gloat 54°. Leaning it left would lift the spring tip into the board. Front views keep the slight tilt. The hat group is `.toad-hat`, and `tests/design.spec.js` checks it never paints over a tile. During a cast it rises about 9px over the edge for its 600ms, alongside his raised hands. It has a coiled spring tip and an orange striped pom-pom, an orange band with gold dots, a lilac stitched patch, a gold star, a joker card tucked in the band, and a tiny snail on the brim.
 - Purple cloak with orange harlequin diamonds on the hem.
 - Back view only: a slingshot in his back pocket and a pink whoopee cushion tucked in his cloak (the player can see his prank gear, the gnome can't).
 - Webbed four-finger hands with round pale fingertip pads.
@@ -30,7 +30,7 @@ No rule changes. Nothing in `src/game/` changes.
 
 | File | Canvas | Notes |
 |---|---|---|
-| `toad-back-idle.svg` | 390 x 140 | Hands gripping the board's bottom corners (about 9% in from each edge), arms angled out from the shoulders. Loops: slow breathe (body scale 1 to 1.015, 3.2s), fly orbiting the hat tip (2.4s) |
+| `toad-back-idle.svg` | 390 x 140 | Hands gripping the board's bottom corners (about 9% in from each edge), arms angled out from the shoulders. Loops: slow breathe (body scale 1 to 1.015, 3.2s), fly orbiting the cocked hat's tip (2.4s, below the board edge) |
 | `toad-back-cast.svg` | 390 x 140 | Hands raised so fingertips reach about 40px above the canvas (`overflow: visible`). Throat sacs puffed, hat tip perked, fingertips glow lime, confetti twinkles |
 | `toad-back-gloat.svg` | 390 x 140 | One fist pumped up, other hand on the edge, body bounced up, "Hehehe!" in Grandstander, tongue snapping the fly, confetti. Loop: 0.5s bounce |
 | `toad-back-sulk.svg` | 390 x 140 | He lets go of the board: body sunk, heavy droopy lids, left fist clenched and raised near the board corner (knuckles up, shake marks and an anger cross, shaking 0.4s every 1.6s; no shake under reduced motion), right arm limp with the hand dangling, hat fallen off and lying on its side at the bottom right with the snail on it, a small cream "Rats!" speech bubble centred above his head, a small rain cloud with drizzle and a flat whoopee cushion. No floating text |

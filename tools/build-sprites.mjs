@@ -446,11 +446,14 @@ const TOAD_CSS = `
 @keyframes toadBlink{0%,93%,100%{opacity:0}96%{opacity:1}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}`;
 
-/** Pose numbers: from the mockup's renderVals(), hands re-placed into the band. */
+/** Pose numbers: from the mockup's renderVals(), hands re-placed into the band.
+    The hat is cocked to the right, over his right eye, so it stays below the board's bottom edge instead of
+    standing up over the bottom row (idle clears the edge; gloat clears it at rest, about 2px at the top of
+    his bounce; cast reaches about 9px over for its 600ms, with his hands). Leaning left lifts the spring tip. */
 const BACK = {
-  idle: { dy: 0, hat: 'rotate(-6 195 540)', tip: 'rotate(0 207 456)', L: [36, 36, -8], R: [354, 36, 8], glow: false, sac: [0, 0], lid: false },
-  cast: { dy: -8, hat: 'translate(0 -10) rotate(5 195 540)', tip: 'rotate(-25 207 456)', L: [34, 4, -24], R: [356, 4, 24], glow: true, sac: [14, 10], lid: false },
-  gloat: { dy: -16, hat: 'translate(0 -14) rotate(-16 195 540)', tip: 'rotate(-40 207 456)', L: [36, 6, -10], R: [354, 38, 10], glow: false, sac: [24, 18], lid: false, fist: 'L' },
+  idle: { dy: 0, hat: 'rotate(40 195 540)', tip: 'rotate(0 207 456)', L: [36, 36, -8], R: [354, 36, 8], glow: false, sac: [0, 0], lid: false },
+  cast: { dy: -8, hat: 'rotate(34 195 540)', tip: 'rotate(-25 207 456)', L: [34, 4, -24], R: [356, 4, 24], glow: true, sac: [14, 10], lid: false },
+  gloat: { dy: -16, hat: 'rotate(54 195 540)', tip: 'rotate(-40 207 456)', L: [36, 6, -10], R: [354, 38, 10], glow: false, sac: [24, 18], lid: false, fist: 'L' },
   sulk: { dy: 30, hat: '', tip: 'rotate(0 207 456)', L: [72, 66, 0], R: [322, 88, 172], glow: false, sac: [0, 0], lid: true, noHat: true },
 };
 function toadBackSvg(mood) {
@@ -523,7 +526,7 @@ function toadBackSvg(mood) {
     ${hum}
     ${part(ell(145, 554, 33, 33), `url(#${PFX}bulge)`, null, null, bw)}${part(ell(245, 554, 33, 33), `url(#${PFX}bulge)`, null, null, bw)}
     ${eyeRim(145)}${eyeRim(245)}${lid(145)}${lid(245)}
-    ${m.noHat ? '' : `<g transform="${m.hat}">${hat(bw * .7, m.tip)}</g>`}
+    ${m.noHat ? "" : `<g class="toad-hat" transform="${m.hat}">${hat(bw * .7, m.tip)}</g>`}
     ${part(hemPath, `url(#${PFX}cloak)`, null, null, bw)}
     ${acorn(195, 690, bw * .7)}${diamonds}${slingshot}${cushion}`;
 
@@ -534,7 +537,7 @@ function toadBackSvg(mood) {
     ${mood === 'sulk' ? fist : handSvg(m.L, false, m.fist === 'L')}${handSvg(m.R, true, m.fist === 'R')}
     <g transform="translate(${TB.tx} ${TB.ty}) scale(${TB.k})"><g transform="translate(0 ${m.dy - 30})"><g class="${mood === 'idle' ? 'breathe' : mood === 'gloat' ? 'bounce' : ''}">${inner}</g></g></g>
     ${castFx}${gloatFx}${sulkFx}</g>`;
-  const css = TOAD_CSS + (mood === 'sulk' ? '.fist-shake{animation:toadFist 1.6s ease-in-out infinite}@keyframes toadFist{0%,32%,100%{transform:translate(0,0) rotate(0)}4%{transform:translate(-2px,0) rotate(-4deg)}8%{transform:translate(2px,0) rotate(4deg)}12%{transform:translate(-2px,0) rotate(-4deg)}16%{transform:translate(2px,0) rotate(4deg)}20%{transform:translate(-1px,0) rotate(-2deg)}24%{transform:translate(0,0) rotate(0)}}' : '') + (mood === 'idle' ? orbitFrames('toadOrbit', 258, 414, 30, 11) + '.flyOrbit{animation:toadOrbit 2.4s linear infinite}' : '');
+  const css = TOAD_CSS + (mood === 'sulk' ? '.fist-shake{animation:toadFist 1.6s ease-in-out infinite}@keyframes toadFist{0%,32%,100%{transform:translate(0,0) rotate(0)}4%{transform:translate(-2px,0) rotate(-4deg)}8%{transform:translate(2px,0) rotate(4deg)}12%{transform:translate(-2px,0) rotate(-4deg)}16%{transform:translate(2px,0) rotate(4deg)}20%{transform:translate(-1px,0) rotate(-2deg)}24%{transform:translate(0,0) rotate(0)}}' : '') + (mood === 'idle' ? orbitFrames('toadOrbit', 303, 468, 30, 11) + '.flyOrbit{animation:toadOrbit 2.4s linear infinite}' : '');
   const label = { idle: 'Sir Croakwell, a toad wizard, watching from behind', cast: 'Sir Croakwell casting a fence spell', gloat: 'Sir Croakwell gloating', sulk: 'Sir Croakwell sulking' }[mood];
   return svgDoc(390, 140, css, body, label, 'gsg-toad').replace('<svg ', '<svg style="overflow:visible" ');
 }
