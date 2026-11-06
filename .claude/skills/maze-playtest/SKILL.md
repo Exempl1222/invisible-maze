@@ -16,7 +16,7 @@ Check the build the way a player meets it: on a phone first. The goal is evidenc
    - horizontal scroll or clipped text
    - tap targets under 44px
    - text that is hard to read against the background
-   - anything overlapping the board
+   - anything overlapping the board. Sir Croakwell's hands may grip the bottom edge, but no other art may paint over a tile: `tests/design.spec.js` hit-tests every tile (it switches his `pointer-events: none` off while measuring, since hit testing skips such elements); run it and look at the bottom row in the screenshots
 4. **Play it (from Phase 4).** For each seed in the list the spec gives (or seeds 1 to 20), play one level to the end using taps only. Record per seed: result (win, lose, stuck), moves taken, any console error, and whether the level felt trivially easy or impossible.
 5. **Check reduced motion.** Reload with `reduced_motion="reduce"` and confirm nothing animates and the board still makes sense.
 

@@ -14,6 +14,11 @@ const $ = (id) => document.getElementById(id);
 function open(dlg, opener) {
   if (dlg.open) return;
   dlg.showModal();
+  // Start at the top with focus on the heading. Native focus goes to the first button, which in How to play is
+  // the last thing in the dialog, so on a short window it opened scrolled past the title.
+  const heading = dlg.querySelector('h2');
+  if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+  dlg.scrollTop = 0;
   const back = () => {
     dlg.removeEventListener('close', back);
     if (opener && opener.isConnected) opener.focus({ preventScroll: true });
