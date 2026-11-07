@@ -44,6 +44,7 @@ docs/ROADMAP.md       phases and status
 docs/GAME_SPEC.md     rules; source of truth for game logic
 REVIEW_CONTEXT.md     what an independent review checks against: scope, rules, accepted limits, severity anchors
 .claude/skills/       project skills (maze-playtest)
+.claude/settings.json enables the superpowers and ponytail plugins for every Claude Code session
 ```
 
 ## Rules
