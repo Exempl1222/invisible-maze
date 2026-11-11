@@ -25,6 +25,14 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 | 6k | **Review fixes (Nov)** | Independent review found 19 findings at `b0b72c0` (verdict: not ready). Fixes on `fix/review-nov`: answers off the page (`DAILY_SPEC` v3.4), midnight streak rule, Worker date window, legacy shape cutover, Turnstile (built, off), Worker always deploys, `?v=` stamping, docs drift, `REVIEW_CONTEXT.md` | Builders (Sonnet), reviewed by Opus | In review |
 | 6 | **Polish and launch** | Daily level, packs of 30, hints, final name, analytics, custom domain, then ads | Mixed | Not started |
 | 7 | **Gnome retheme** | sprites in game, menus rethemed | Builder (Sonnet), reviewed by Opus | In review |
+| 8a | **Spec v5** | `docs/GAME_SPEC.md` "Rules v5" (tiers, ice, mud, gates, gnome tools, metrics), `REVIEW_CONTEXT.md` updated. Plan: `docs/PLAY_PLAN.md` | Orchestrator (Opus) | Done 11 Nov 2026 |
+| 8b | **Easy pack** | 20 levels 5x5, par 1 to 4, to the v5 metrics; tier select on the Play page; pack 1 stars for 1 to 5 carried | Builder (Sonnet) | Not started |
+| 8c | **Engine: ice, mud, gates** | Tests first; solver exact vs brute force on small boards; v4 levels unchanged | Builder (Sonnet), verified by Opus | Not started |
+| 8d | **Art + animation: Medium tiles** | Sprites from `build-sprites.mjs`, slide, sink and gate animations, reduced-motion fallbacks | Builder (Sonnet) | Not started |
+| 8e | **Lab round 1** | 5 Lab levels per Medium mechanic, Eric playtests | Eric + QA (Sonnet) | Not started |
+| 8f | **Medium pack** | 20 levels 7x7 to the metrics | Builder (Sonnet) | Not started |
+| 8g | **Engine + UI: gnome tools** | Tool state in routing and solver, brute-force proof, tool badge, three animations | Builder (Sonnet), verified by Opus | Not started |
+| 8h | **Lab round 2 + Hard pack** | Tools playtested, then 20 levels 9x9 | Eric, then Builder | Not started |
 
 ## Why this order
 

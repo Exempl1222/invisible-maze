@@ -1,6 +1,6 @@
 # Play plan: Easy, Medium, Hard (decisions signed off 11 Nov 2026)
 
-Plan for the next stretch of the Play game. **Eric took every recommendation in the decisions table on 11 Nov 2026.** The rules still move into `docs/GAME_SPEC.md` as v5 in parcel 7a before any engine code and into `REVIEW_CONTEXT.md` (CLAUDE.md rules 1 and 10). The daily stays on v4 and is untouched by this plan.
+Plan for the next stretch of the Play game. **Eric took every recommendation in the decisions table on 11 Nov 2026.** The rules still move into `docs/GAME_SPEC.md` as v5 in parcel 8a before any engine code and into `REVIEW_CONTEXT.md` (CLAUDE.md rules 1 and 10). The daily stays on v4 and is untouched by this plan.
 
 ## Terms
 
@@ -132,16 +132,16 @@ Intro pattern for each mechanic: 1 level where it alone decides par, 2 where it 
 
 | # | Parcel | Done when | Who |
 |---|---|---|---|
-| 7a | **Spec v5** | Decisions below signed off; GAME_SPEC v5 sections for tiers, ice, mud, gate, tools; REVIEW_CONTEXT updated | Orchestrator (Opus) |
-| 7b | **Easy pack** | 20 levels 5x5 to the table and metrics; tier select on the Play page (MENU_SPEC); pack 1 progress mapped | Builder (Sonnet) |
-| 7c | **Engine: ice + mud (+ gate)** | Tests first: slides, stops, mud cost, directed no-cut, solver exact vs brute force on 5x5 | Builder (Sonnet), verified by Opus |
-| 7d | **Art + animation: Medium tiles** | Sprites from `build-sprites.mjs`, slide / sink / gate animations, reduced-motion fallbacks | Builder (Sonnet) + frontend-design |
-| 7e | **Lab round** | 5 Lab levels per mechanic; Eric playtests; keep, tweak or cut | Eric + QA (Sonnet, fresh) |
-| 7f | **Medium pack** | 20 levels 7x7 to the metrics | Builder (Sonnet) |
-| 7g | **Engine + UI: tools** | Tool state in routing and solver, brute-force proof, tool badge, three animations | Builder (Sonnet), verified by Opus |
-| 7h | **Lab round 2 + Hard pack** | Tools playtested, then 20 levels 9x9 | Eric, then Builder |
+| 8a | **Spec v5** | Decisions below signed off; GAME_SPEC v5 sections for tiers, ice, mud, gate, tools; REVIEW_CONTEXT updated | Orchestrator (Opus) |
+| 8b | **Easy pack** | 20 levels 5x5 to the table and metrics; tier select on the Play page (MENU_SPEC); pack 1 progress mapped | Builder (Sonnet) |
+| 8c | **Engine: ice + mud (+ gate)** | Tests first: slides, stops, mud cost, directed no-cut, solver exact vs brute force on 5x5 | Builder (Sonnet), verified by Opus |
+| 8d | **Art + animation: Medium tiles** | Sprites from `build-sprites.mjs`, slide / sink / gate animations, reduced-motion fallbacks | Builder (Sonnet) + frontend-design |
+| 8e | **Lab round** | 5 Lab levels per mechanic; Eric playtests; keep, tweak or cut | Eric + QA (Sonnet, fresh) |
+| 8f | **Medium pack** | 20 levels 7x7 to the metrics | Builder (Sonnet) |
+| 8g | **Engine + UI: tools** | Tool state in routing and solver, brute-force proof, tool badge, three animations | Builder (Sonnet), verified by Opus |
+| 8h | **Lab round 2 + Hard pack** | Tools playtested, then 20 levels 9x9 | Eric, then Builder |
 
-7b can start straight away and ship on its own, since it needs no engine change.
+8b can start straight away and ship on its own, since it needs no engine change.
 
 ## Where this could be wrong (devil's advocate)
 
@@ -163,7 +163,7 @@ Instead of (or as well as) gnome tools, Hard gives the **player** one Croakwell 
 | D2 | Ice slide counts as 1 move total, or 1 per tile slid? | 1 total (makes ice a shortcut the player must deal with) |
 | D3 | Mud: 2 moves to enter? | Yes |
 | D4 | Third Medium mechanic: one-way gate, spring pad, both, neither? | Gate only |
-| D5 | Hard: gnome tools, player spells, or both? | Gnome tools first (your idea), player spells as the Lab alternative in 7h |
+| D5 | Hard: gnome tools, player spells, or both? | Gnome tools first (your idea), player spells as the Lab alternative in 8h |
 | D6 | Tool costs: ladder 2, pickaxe 2, plank 1? | Yes |
 | D7 | No-cut ignores the gnome's tool? | Yes |
 | D8 | Old pack 1: retire and map stars across by board size, or keep as "Classic"? | Retire; stars on old 5x5 levels 1 to 5 carry to Easy 1 to 5 (same levels) |
