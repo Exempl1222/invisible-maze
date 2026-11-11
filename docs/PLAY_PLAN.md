@@ -1,6 +1,6 @@
-# Play plan: Easy, Medium, Hard (draft, 7 Nov 2026)
+# Play plan: Easy, Medium, Hard (decisions signed off 11 Nov 2026)
 
-Proposal for the next stretch of the Play game. **Not locked.** Nothing here changes `docs/GAME_SPEC.md` until Eric signs off the decisions at the bottom; then the agreed rules move into the spec as v5 and into `REVIEW_CONTEXT.md` (CLAUDE.md rules 1 and 10). The daily stays on v4 and is untouched by this plan.
+Plan for the next stretch of the Play game. **Eric took every recommendation in the decisions table on 11 Nov 2026.** The rules still move into `docs/GAME_SPEC.md` as v5 in parcel 7a before any engine code and into `REVIEW_CONTEXT.md` (CLAUDE.md rules 1 and 10). The daily stays on v4 and is untouched by this plan.
 
 ## Terms
 
@@ -155,9 +155,9 @@ Intro pattern for each mechanic: 1 level where it alone decides par, 2 where it 
 
 Instead of (or as well as) gnome tools, Hard gives the **player** one Croakwell spell per level: freeze a tile to ice, turn a tile to mud, or drop a one-way gate. Same engine work as Medium tiles (the spell just places a tile), more expressive for the player, and it fits Croakwell's prankster role. Gnome tools could then be a Hard+ / later tier.
 
-## Decisions for Eric (batched)
+## Decisions (signed off 11 Nov 2026: all as recommended)
 
-| # | Question | Recommendation |
+| # | Question | Decision |
 |---|---|---|
 | D1 | 20 levels per tier (60 total)? | Yes |
 | D2 | Ice slide counts as 1 move total, or 1 per tile slid? | 1 total (makes ice a shortcut the player must deal with) |
