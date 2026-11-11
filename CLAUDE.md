@@ -43,7 +43,7 @@ tests-site/           smoke test of the stamped site (playwright.site.config.js;
 docs/ROADMAP.md       phases and status
 docs/GAME_SPEC.md     rules; source of truth for game logic
 REVIEW_CONTEXT.md     what an independent review checks against: scope, rules, accepted limits, severity anchors
-.claude/skills/       project skills (maze-playtest)
+.claude/skills/       project skills: maze-playtest (QA gate), design-review (read-only design audit with shots.mjs and contrast.py)
 ```
 
 ## Rules
@@ -66,6 +66,8 @@ REVIEW_CONTEXT.md     what an independent review checks against: scope, rules, a
 8. **Art is generated.** Change `tools/build-sprites.mjs` and rebuild, never hand-edit `assets/sprites/`.
 9. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
 10. **Keep REVIEW_CONTEXT.md current.** Any change to a game rule, daily rule, scope or deploy setup updates REVIEW_CONTEXT.md in the same PR. Independent reviews check against it.
+11. **Every new check must fail on the old code.** Before a new test, measurement or script counts, run it against the broken version and see it fail for the right reason, then see it pass on the fix. Say both in the PR. A check that has never failed may not be testing anything (the first hat-over-board test passed on the old art, because hit testing skips `pointer-events: none`).
+12. **Visual changes get a design review.** New art, a new page or a restyle runs the design-review skill (fresh context, read-only) before merge, alongside the independent code review.
 
 ## Agent roles
 
@@ -74,9 +76,9 @@ REVIEW_CONTEXT.md     what an independent review checks against: scope, rules, a
 | Orchestrator | Opus | Spec, architecture, reviews, merges | Grind out boilerplate |
 | Builder | Sonnet | Implements one roadmap parcel against the spec and tests | Change the spec |
 | QA | Sonnet, fresh context | Plays the build with maze-playtest, files findings | Fix what it finds (keeps it honest) |
-| Reviewer | Opus, fresh context | Independent read-only audit against REVIEW_CONTEXT.md before merge | Fix what it finds |
+| Reviewer | Opus, fresh context | Independent read-only audit against REVIEW_CONTEXT.md before merge; design-review skill for visual changes | Fix what it finds |
 
-Give a Builder one parcel, the spec section it needs, and the definition of done from the roadmap. Nothing else.
+Give a Builder one parcel, the spec section it needs, and the definition of done from the roadmap. Nothing else, except rule 11: any check the Builder adds must be shown failing on the old code.
 
 ## Commands
 
