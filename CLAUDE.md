@@ -39,7 +39,9 @@ tests/                Playwright browser tests (phone + desktop)
 docs/ROADMAP.md       phases and status
 docs/GAME_SPEC.md     rules; source of truth for game logic
 .claude/skills/       project skills: maze-playtest (ours); vendored design skills (Emil Kowalski's
-                      emil-design-eng + motion set, impeccable, taste-skill). See rule 10
+                      emil-design-eng + motion set, impeccable, taste-skill) and Matt Pocock's
+                      engineering set (tdd, codebase-design, diagnosing-bugs, grilling,
+                      grill-with-docs, domain-modeling, handoff). See rule 10
 ```
 
 ## Rules
@@ -61,7 +63,8 @@ docs/GAME_SPEC.md     rules; source of truth for game logic
 7. **Verify before claiming done.** Run `npm test`, and for UI changes run the maze-playtest skill and look at the screenshots.
 8. **Art is generated.** Change `tools/build-sprites.mjs` and rebuild, never hand-edit `assets/sprites/`.
 9. **Small commits on branches.** Open a PR into `main`; CI tests it, merge deploys it.
-10. **House specs beat vendored design skills.** The third-party design skills in `.claude/skills/` (emil-design-eng and the animation set, impeccable, taste-skill) are advice. `docs/ART_SPEC.md`, the colour legend in rule 6, rule 8 and `docs/GAME_SPEC.md` win any conflict. Use them to critique, polish and tune motion, not to restyle the game. Update by re-copying from upstream, never hand-edit.
+10. **House specs beat vendored skills.** The third-party skills in `.claude/skills/` (emil-design-eng and the animation set, impeccable, taste-skill, and Matt Pocock's engineering set) are advice. `docs/ART_SPEC.md`, the colour legend in rule 6, rule 8 and `docs/GAME_SPEC.md` win any conflict. Use them to critique, polish and tune motion, not to restyle the game. Update by re-copying from upstream, never hand-edit.
+    In this repo, prefer the vendored Matt Pocock skills over similar account-level ones: `tdd` over test-driven-development, `diagnosing-bugs` over systematic-debugging, `grill-with-docs` before any new `docs/GAME_SPEC.md` section. `domain-modeling` keeps `GLOSSARY.md` (engine words vs player words) and `docs/adr/`.
 
 ## Agent roles
 
