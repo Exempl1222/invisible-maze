@@ -9,7 +9,7 @@
 // Tie-break (cosmetic): at each step prefer up, right, down, left among moves that stay
 // on a shortest route. We get this by computing distance-to-beacon for every cell and
 // stepping greedily in that order.
-import { lineIndex, GATE_DIR } from './level.js';
+import { lineIndex, lineWall, GATE_DIR } from './level.js';
 
 export const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // up, right, down, left
 
@@ -130,16 +130,26 @@ function isTeleporterV5(c) {
   return c >= 'a' && c <= 'z' && c !== 'v'; // 'v' is the down gate in v5
 }
 
-/** Can he step from (x, y) in direction d? Returns the target cell index, or -1. */
-function stepTarget(grid, size, mask, x, y, d) {
+/**
+ * Can he step from (x, y) in direction d? Returns the target cell index, or -1.
+ * `tool` (v5 gnome tools, only for the first step of a move) changes what the step may do:
+ * "ladder": the line MUST be fenced and the fence is ignored; "pickaxe": the target must be rock;
+ * "plank": the target must be river. Without it rock and river are never entered.
+ */
+function stepTarget(grid, size, mask, x, y, d, tool) {
   const nx = x + DIRS[d][0];
   const ny = y + DIRS[d][1];
   if (nx < 0 || ny < 0 || nx >= size || ny >= size) return -1;
   const nc = grid[ny][nx];
-  if (nc === '#' || nc === '~') return -1;
+  if (tool === 'pickaxe') {
+    if (nc !== '#') return -1;
+  } else if (tool === 'plank') {
+    if (nc !== '~') return -1;
+  } else if (nc === '#' || nc === '~') return -1;
   const u = y * size + x;
   const v = ny * size + nx;
-  if (mask[crossing(u, v, d)]) return -1;
+  const fenced = mask[crossing(u, v, d)] === 1;
+  if (tool === 'ladder' ? !fenced : fenced) return -1;
   const leave = GATE_DIR.get(grid[y][x]);
   if (leave !== undefined && leave !== d) return -1;
   const enter = GATE_DIR.get(nc);
@@ -151,16 +161,20 @@ function stepTarget(grid, size, mask, x, y, d) {
  * The whole move from cell u in direction d, or null if he can't take it:
  * { end, cost, tiles, lines, via, mud }. tiles: the cell indices he passes, ending with the tile he
  * stepped or slid onto (for a teleporter, the teleporter tile, before the jump). end: where he stands.
+ * `tool` (gnome tool, first step only): see stepTarget. A ladder or pickaxe step costs one more
+ * than the same move without it; a plank step costs 1 (river is not ice, mud or a teleporter).
  */
-function moveV5(level, mask, u, d) {
+function moveV5(level, mask, u, d, tool) {
   const { size, grid } = level;
   const x = u % size;
   const y = (u - x) / size;
-  let cur = stepTarget(grid, size, mask, x, y, d);
+  let cur = stepTarget(grid, size, mask, x, y, d, tool);
   if (cur === -1) return null;
   const tiles = [cur];
   const lines = [crossing(u, cur, d)];
   let c = grid[Math.floor(cur / size)][cur % size];
+  if (tool === 'pickaxe') c = '.'; // the rock is grass once dug
+  const extra = tool === 'ladder' || tool === 'pickaxe' ? 1 : 0;
   while (c === '*') {
     const cx = cur % size;
     const cy = (cur - cx) / size;
@@ -173,9 +187,9 @@ function moveV5(level, mask, u, d) {
   }
   if (isTeleporterV5(c)) {
     const p = level.partner(cur % size, Math.floor(cur / size));
-    return { end: p[1] * size + p[0], cost: 1, tiles, lines, via: cur, mud: false };
+    return { end: p[1] * size + p[0], cost: 1 + extra, tiles, lines, via: cur, mud: false };
   }
-  return { end: cur, cost: c === '&' ? 2 : 1, tiles, lines, via: -1, mud: c === '&' };
+  return { end: cur, cost: (c === '&' ? 2 : 1) + extra, tiles, lines, via: -1, mud: c === '&' };
 }
 
 function routeV5(level, lineMask) {
@@ -210,6 +224,10 @@ function routeV5(level, lineMask) {
       }
     }
   }
+  if (level.tool !== null) {
+    const t = routeV5Tool(level, lineMask, dist[s]);
+    if (t !== null) return t;
+  }
   if (dist[s] === -1) return null;
 
   const positions = [[start[0], start[1]]];
@@ -242,7 +260,130 @@ function routeV5(level, lineMask) {
     }
     cur = m.end;
   }
-  return { positions, teleports, via, lines, trails, stuck };
+  const route = { positions, teleports, via, lines, trails, stuck };
+  if (level.tool !== null) Object.assign(route, { toolStep: null, toolUse: null, toolFreeRoute: true });
+  return route;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Gnome tools (v5, "tool": "ladder" | "pickaxe" | "plank"). He uses his tool at most once, and only
+// where it makes his route cheaper; on a tie he does not use it. So the cheapest route is a shortest
+// path in a state graph with a "tool used?" bit:
+//  - layer 0: tool still unused. Normal moves stay in layer 0. The tool move (first step of a move,
+//    never mid-slide) goes to layer 1, or for the plank onto the river tile (layer 2).
+//  - layer 1: tool used. Only normal moves (a dug rock tile is grass; he never needs to re-enter it
+//    because a shortest route never revisits a state).
+//  - layer 2 (plank): standing on the river tile; the only moves are normal ones to land (a normal
+//    move never targets river, so he never goes on to another river tile), into layer 1.
+// Costs: ladder and pickaxe step 2 (+1 for mud after it), plank step 1. A ladder or pickaxe step is
+// shown as two moves: a "prep" move where he stays put, then the crossing (like mud's stuck move).
+// The no-cut rule ignores the tool, so the result says whether a tool-free route exists.
+//
+// Result: the v5 route plus toolStep (index into positions of the move that arrives across the
+// fence / onto the rock / onto the river; null if the tool is not used), toolUse (null, or
+// { tool, prep, line | tile, from, to }: prep = index of the prep move or null for the plank; line =
+// the climbed line as a wall [x, y, "R"|"D"] (ladder); tile = the rock or river tile [x, y];
+// from = where he stood; to = the tile he stepped onto) and toolFreeRoute (a route without the
+// tool exists). The ladder's line is also in `lines`.
+
+/** Cheapest tool route if it is strictly cheaper than the tool-free one (`freeDist`, -1 if none), else null. */
+function routeV5Tool(level, mask, freeDist) {
+  const { size, grid, beacon, start, tool } = level;
+  const n = size * size;
+  const goal = beacon[1] * size + beacon[0];
+  const s = start[1] * size + start[0];
+  const adj = new Array(n * 3 * 4).fill(null); // node * 4 + d
+  const rev = Array.from({ length: n * 3 }, () => []);
+  const add = (from, d, to, m) => {
+    adj[from * 4 + d] = { to, m };
+    rev[to].push([from, m.cost]);
+  };
+  for (let u = 0; u < n; u++) {
+    if (u === goal) continue;
+    const c = grid[Math.floor(u / size)][u % size];
+    const land = c !== '#' && c !== '~';
+    for (let d = 0; d < 4; d++) {
+      const m = moveV5(level, mask, u, d);
+      if (m !== null) {
+        if (land) add(u, d, m.end, m);
+        if (land || (tool === 'pickaxe' && c === '#')) add(n + u, d, n + m.end, m);
+        if (c === '~' && tool === 'plank') add(2 * n + u, d, n + m.end, m);
+      }
+      if (land) {
+        const t = moveV5(level, mask, u, d, tool);
+        if (t !== null) add(u, d, (tool === 'plank' ? 2 * n : n) + t.end, t);
+      }
+    }
+  }
+  const dist = new Int32Array(n * 3).fill(-1);
+  dist[goal] = 0;
+  dist[n + goal] = 0;
+  const buckets = [[goal, n + goal]];
+  for (let k = 0; k < buckets.length; k++) {
+    for (const v of buckets[k] ?? []) {
+      if (dist[v] !== k) continue;
+      for (const [u, w] of rev[v]) {
+        if (dist[u] === -1 || dist[u] > k + w) {
+          dist[u] = k + w;
+          (buckets[k + w] ??= []).push(u);
+        }
+      }
+    }
+  }
+  const best = dist[s];
+  if (best === -1 || (freeDist !== -1 && best >= freeDist)) return null;
+
+  const positions = [[start[0], start[1]]];
+  const teleports = [];
+  const via = [null];
+  const lines = [];
+  const trails = [[]];
+  const stuck = [];
+  let toolStep = null;
+  let toolUse = null;
+  const xy = (i) => [i % size, Math.floor(i / size)];
+  let node = s;
+  while (node % n !== goal || node >= 2 * n) {
+    let e = null;
+    let d;
+    for (d = 0; d < 4; d++) {
+      const a = adj[node * 4 + d];
+      if (a !== null && dist[a.to] !== -1 && dist[a.to] + a.m.cost === dist[node]) { e = a; break; }
+    }
+    const m = e.m;
+    const cell = node % n;
+    const isTool = (node < n && e.to >= n); // the move that spends the tool
+    let prep = null;
+    if (isTool && tool !== 'plank') {
+      positions.push(xy(cell)); // the prep move: he stays put
+      trails.push([]);
+      via.push(null);
+      prep = positions.length - 1;
+    }
+    for (const l of m.lines) lines.push(l);
+    positions.push(xy(m.end));
+    trails.push(m.tiles.map(xy));
+    if (m.via !== -1) {
+      teleports.push(positions.length - 1);
+      via.push(xy(m.via));
+    } else {
+      via.push(null);
+    }
+    if (isTool) {
+      toolStep = positions.length - 1;
+      toolUse = tool === 'ladder'
+        ? { tool, prep, line: lineWall(level, m.lines[0]), from: xy(cell), to: xy(m.tiles[0]) }
+        : { tool, prep, tile: xy(m.tiles[0]), from: xy(cell), to: xy(m.tiles[0]) };
+    }
+    if (m.mud) {
+      positions.push(positions[positions.length - 1].slice());
+      trails.push([]);
+      via.push(null);
+      stuck.push(positions.length - 1);
+    }
+    node = e.to;
+  }
+  return { positions, teleports, via, lines, trails, stuck, toolStep, toolUse, toolFreeRoute: freeDist !== -1 };
 }
 
 /** Line mask for walls [x, y, "R" | "D"]. Throws on malformed or out-of-grid walls. */

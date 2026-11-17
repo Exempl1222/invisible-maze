@@ -11,6 +11,8 @@ const GATE_STEP = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** Rule sets a level can declare. Absent means the live rules, v3.1. */
 export const RULES = ['v3.1', 'v4', 'v5'];
+/** Rules v5 gnome tools (a level carries at most one). */
+export const TOOLS = ['ladder', 'pickaxe', 'plank'];
 /** Rules v4: a wall set may wall at most this many sides of the robot start, and of the beacon. */
 export const SIDE_CAP = 2;
 
@@ -92,8 +94,11 @@ export function parseLevel(json) {
   if (json === null || typeof json !== 'object') fail('level must be an object');
   const rules = json.rules === undefined ? 'v3.1' : json.rules;
   if (!RULES.includes(rules)) fail(`rules must be one of ${RULES.map((r) => `"${r}"`).join(', ')}, got ${JSON.stringify(json.rules)}`);
-  if (json.tool !== undefined) fail('"tool" is not supported by the engine yet (gnome tools are a later parcel)');
   const v5 = rules === 'v5';
+  if (json.tool !== undefined) {
+    if (!v5) fail('"tool" needs rules v5 (set "rules": "v5")');
+    if (!TOOLS.includes(json.tool)) fail(`tool must be one of ${TOOLS.map((t) => `"${t}"`).join(', ')}, got ${JSON.stringify(json.tool)}`);
+  }
   const { size, tiles, moveLimit, wallBudget } = json;
   if (!Number.isInteger(size) || size < 2) fail(`size must be an integer of at least 2, got ${size}`);
   if (!Array.isArray(tiles) || tiles.length !== size) {
@@ -166,6 +171,8 @@ export function parseLevel(json) {
     moveLimit,
     wallBudget,
     rules,
+    /** Rules v5 gnome tool: "ladder", "pickaxe", "plank", or null. */
+    tool: json.tool ?? null,
     inBounds,
     tile,
     /** Teleporter partner of the tile at (x, y) as [x, y], or null. */

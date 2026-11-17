@@ -54,9 +54,9 @@ test('v5 symbols on a level that is not v5 throw a clear error', () => {
   assert.ok(parseLevel(makeLevel(['Rv...', '.....', '.....', '.....', 'v...B'], { rules: 'v4' })).partner(1, 0));
 });
 
-test('the tool field is rejected (the engine does not support tools yet), on every rule set', () => {
+test('the tool field is accepted on v5 only (gnome tools: src/game/tools.test.js)', () => {
   const tiles = ['R....', '.....', '.....', '.....', '....B'];
-  assert.throws(() => parseLevel(makeLevel(tiles, { rules: 'v5', tool: 'ladder' })), /tool/);
+  assert.equal(parseLevel(makeLevel(tiles, { rules: 'v5', tool: 'ladder' })).tool, 'ladder');
   assert.throws(() => parseLevel(makeLevel(tiles, { rules: 'v4', tool: 'ladder' })), /tool/);
   assert.throws(() => parseLevel(makeLevel(tiles, { tool: 'ladder' })), /tool/);
 });
