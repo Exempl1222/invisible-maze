@@ -171,6 +171,7 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 | Load-bearing | A mechanic is load-bearing on a level if swapping it for grass (tiles) or removing it (tool) changes par or makes the stored answer lose. For bridges the swap is the whole river (river and bridge tiles become grass), since a bridge alone walks like grass, and the stored answer must fence a bridge end. 100% on its intro levels, at least 70% across the tier |
 | Slack (move limit minus base route) | Easy 2 to 5, Medium 3 to 7, Hard 5 to 10 |
 | Par answers | At most 10 on intro levels and Easy 6 to 13 |
+| Gates in use | On every level with a gate, the stored answer's route goes through a gate (a gate only ever used as a decoy doesn't teach it) |
 | Density on 7x7 | Ice 3 to 8 tiles, mud 2 to 5, gates 1 to 3 |
 | Solve | Every level's `solve` finishes within the build's node budget |
 
