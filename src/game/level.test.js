@@ -127,11 +127,12 @@ test('teleporter letters appearing twice are paired, three times are rejected', 
 
 // ---------- rules v4 (lab) ----------
 
-test('rules: absent means v3.1, "v4" is accepted, anything else is rejected', () => {
+test('rules: absent means v3.1, "v4" and "v5" are accepted, anything else is rejected', () => {
   assert.equal(parseLevel(makeLevel(['R.', '.B'])).rules, 'v3.1');
   assert.equal(parseLevel(makeLevel(['R.', '.B'], { rules: 'v3.1' })).rules, 'v3.1');
   assert.equal(parseLevel(makeLevel(['R.', '.B'], { rules: 'v4' })).rules, 'v4');
-  assert.throws(() => parseLevel(makeLevel(['R.', '.B'], { rules: 'v5' })), /rules/);
+  assert.equal(parseLevel(makeLevel(['R.', '.B'], { rules: 'v5' })).rules, 'v5');
+  assert.throws(() => parseLevel(makeLevel(['R.', '.B'], { rules: 'v6' })), /rules/);
   assert.throws(() => parseLevel(makeLevel(['R.', '.B'], { rules: 4 })), /rules/);
 });
 
