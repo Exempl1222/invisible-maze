@@ -7,13 +7,14 @@ Daily fence-building puzzle at gnomesweetgnome.app. Players place fences on grid
 
 ## Scope for this check (in / out)
 **In:** daily page and game logic, puzzle generation and seeding, solver and par, scoring, tries and hints, Easy/Hard streaks and stats, 30-day archive, share text and score card, Cloudflare Worker + D1 (score submission, server-side fence re-check, score spread stats; deployed but switched off), CI, GitHub Pages and custom domain, all notes and decision docs.
-**Out:** full app levels and lab levels, except shared code the daily depends on. The "Can you beat it?" banner is planned, not built (specced on branch `feat/beat-friend`); do not report it as missing.
+**Out:** full app levels and lab levels, except shared code the daily depends on. Play rules v5 (Easy / Medium / Hard tiers, ice, mud, gates, gnome tools; `docs/GAME_SPEC.md` "Rules v5") are Play-only and out of scope here, except that the shared engine must keep v4 levels (the daily) behaving exactly as before. The "Can you beat it?" banner is planned, not built (specced on branch `feat/beat-friend`); do not report it as missing.
 
 ## Stated rules and invariants
 - Gnome takes the shortest path home. Fences sit on grid lines between tiles.
 - The player can never block every route; the gnome must always have a way home.
 - Rules v4: a fence can go on any line whose two tiles are both walkable (grass, bridge, teleporter, gnome start, house). Fences are allowed next to bridges and stumps. A line touching a river or rock tile can't be fenced (`lineBuildable`), and the outer border is already a wall. At most 2 sides of the gnome and 2 sides of his house can be fenced. Teleporters are paired hollow stumps; a jump crosses no line.
 - Easy is 7x7, Hard is 9x9, with separate streaks and stats.
+- The daily is rules v4 only. v5 tiles (`*` ice, `&` mud, `> < ^ v` gates) and the `tool` field are rejected on any level not marked `"rules": "v5"`, so they can't reach a daily.
 - No fence limit. Par is not shown during play. The answer is never shipped: the daily JSON has no `answer`, and the browser solver (`solve(level, { exactPar })` in a module worker) computes hint and solution on demand. Par IS in the data by accepted design.
 - 5 tries a day (`MAX_TRIES`), best try counts. Score out of 100: par = 100, down to 30 at 3x par. 5 losses = 0. Hint costs 15 points (no free hint), floor 15 on a hinted win.
 - Streak: a won day counts if finished on its own date, or if the page opened it as the player's today (`startedOn`, the load-time date) and it was finished by the end of the next day. Archive catch-ups never count.

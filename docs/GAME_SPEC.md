@@ -1,4 +1,4 @@
-# Game spec v4 (locked 26 Oct 2026)
+# Game spec v5 (locked 11 Nov 2026)
 
 ## Core rules at a glance (signed off by Eric)
 
@@ -11,6 +11,8 @@
 7. Each hint you use costs 1 star (minimum 1).
 
 Source of truth for game logic. If something isn't answered here, stop and ask; don't invent rules. Changes go through a PR that edits this file first.
+
+**What changed in v5 (11 Nov):** the Play game splits into three 20-level tiers (Easy 5x5, Medium 7x7, Hard 9x9). Medium adds ice, mud and one-way gates; Hard gives the gnome one tool (ladder, pickaxe or plank). New tiles and tools only exist on levels marked `"rules": "v5"`; every v4 rule still holds there. The daily stays on v4. Plan and reasoning: `docs/PLAY_PLAN.md`. Section: "Rules v5" below.
 
 **What changed in v4 (26 Oct):** the Lab rules won Eric's playtest and are now the rules everywhere: walls allowed next to bridges and teleporters and on up to 2 sides of the robot and beacon, budget par + 2, a single par answer no longer required, and later levels go up to 6 to 7 walls. Generation timing under v4 (9x9, seconds per kept level): par 4 about 0.7, par 5 about 1.7, par 6 about 11; par 7 took about 4 minutes, so par-7 levels are rare and hand-picked.
 
@@ -76,9 +78,11 @@ A robot wants to reach the beacon and always takes the shortest route. Before it
 
 | Size | Use |
 |---|---|
-| 5x5 | Tutorial (first 5 levels, one new idea each) |
-| 7x7 | Main levels |
-| 9x9 | Hard levels and the daily |
+| 5x5 | Easy tier (v5); pack 1's tutorial |
+| 7x7 | Medium tier (v5); pack 1's main levels; the Easy daily |
+| 9x9 | Hard tier (v5); pack 1's hard levels; the Hard daily |
+
+Pack 1 below is live until the Easy pack ships (see "Rules v5", Tiers).
 
 - **Level pack 1 (v4):** 30 levels, budget par + 2, a single par answer not required.
   - 1 to 5: hand-authored **5x5** tutorial (par 1 to 3), one idea each.
@@ -87,6 +91,93 @@ A robot wants to reach the beacon and always takes the shortest route. Before it
   - 26 to 30: 9x9, par 6 to 7 (generated; at least one par 7).
 - **All levels are open while in development.** No locks. Locks come back at launch.
 - **Levels are generated offline and verified**, not made on the phone. The phone only plays and scores.
+
+## Rules v5 (Play tiers, signed off 11 Nov 2026)
+
+v5 is v4 plus the tiles and tools below. A v4 level parses and plays exactly as before. `parseLevel` rejects the new symbols and the `tool` field on any level that isn't `"rules": "v5"`.
+
+### Tiers
+
+| Tier | Pack file | Board | Levels | Par | Mechanics |
+|---|---|---|---|---|---|
+| Easy | `assets/levels/easy.json` | 5x5 | 1 to 20 | 1 to 4 | v4 only (no new tiles) |
+| Medium | `assets/levels/medium.json` | 7x7 | 21 to 40 | 3 to 5 | Ice, mud, gates |
+| Hard | `assets/levels/hard.json` | 9x9 | 41 to 60 | 4 to 7 (at least one 7) | One gnome tool per level, Medium tiles from level 56 |
+
+- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1 retires when the Easy pack ships.
+- Budget stays par + 2. Stars, hints and the no-cut rule are unchanged.
+- Each new mechanic is introduced in order: 1 level where it alone decides par, then 2 where it combines with a known idea, then it joins the mix. Medium: ice 21 to 25, mud 26 to 30, gates 31 to 34, mixed 35 to 40. Hard: ladder 41 to 45, pickaxe 46 to 50, plank 51 to 55, mixed 56 to 60.
+- All tiers are open in development; at launch each tier unlocks when the one before is finished.
+
+### New tiles
+
+| Tile | Symbol | Walkable | Lines beside it can be fenced | Rule |
+|---|---|---|---|---|
+| Ice | `*` | Yes | Yes, if the other side is walkable | See Ice |
+| Mud | `&` | Yes | Yes, if the other side is walkable | Stepping onto mud costs 2 moves |
+| Gate | `>` `<` `^` `v` | Yes, only along its arrow | Yes, if the other side is walkable | See Gates |
+
+The gnome start and the house are never ice, mud or a gate. Teleporter letters, bridges and rocks are unchanged.
+
+### Ice
+
+- When a move takes the gnome onto ice, he keeps going in the same direction, one tile at a time, while he stands on ice and the next tile can be entered (walkable, on the board, no fence on the line, and allowed by a gate's arrow).
+- The slide stops on the first tile that isn't ice, or on the ice tile he's on when the next tile can't be entered. A fence across the slide's path stops him on the ice before it.
+- **The whole slide is one move**, however many tiles it covers (like a teleport jump).
+- Sliding onto mud stops him there and adds mud's extra move. Sliding onto a teleporter jumps him and ends the slide; he never slides out of the partner tile. Sliding onto the house reaches it.
+- A move that starts on ice (he stopped there) is a normal step in any direction; if it lands on ice, a new slide starts.
+- A slide crosses every line between the tiles it passes; a fence on any of them changes it.
+
+### Mud
+
+- Stepping onto mud costs 2 moves: 1 to step in, 1 stuck. Stepping off is a normal move.
+- In the replay the stuck move is a move where he stays on the same tile.
+- If his moves run out while he's stuck, he stays there (a player win, like any other "out of moves").
+
+### Gates
+
+- A gate tile can only be entered moving in its arrow's direction, and only left moving in that direction. `>` lets him through left to right only.
+- A gate's entry and exit tiles (behind and in front of it along the arrow) must both be walkable land, never another gate, and on the board. The generator enforces it and the tests check every shipped gate, like bridges.
+- A gate is not ice; a slide that enters a gate stops on it.
+
+### Gnome tools (Hard)
+
+- A level may carry `"tool": "ladder" | "pickaxe" | "plank"`. The UI shows it before the player places anything.
+- He uses it **at most once, and only where it gives him a shorter route home**. His route is the shortest route with the tool used once or not at all. When two routes tie, he prefers the one without the tool (cosmetic, like the tie-break).
+- A tool is used on a normal step he starts, never in the middle of a slide.
+
+| Tool | The one step it allows | Cost of that step |
+|---|---|---|
+| Ladder | Cross one line that has a **player fence** on it (never the border) | 2 moves |
+| Pickaxe | Step onto one rock tile, which becomes grass for the rest of that replay (the art shows a pickaxe on a rock, a scythe on a berry bush, which is a rock in the engine) | 2 moves |
+| Plank | Step onto one river tile. His next move must step off it onto land; the plank never carries him on to another river tile | 1 move |
+
+- After the tool step every other rule applies: landing on ice starts a slide, landing on mud adds its extra move, landing on a teleporter jumps him.
+- **The no-cut rule ignores the tool.** A fence set is legal only if he has a route home without the tool. So the tool never decides whether a fence is refused.
+- Par, the stored `answer` and hints are exact against the gnome using his tool.
+
+### Route and move counting (v5)
+
+- His route is the cheapest in moves: a step is 1, a slide is 1, a teleport is 1, mud adds 1, a ladder or pickaxe step is 2.
+- Win and lose are unchanged: he wins for the player when the cheapest route costs more than the move limit, and walks until his moves run out.
+- The tie-break (up, right, down, left at each choice) stays cosmetic.
+
+### Design metrics (checked by each tier's build script)
+
+| Metric | Target |
+|---|---|
+| Load-bearing | A mechanic is load-bearing on a level if swapping it for grass (tiles) or removing it (tool) changes par or makes the stored answer lose. 100% on its intro levels, at least 70% across the tier |
+| Slack (move limit minus base route) | Easy 2 to 5, Medium 3 to 7, Hard 5 to 10 |
+| Par answers | At most 10 on intro levels and Easy 6 to 13 |
+| Density on 7x7 | Ice 3 to 8 tiles, mud 2 to 5, gates 1 to 3 |
+| Solve | Every level's `solve` finishes within the build's node budget |
+
+### Colours for the new things (rule 6 legend, added to `docs/ART_SPEC.md` with the art)
+
+- Ice: frosted `#dff3f8`, white shine streaks, no glow.
+- Mud: peat `#6b5232` (must read apart from bridge log brown `#a0703f`).
+- Gate: stone grey `#9aa3a6` arch, cream `#fff6e0` arrow. Not timber (timber is a player fence).
+- Tools are props the gnome carries; none uses hat red, timber, gold, the teleporter glows or lime.
 
 ## Daily level
 
