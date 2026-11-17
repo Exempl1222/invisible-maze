@@ -9,7 +9,8 @@ import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.
 import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 
 const EASY_URL = '../assets/levels/easy.json';
-const PACK_URL = '../assets/levels/pack-01.json'; // levels 6 to 30 stay as levels 21 to 45 until Medium and Hard replace them
+const MEDIUM_URL = '../assets/levels/medium.json';
+const PACK_URL = '../assets/levels/pack-01.json'; // its 9x9 levels (11 to 30) stay as levels 41 to 55 until Hard ships; its 7x7 retired with Medium
 const LAB_URL = '../assets/levels/lab.json';
 const LAB_V5_URL = '../assets/levels/lab-v5.json'; // rules v5: ice, mud, gates. Listed after the five v4 lab levels (?lab=6 and up)
 const LAB_V4_COUNT = 5;
@@ -26,6 +27,13 @@ const parEl = $('par');
 const limitEl = $('move-limit');
 const movesLeftEl = $('moves-left');
 const statusEl = $('status');
+const introEl = $('intro-note');
+// One plain-words line on the level that introduces a tile (Medium 21, 26, 31)
+const INTRO_NOTES = {
+  'medium-01': 'Ice: he slides until something stops him. The whole slide is one move.',
+  'medium-06': 'Mud: stepping onto it costs him 2 moves.',
+  'medium-11': 'Gate: he can only pass it the way its arrow points.',
+};
 const controlsEl = $('controls');
 const goBtn = $('go');
 const clearBtn = $('clear');
@@ -140,6 +148,8 @@ function startGame({ kind, index, level, title }) {
   controlsEl.hidden = false;
   goBtn.disabled = false;
   hintPanel.hidden = true;
+  introEl.textContent = INTRO_NOTES[level.id] || '';
+  introEl.hidden = !introEl.textContent;
   setStatus("Tap a line between two tiles to place a fence. Make the gnome's route longer than his move limit. You must leave him a way through.");
   updateCounters();
 }
@@ -419,11 +429,11 @@ async function boot() {
   const art = preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...VILLAIN_SPRITES]);
   art.catch(() => {}); // handled where it is awaited below
   try {
-    const [easyRes, packRes] = await Promise.all([fetch(EASY_URL), fetch(PACK_URL)]);
-    if (!easyRes.ok || !packRes.ok) throw new Error(`${easyRes.status} ${packRes.status}`);
-    const [easy, pack] = await Promise.all([easyRes.json(), packRes.json()]);
-    // Easy 1 to 20, then pack 1's 7x7 and 9x9 levels (its 5x5 tutorial is Easy 1 to 5)
-    levels = [...easy.levels, ...pack.levels.filter((l) => l.size !== 5)].map((l) => parseLevel(l));
+    const [easyRes, mediumRes, packRes] = await Promise.all([fetch(EASY_URL), fetch(MEDIUM_URL), fetch(PACK_URL)]);
+    if (!easyRes.ok || !mediumRes.ok || !packRes.ok) throw new Error(`${easyRes.status} ${mediumRes.status} ${packRes.status}`);
+    const [easy, medium, pack] = await Promise.all([easyRes.json(), mediumRes.json(), packRes.json()]);
+    // Easy 1 to 20, Medium 21 to 40, then pack 1's 9x9 levels as 41 to 55 (its 5x5 is Easy 1 to 5; its 7x7 retired)
+    levels = [...easy.levels, ...medium.levels, ...pack.levels.filter((l) => l.size === 9)].map((l) => parseLevel(l));
   } catch (err) {
     loading.textContent = '';
     const p = document.createElement('p');
