@@ -127,6 +127,8 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 - Sliding onto mud stops him there and adds mud's extra move. Sliding onto a teleporter jumps him and ends the slide; he never slides out of the partner tile. Sliding onto the house reaches it.
 - A move that starts on ice (he stopped there) is a normal step in any direction; if it lands on ice, a new slide starts.
 - A slide crosses every line between the tiles it passes; a fence on any of them changes it.
+- A fence can help him on ice: stopping a slide early can open a shorter way, or the only way. So under v5 more fences don't always mean a longer route (the solver accounts for it).
+- The no-cut rule is still checked as each fence is placed. A level ships only if its stored answer can be placed in some order without ever leaving him no route.
 
 ### Mud
 
