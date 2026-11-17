@@ -93,8 +93,11 @@ export function renderSelect(root, levels, { onPick, onMode }) {
 
 export const LAB_NOTE = 'Experiments: new rules are tried here before they reach the main game. These five levels introduced the current rules (their bridges predate the bridge fix).';
 
+export const LAB_NEW_TITLE = 'New tiles: ice, mud, gates';
+export const LAB_NEW_NOTE = 'Rules v5, for the Medium tier. Ice: he slides until something stops him, and a fence across the slide stops him early. Mud: stepping in costs 2 moves. Gates: one way only, along the arrow.';
+
 /** The Lab tab: its note and a button per lab level with best stars. */
-export function renderLab(root, levels, { onPick, onMode, failed = false }) {
+export function renderLab(root, levels, { onPick, onMode, failed = false, v4Count = levels.length }) {
   root.innerHTML = '';
   root.appendChild(modeTabs('lab', onMode));
   const note = document.createElement('p');
@@ -109,20 +112,38 @@ export function renderLab(root, levels, { onPick, onMode, failed = false }) {
     root.appendChild(p);
     return;
   }
-  const grid = document.createElement('div');
-  grid.className = 'level-grid lab-grid';
-  levels.forEach((level, i) => {
+  const button = (level, i, cls) => {
     const stars = bestStars(level.id);
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'level-btn';
+    b.className = cls;
     b.dataset.level = String(i + 1);
     b.dataset.lab = String(i + 1);
     const label = stars === 0 ? 'not played' : `${stars} star${stars === 1 ? '' : 's'}`;
     b.setAttribute('aria-label', `Lab ${i + 1}, ${label}`);
     b.innerHTML = `<span class="num">${i + 1}</span><span class="level-stars">${starsMarkup(stars)}</span>`;
     b.addEventListener('click', () => onPick(i));
-    grid.appendChild(b);
-  });
+    return b;
+  };
+  const grid = document.createElement('div');
+  grid.className = 'level-grid lab-grid';
+  levels.slice(0, v4Count).forEach((level, i) => grid.appendChild(button(level, i, 'level-btn')));
   root.appendChild(grid);
+  if (levels.length > v4Count) {
+    // Rules v5 (ice, mud, gates): their own small heading below the five, same stepping stones.
+    const h = document.createElement('h2');
+    h.className = 'group-title';
+    h.id = 'lab-new-title';
+    h.textContent = LAB_NEW_TITLE;
+    root.appendChild(h);
+    const p = document.createElement('p');
+    p.className = 'lab-note';
+    p.id = 'lab-new-note';
+    p.textContent = LAB_NEW_NOTE;
+    root.appendChild(p);
+    const g2 = document.createElement('div');
+    g2.className = 'level-grid lab-grid lab-new-grid';
+    levels.slice(v4Count).forEach((level, k) => g2.appendChild(button(level, v4Count + k, 'lab-new-btn')));
+    root.appendChild(g2);
+  }
 }

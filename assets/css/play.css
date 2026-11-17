@@ -93,7 +93,7 @@
 }
 .level-grid:has(.next) { padding-top: 26px; } /* room for the gnome peeking over the next level */
 /* Cream stepping stones. */
-.level-btn {
+.level-btn, .lab-new-btn {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -111,9 +111,9 @@
   cursor: pointer;
   transition: transform 80ms ease, box-shadow 80ms ease;
 }
-.level-btn .num { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); line-height: 1; }
-.level-btn:hover { background: #fff; }
-.level-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--outline); }
+:is(.level-btn, .lab-new-btn) .num { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); line-height: 1; }
+:is(.level-btn, .lab-new-btn):hover { background: #fff; }
+:is(.level-btn, .lab-new-btn):active { transform: translateY(3px); box-shadow: 0 0 0 var(--outline); }
 .level-btn.next { box-shadow: 0 0 0 3px var(--page), 0 0 0 6px var(--robot), 0 3px 0 6px var(--robot); }
 .level-btn.next:active { transform: none; }
 /* A third of the stone's height of gnome looks over its top edge. */
@@ -330,7 +330,7 @@
 @media (prefers-reduced-motion: reduce) {
   .play-board .robot { transition: none; }
   .stat.refused, .hint.refused, .line-hint.pulse, .tele-link.jump, .result-stars .star.on { animation: none; }
-  .level-btn { transition: none; }
+  .level-btn, .lab-new-btn { transition: none; }
 }
 
 /* ---------- lab ---------- */

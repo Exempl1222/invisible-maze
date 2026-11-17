@@ -20,6 +20,12 @@
 .play-board .cell.river                { background-image: url(../sprites/tile-river.svg); }
 .play-board .cell.bridge               { background-image: url(../sprites/tile-bridge-h.svg); }
 .play-board .cell.bridge.across-v      { background-image: url(../sprites/tile-bridge-v.svg); }
+.play-board .cell.ice                  { background-image: url(../sprites/tile-ice.svg); }
+.play-board .cell.mud                  { background-image: url(../sprites/tile-mud.svg); }
+.play-board .cell.gate[data-gate="r"]  { background-image: url(../sprites/tile-gate-r.svg); }
+.play-board .cell.gate[data-gate="d"]  { background-image: url(../sprites/tile-gate-d.svg); }
+.play-board .cell.gate[data-gate="l"]  { background-image: url(../sprites/tile-gate-l.svg); }
+.play-board .cell.gate[data-gate="u"]  { background-image: url(../sprites/tile-gate-u.svg); }
 .play-board .cell.beacon               { background-image: url(../sprites/tile-house.svg); }
 .play-board .cell.start                { background-image: url(../sprites/tile-start.svg); }
 .play-board .cell.teleporter                    { background-image: url(../sprites/stump-a.svg); }
@@ -155,4 +161,92 @@
 @media (prefers-reduced-motion: reduce) {
   .wall-bar.magic .wall-art { animation: none; }
   .magic-fx { display: none; }
+}
+
+/* ---------- rules v5: gates, ice, mud (docs/GAME_SPEC.md, "Rules v5") ---------- */
+/* The gate's door leaf is drawn here, not in the art, so it can swing. The sprite is for a gnome walking right;
+   the frame turns the leaf with the arrow. Leaf: stone grey with the outline colour, between the two pillars. */
+.play-board .cell.gate { --rot: 0deg; }
+.play-board .cell.gate[data-gate="d"] { --rot: 90deg; }
+.play-board .cell.gate[data-gate="l"] { --rot: 180deg; }
+.play-board .cell.gate[data-gate="u"] { --rot: 270deg; }
+.gate-frame { position: absolute; inset: 0; display: block; pointer-events: none; transform: rotate(var(--rot)); }
+.gate-leaf {
+  position: absolute; left: 36.6%; top: 28.5%; width: 8%; height: 43%; box-sizing: border-box;
+  background: #9aa3a6; border: 2px solid #3b2618; border-radius: 3px; box-shadow: inset -2px 0 0 #7c8588;
+  transform-origin: 50% 0; transition: transform 170ms ease-out;
+}
+.cell.gate-open .gate-leaf { transform: scaleY(.12) rotate(14deg); }
+
+/* Ice: one glide along the whole trail (the length is set in board.js), a skid lean, a spray of frost behind him. */
+.play-board .robot { --lean: 0deg; --sy: 1; --nx: 0%; --ny: 0%; --fx: 0; --fy: 0; }
+.play-board .robot[data-dir="right"] { --lean: 9deg; --nx: -7%; --fx: -1; }
+.play-board .robot[data-dir="left"] { --lean: -9deg; --nx: 7%; --fx: 1; }
+.play-board .robot[data-dir="up"] { --sy: 1.06; --ny: 6%; --fy: 1; }
+.play-board .robot[data-dir="down"] { --sy: .94; --ny: -6%; --fy: -1; }
+.play-board .robot.skid .gnome-sprite { animation: gsg-skid var(--glide-ms, 400ms) ease-out both; }
+@keyframes gsg-skid {
+  0%   { transform: none; }
+  20%  { transform: rotate(var(--lean)) scale(1, var(--sy)); }
+  75%  { transform: rotate(var(--lean)) scale(1, var(--sy)); }
+  100% { transform: none; }
+}
+.play-board .robot.bump .gnome-sprite { animation: gsg-bump 260ms ease-out both; }
+@keyframes gsg-bump {
+  0%   { transform: none; }
+  30%  { transform: translate(var(--nx), var(--ny)) scale(1.14, .84); }
+  65%  { transform: scale(.95, 1.06); }
+  100% { transform: none; }
+}
+.play-board .robot .frost { position: absolute; left: 50%; bottom: 14%; width: 0; height: 0; pointer-events: none; }
+.play-board .robot .frost .bit {
+  position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; box-sizing: border-box;
+  background: #fff; border: 1px solid #3b2618; border-radius: 1px; transform: rotate(45deg);
+  animation: gsg-frost 340ms ease-out infinite both;
+}
+.play-board .robot .frost .bit:nth-child(1) { --dy: -6px; animation-delay: 0ms; }
+.play-board .robot .frost .bit:nth-child(2) { --dy: 4px; animation-delay: 70ms; background: #dff3f8; }
+.play-board .robot .frost .bit:nth-child(3) { --dy: -2px; animation-delay: 140ms; }
+.play-board .robot .frost .bit:nth-child(4) { --dy: 8px; animation-delay: 210ms; background: #dff3f8; }
+.play-board .robot .frost .bit:nth-child(5) { --dy: 0px; animation-delay: 280ms; }
+@keyframes gsg-frost {
+  0%   { transform: translate(0, 0) rotate(45deg) scale(.4); opacity: 1; }
+  100% { transform: translate(calc(var(--fx) * 26px + var(--fy) * var(--dy) * -1), calc(var(--fy) * 26px + var(--fx) * var(--dy))) rotate(120deg) scale(1); opacity: 0; }
+}
+
+/* Mud: he sinks in (lower, squashed, feet below the surface), wiggles while stuck, pulls free on the next move. */
+.play-board .robot.sink, .play-board .robot.wiggle { clip-path: inset(-100% -60% 10% -60%); }
+.play-board .robot.sink .gnome-sprite { animation: gsg-sink 240ms ease-out both; }
+@keyframes gsg-sink {
+  0%   { transform: none; }
+  100% { transform: translateY(9%) scale(1.06, .86); }
+}
+.play-board .robot.sink.wiggle .gnome-sprite { animation: gsg-wiggle 170ms ease-in-out infinite; }
+@keyframes gsg-wiggle {
+  0%, 100% { transform: translateY(9%) rotate(-7deg) scale(1.06, .86); }
+  50%      { transform: translateY(9%) rotate(7deg) scale(1.06, .86); }
+}
+.play-board .robot.pull .gnome-sprite { animation: gsg-pull 200ms ease-out both; }
+@keyframes gsg-pull {
+  0%   { transform: translateY(9%) scale(1.06, .86); }
+  45%  { transform: translateY(-9%) scale(.94, 1.1); }
+  100% { transform: none; }
+}
+.mud-bubble {
+  position: absolute; left: 58%; top: 34%; width: 20%; height: 20%; box-sizing: border-box; display: block; pointer-events: none; z-index: 5;
+  background: #8a6c46; border: 2px solid #3b2618; border-radius: 50%;
+  animation: gsg-bubble 480ms ease-out both;
+}
+@keyframes gsg-bubble {
+  0%   { transform: scale(.2); opacity: 1; }
+  65%  { transform: scale(1); opacity: 1; }
+  85%  { transform: scale(1.3); opacity: .8; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gate-leaf { transition: none; }
+  .play-board .robot.skid .gnome-sprite, .play-board .robot.bump .gnome-sprite, .play-board .robot.sink .gnome-sprite,
+  .play-board .robot.sink.wiggle .gnome-sprite, .play-board .robot.pull .gnome-sprite, .play-board .robot .frost .bit, .mud-bubble { animation: none; }
+  .play-board .robot .frost, .mud-bubble { display: none; }
+  .play-board .robot.sink, .play-board .robot.wiggle { clip-path: none; }
 }

@@ -11,6 +11,8 @@ import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 const EASY_URL = '../assets/levels/easy.json';
 const PACK_URL = '../assets/levels/pack-01.json'; // levels 6 to 30 stay as levels 21 to 45 until Medium and Hard replace them
 const LAB_URL = '../assets/levels/lab.json';
+const LAB_V5_URL = '../assets/levels/lab-v5.json'; // rules v5: ice, mud, gates. Listed after the five v4 lab levels (?lab=6 and up)
+const LAB_V4_COUNT = 5;
 const STEP_MS = 220;
 
 const $ = (id) => document.getElementById(id);
@@ -32,7 +34,7 @@ const hintPanel = $('hint-panel');
 const resultEl = $('result');
 
 let levels = [];
-let labLevels = []; // lab pack (rules v4), parsed
+let labLevels = []; // lab pack (rules v4) then the rules v5 lab levels, parsed
 let labFailed = false;
 let game = null; // { kind: 'level' | 'lab', index, level, board, state: 'editing' | 'running' | 'result', token }
 
@@ -99,7 +101,7 @@ function showLab() {
   gameView.hidden = true;
   selectView.hidden = false;
   document.title = 'Lab · Gnome Sweet Gnome';
-  renderLab(selectView, labLevels, { onPick: toLabLevel, onMode: toMode, failed: labFailed });
+  renderLab(selectView, labLevels, { onPick: toLabLevel, onMode: toMode, failed: labFailed, v4Count: LAB_V4_COUNT });
 }
 
 /* ---------- game ---------- */
@@ -296,7 +298,8 @@ function finish(sim, walls) {
     }
     resultEl.appendChild(actions);
     const lastLevel = g.kind === 'level' && g.index === levels.length - 1;
-    const lastLab = g.kind === 'lab' && g.index === labLevels.length - 1;
+    // The last level of its group: the v4 lab levels and the v5 ones each end on "All lab levels"
+    const lastLab = g.kind === 'lab' && (g.index === labLevels.length - 1 || g.index === LAB_V4_COUNT - 1);
     if (g.kind === 'lab') focusTarget = lastLab ? button('All lab levels', true, toLab) : button('Next level', true, () => toLabLevel(g.index + 1));
     else if (lastLevel) focusTarget = button('All levels', true, toSelect);
     else focusTarget = button('Next level', true, () => toLevel(g.index + 1));
@@ -439,6 +442,13 @@ async function boot() {
     labLevels = (await res.json()).levels.map((l) => parseLevel(l));
   } catch {
     labFailed = true; // the Lab tab says so; the rest of the game still works
+  }
+  if (!labFailed) {
+    try {
+      const res = await fetch(LAB_V5_URL);
+      if (!res.ok) throw new Error(`${res.status}`);
+      labLevels = [...labLevels, ...(await res.json()).levels.map((l) => parseLevel(l))];
+    } catch { /* the new-tiles levels are optional: the five v4 lab levels still show */ }
   }
   try {
     await art;

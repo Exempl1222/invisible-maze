@@ -29,6 +29,8 @@ const C = {
   ribbon: '#e9b949', ribbon2: '#c9962a',
   cap: '#c94a32', cap2: '#a8382a', stem: '#f2e6cf', stem2: '#dccbab', door: '#8d5d38',
   shadow: '#2d4a1f',
+  ice: '#dff3f8', ice2: '#c3e4ee', ice3: '#f2fbfd', shine: '#ffffff',
+  peat: '#6b5232', peat2: '#54402a', peat3: '#8a6c46', peatHi: '#b39266', cream: '#fff6e0',
 };
 const GLOW = { a: '#5ff0d8', b: '#c79bff', c: '#ffcf5a' }; // teleporter pairs 1, 2, 3
 
@@ -242,6 +244,32 @@ const house = () => part('M24 34 H40 V56 H24 Z', C.stem, 'M33 34 H44 V58 H33 Z',
    <circle class="lamp" cx="32" cy="42" r="2.6" fill="${C.buttercup}" ${O(1.2)}/>`;
 const startMark = () => `<ellipse cx="32" cy="46" rx="18" ry="7" fill="${C.soil}" opacity=".35"/>` +
   [[20, 44], [32, 48], [44, 44], [26, 40], [38, 40]].map(([x, y]) => part(`M${x - 4} ${y} a4 2.6 0 1 0 8 0 a4 2.6 0 1 0 -8 0`, C.stone, null, null, 1.2)).join('');
+
+/* Rules v5 tiles. Ice: frosted, white shine, no glow. Mud: dark peat, far from bridge log brown. Gate: stone arch, cream arrow. */
+const ice = () => `<rect width="64" height="64" fill="${C.ice}"/>
+  <path d="M0 40 C14 34 26 44 40 38 C50 34 58 36 64 34 V64 H0 Z" fill="${C.ice2}" opacity=".7"/>
+  <path d="M0 0 H30 C22 10 10 14 0 16 Z" fill="${C.ice3}"/>
+  <path d="M10 22 L22 11 M14 30 L19 25 M38 56 L54 41 M44 58 L51 51" fill="none" stroke="${C.shine}" stroke-width="3" stroke-linecap="round"/>
+  <path d="M28 40 L34 33 L32 27 L41 20 M34 33 L43 35 M32 27 L26 24" fill="none" ${O(1.5)}/>
+  <path d="M30 41 L35 34 L33 28 L42 21" fill="none" stroke="${C.shine}" stroke-width=".7" stroke-linecap="round" opacity=".8" transform="translate(1.6 1.2)"/>`;
+const mud = () => `<rect width="64" height="64" fill="${C.peat}"/>
+  <path d="M0 14 C12 8 22 18 34 12 C46 6 56 12 64 8 V22 C54 26 44 20 32 26 C20 32 10 24 0 28 Z" fill="${C.peat2}" opacity=".75"/>
+  <path d="M0 50 C14 44 26 54 40 48 C50 44 58 48 64 44 V64 H0 Z" fill="${C.peat2}" opacity=".6"/>
+  <path d="M6 30 q6 -3 12 0 M40 42 q6 -3 12 0 M30 8 q5 -2 10 0" fill="none" stroke="${C.peat3}" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="47" cy="20" r="7" fill="${C.peat3}" ${O(1.7)}/><circle cx="44.6" cy="17.6" r="2.4" fill="${C.peatHi}"/>
+  <circle cx="15" cy="52" r="5.4" fill="${C.peat3}" ${O(1.6)}/><circle cx="13.2" cy="50.2" r="1.8" fill="${C.peatHi}"/>
+  <circle cx="53" cy="49" r="3.4" fill="${C.peat3}" ${O(1.4)}/><circle cx="52" cy="48" r="1" fill="${C.peatHi}"/>
+  <g transform="rotate(-18 24 34)">
+    <path d="M17 24 C17 20 27 20 27 24 C27 28 26 31 24 32 C22 31 17 29 17 24 Z" fill="${C.peat2}" ${O(1.4)}/>
+    <path d="M18 36 C18 34 25 34 25 36 L25 42 C25 45 18 45 18 42 Z" fill="${C.peat2}" ${O(1.4)}/>
+    <path d="M19 24 H26 M19 27.5 H25.5 M19.5 39 H24 M19.5 42 H24" stroke="${C.peat}" stroke-width="1.2" stroke-linecap="round"/></g>`;
+/** A gate for a gnome walking left to right: two stone pillars above and below his path, a cream arrow on the way. The door leaf is CSS (assets/css/sprites.css), so it can swing. */
+const gateArt = () => `<rect width="64" height="64" fill="${C.grass}"/>
+  <ellipse cx="42" cy="32" rx="19" ry="9" fill="${C.soil}" opacity=".3"/>` +
+  [3, 45].map((y) => part(`M16 ${y + 3} Q16 ${y} 19 ${y} H33 Q36 ${y} 36 ${y + 3} V${y + 13} Q36 ${y + 16} 33 ${y + 16} H19 Q16 ${y + 16} 16 ${y + 13} Z`, C.stone, `M28 ${y - 2} H40 V${y + 20} H28 Z`, C.stone2, T) +
+    `<path d="M19 ${y + 4} H29" stroke="${C.stoneHi}" stroke-width="2.2" stroke-linecap="round"/><path d="M22 ${y + 10} H31" stroke="${C.stoneLine}" stroke-width="1.2" stroke-linecap="round"/>`).join('') +
+  `<path d="M34 28 H48 V23 L60 32 L48 41 V36 H34 Z" fill="${C.cream}" ${O(1.8)}/>`;
+const gateRot = { r: 0, d: 90, l: 180, u: 270 };
 
 /* ---------- hollow stump teleporter ---------- */
 const STUMP_CSS = `
@@ -650,6 +678,9 @@ tile('tile-bridge-h', river() + bridgeLogs(), 'Bridge, crossing left to right', 
 tile('tile-bridge-v', river() + `<g transform="rotate(90 32 32)">${bridgeLogs()}</g>`, 'Bridge, crossing top to bottom', { use: 'river runs left and right' });
 tile('tile-house', grass(2) + house(), 'Toadstool house, the goal');
 tile('tile-start', grass(0) + startMark(), 'Start');
+tile('tile-ice', ice(), 'Ice, he slides', { use: 'rules v5' });
+tile('tile-mud', mud(), 'Mud, he gets stuck', { use: 'rules v5' });
+for (const [k, deg] of Object.entries(gateRot)) tile(`tile-gate-${k}`, `<g transform="rotate(${deg} 32 32)">${gateArt()}</g>`, `One-way gate, ${{ r: 'right', d: 'down', l: 'left', u: 'up' }[k]}`, { use: 'rules v5; the door leaf is drawn in CSS', direction: k });
 for (const [k, glow] of Object.entries(GLOW)) {
   cid = 0; PFX = `gsg-s${k}-`;
   write(`stump-${k}.svg`, svgDoc(64, 64, STUMP_CSS, grass(2) + stump(glow), `Hollow stump teleporter, pair ${k.toUpperCase()}`, 'gsg-stump'),

@@ -232,6 +232,58 @@
         64,
         64
       ]
+    },
+    "tile-ice": {
+      "file": "assets/sprites/tile-ice.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5"
+    },
+    "tile-mud": {
+      "file": "assets/sprites/tile-mud.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5"
+    },
+    "tile-gate-r": {
+      "file": "assets/sprites/tile-gate-r.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5; the door leaf is drawn in CSS",
+      "direction": "r"
+    },
+    "tile-gate-d": {
+      "file": "assets/sprites/tile-gate-d.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5; the door leaf is drawn in CSS",
+      "direction": "d"
+    },
+    "tile-gate-l": {
+      "file": "assets/sprites/tile-gate-l.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5; the door leaf is drawn in CSS",
+      "direction": "l"
+    },
+    "tile-gate-u": {
+      "file": "assets/sprites/tile-gate-u.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5; the door leaf is drawn in CSS",
+      "direction": "u"
     }
   },
   "teleporter": {

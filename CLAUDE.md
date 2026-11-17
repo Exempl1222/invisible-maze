@@ -19,8 +19,9 @@ assets/js/sprites.js   loads the sprites; inline gnome and walls, one-shot anima
 assets/js/villain.js   Sir Croakwell under the board: `mountVillain(host)` returns `{ setMood, cast }` (docs/VILLAIN_SPEC.md)
 assets/js/tiles.js     which art variant each tile gets (shared by game and home replay)
 assets/css/sprites.css tile, wall and gnome art placement
-assets/sprites/        generated art (36 SVGs: 35 sprites incl. 6 Sir Croakwell toads, plus icon-gnome.svg; and manifest.json). Never hand-edit
+assets/sprites/        generated art (42 SVGs: 41 sprites incl. 6 Sir Croakwell toads and the v5 ice, mud and gate tiles, plus icon-gnome.svg; and manifest.json). Never hand-edit
 tools/build-easy.js    builds assets/levels/easy.json (Easy tier: tutorial plus generated 5x5, metrics enforced; tools/easy.test.js)
+tools/build-lab-v5.js  hand-drawn v5 lab boards; par, answer and the load-bearing checks come from the engine (tools/lab-v5.test.js)
 tools/build-sprites.mjs  the one source of all art: `node tools/build-sprites.mjs`
 tools/sprites.html     dev gallery of every sprite
 tools/stamp-version.mjs  deploy-only cache busting: appends ?v=<commit> to own .js/.json/.css references in _site (never run on the repo)
@@ -35,7 +36,7 @@ assets/js/daily/answer-cache.js  caches a finished day's solved answer in localS
 assets/js/daily/judge.js, everyone.js  shared pure judge (page and server score identically), stats send/spread helpers
 worker/               stats Worker (Cloudflare + D1): src/handle.js pure handler, src/index.js entry, schema.sql, wrangler.toml, README.md (setup)
 assets/js/bars.js     draws a wall bar on a line between tiles (game and home page)
-assets/levels/        level packs (easy.json: the 20 Easy 5x5 levels, `node tools/build-easy.js`; pack-01.json, whose levels 6 to 30 show as Play levels 21 to 45), the Hard daily batch (daily.json), the Easy 7x7 batch (daily-easy.json, `node tools/build-daily.js --size 7`) and the lab pack (lab.json, rules v4)
+assets/levels/        level packs (easy.json: the 20 Easy 5x5 levels, `node tools/build-easy.js`; pack-01.json, whose levels 6 to 30 show as Play levels 21 to 45), the Hard daily batch (daily.json), the Easy 7x7 batch (daily-easy.json, `node tools/build-daily.js --size 7`) and the lab pack (lab.json, rules v4) and the v5 lab pack (lab-v5.json: ice, mud, gates; `node tools/build-lab-v5.js`)
 assets/js/teaser.js   hero replay (canned, not game logic)
 assets/js/teaser-data.js  the replay's level, route and par walls; tools/teaser.test.js checks them against the engine
 src/game/             puzzle engine, pure JS, no DOM (Phase 3)

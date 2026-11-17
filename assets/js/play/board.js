@@ -6,8 +6,10 @@ import { placeBar } from '../bars.js';
 import { decorateTile } from '../tiles.js';
 import { pointTarget, lineFor, lineKey, explainLine, wallSidesText } from './lines.js';
 
-const NAMES = { '.': 'Grass', '#': 'Rock', '~': 'River', '=': 'Bridge', R: 'Gnome start', B: 'House' };
-const CLASS = { '.': 'grass', '#': 'rock', '~': 'river', '=': 'bridge', R: 'start', B: 'beacon' };
+const NAMES = { '.': 'Grass', '#': 'Rock', '~': 'River', '=': 'Bridge', R: 'Gnome start', B: 'House', '*': 'Ice', '&': 'Mud' };
+const CLASS = { '.': 'grass', '#': 'rock', '~': 'river', '=': 'bridge', R: 'start', B: 'beacon', '*': 'ice', '&': 'mud', '>': 'gate', '<': 'gate', '^': 'gate', v: 'gate' };
+// Rules v5 gates: the way the arrow points, as the sprite direction letter and the words for a label.
+const GATE = { '>': ['r', 'right'], '<': ['l', 'left'], '^': ['u', 'up'], v: ['d', 'down'] };
 const STEP = { U: [0, -1], R: [1, 0], D: [0, 1], L: [-1, 0] };
 const ARROWS = { ArrowUp: 'U', ArrowRight: 'R', ArrowDown: 'D', ArrowLeft: 'L' };
 const GAP = 3;
@@ -18,8 +20,9 @@ const TOAD_ASPECT = 140 / 390; // the back sprites' canvas: height over width. H
 const TOAD_OVERLAP = 0.18; // his hands overlap the board's bottom edge by this share of his height
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const isPortal = (c) => c >= 'a' && c <= 'z';
+const isLetter = (c) => c >= 'a' && c <= 'z';
 const el = (cls) => { const d = document.createElement('div'); d.className = cls; return d; };
+const span = (cls) => { const d = document.createElement('span'); d.className = cls; return d; }; // inside a tile button, which may only hold phrasing content
 
 export function createBoard(root, level, { onLine, onHelp }) {
   root.innerHTML = '';
@@ -32,6 +35,8 @@ export function createBoard(root, level, { onLine, onHelp }) {
   let walking = 0; // replays in flight: a cut-short one may still be winding down when the next starts
 
   const n = level.size;
+  const v5 = level.rules === 'v5';
+  const isPortal = (c) => isLetter(c) && !(v5 && c === 'v'); // in v5 the letter v is the down gate
   const letters = [...new Set(level.tiles.join('').split('').filter(isPortal))].sort();
   const cells = new Map();
   const key = (x, y) => `${x},${y}`;
@@ -55,7 +60,15 @@ export function createBoard(root, level, { onLine, onHelp }) {
       b.className = `cell ${portal ? 'teleporter' : CLASS[ch]}`;
       b.dataset.tile = portal ? 'teleporter' : CLASS[ch];
       b.tabIndex = -1;
-      decorateTile(b, level.tiles, n, x, y, letters);
+      decorateTile(b, level.tiles, n, x, y, letters, level.rules);
+      if (GATE[ch] && v5) {
+        // The door leaf is a CSS shape so it can swing open and shut (assets/css/sprites.css).
+        b.dataset.gate = GATE[ch][0];
+        const frame = span('gate-frame');
+        frame.setAttribute('aria-hidden', 'true');
+        frame.appendChild(span('gate-leaf'));
+        b.appendChild(frame);
+      }
       if (portal && letters.length > 1) {
         b.textContent = String(letters.indexOf(ch) + 1);
         b.dataset.pair = ch;
@@ -88,9 +101,10 @@ export function createBoard(root, level, { onLine, onHelp }) {
       const num = letters.length > 1 ? ` ${letters.indexOf(ch) + 1}` : '';
       return `Stump${num}, ${where}`;
     }
-    if (ch === '.') {
+    if (ch === '.' || ch === '*' || ch === '&' || GATE[ch]) {
       const ws = wallSidesText(x, y, n, hasWall);
-      return `Grass, ${where}${ws ? `, ${ws}` : ''}`;
+      const what = GATE[ch] ? `Gate, one way ${GATE[ch][1]}` : NAMES[ch];
+      return `${what}, ${where}${ws ? `, ${ws}` : ''}`;
     }
     return `${NAMES[ch]}, ${where}`;
   }
@@ -419,9 +433,11 @@ export function createBoard(root, level, { onLine, onHelp }) {
     },
     /** Put the robot back at the start and wipe trail and effects. Walls stay. */
     resetRun() {
-      for (const c of cells.values()) c.classList.remove('trail', 'reached', 'flash', 'linked');
+      for (const c of cells.values()) c.classList.remove('trail', 'reached', 'flash', 'linked', 'gate-open');
       for (const l of [...links]) removeLink(l);
-      robot.classList.remove('jolt', 'vanish', 'dive', 'pop', 'home');
+      for (const f of root.querySelectorAll('.frost, .mud-bubble')) f.remove();
+      robot.style.transitionTimingFunction = '';
+      robot.classList.remove('jolt', 'vanish', 'dive', 'pop', 'home', 'skid', 'bump', 'sink', 'wiggle', 'pull');
       setGnome(robot, 'down', 'idle');
       moveRobot(level.start, { instant: true });
     },
@@ -470,6 +486,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
       for (let i = 0; i <= last; i++) {
         mark(sim.steps[i]);
         if (sim.via[i]) mark(sim.via[i]);
+        if (sim.trails) for (const t of sim.trails[i]) mark(t); // rules v5: every tile a slide passed
       }
       for (let i = 1; i <= last; i++) face(sim.steps[i - 1], sim.via[i] || sim.steps[i]); // a jump faces the stump he walked onto
       setGnome(robot, lastDir, 'idle');
@@ -481,39 +498,105 @@ export function createBoard(root, level, { onLine, onHelp }) {
       } else setGnome(robot, lastDir, 'shrug');
       return true;
     }
+    const tileAt = (pos) => level.tiles[pos[1]][pos[0]];
+    const isGateAt = (pos) => v5 && !!GATE[tileAt(pos)];
+    const openGate = (pos) => cellAt(pos[0], pos[1]).classList.add('gate-open');
+    /** The gate swings shut behind him: every open gate he is no longer standing on. */
+    const shutGates = (at) => {
+      for (const c of cells.values()) {
+        if (c.classList.contains('gate-open') && !(Number(c.dataset.x) === at[0] && Number(c.dataset.y) === at[1])) c.classList.remove('gate-open');
+      }
+    };
+    /** Teleport, from the stump he stands on: dive, then pop out of the twin. Dive and pop scale with the step time. */
+    const teleportFrom = async (i, via, ms) => {
+      const diveMs = Math.round(ms * 2.55);
+      const popMs = Math.round(ms * 2.36);
+      robot.style.setProperty('--dive-ms', `${diveMs}ms`);
+      robot.style.setProperty('--pop-ms', `${popMs}ms`);
+      await playOnce(robot, 'dive', diveMs, { keep: true });
+      if (cancelled()) { robot.classList.remove('dive'); return; }
+      pulse(via, 'flash');
+      pulse(sim.steps[i], 'flash');
+      const link = drawLink(via, sim.steps[i], 'jump');
+      moveRobot(sim.steps[i], { instant: true });
+      robot.classList.remove('dive');
+      await playOnce(robot, 'pop', popMs);
+      removeLink(link);
+    };
+    /** Ice: one continuous glide along the whole trail, a skid pose, a spray of frost, a bump if a fence or rock stops him on ice. */
+    const glide = async (from, trail, ms) => {
+      const to = trail[trail.length - 1];
+      setGnome(robot, face(from, to), 'idle');
+      const dur = Math.round(ms * (0.35 + 0.2 * trail.length));
+      robot.style.setProperty('--glide-ms', `${dur}ms`);
+      robot.classList.add('skid');
+      robot.style.transitionTimingFunction = 'cubic-bezier(.25,.6,.45,1)';
+      const fx = el('frost');
+      fx.setAttribute('aria-hidden', 'true');
+      for (let k = 0; k < 5; k++) fx.appendChild(el('bit'));
+      robot.appendChild(fx);
+      moveRobot(to, { ms: dur });
+      await sleep(dur);
+      robot.style.transitionTimingFunction = '';
+      robot.classList.remove('skid');
+      fx.remove();
+      for (const t of trail) mark(t);
+      if (cancelled()) return;
+      if (tileAt(to) === '*') await playOnce(robot, 'bump', Math.round(ms * 0.7)); // stopped on ice: a fence or an obstacle is in the way
+    };
+    /** Mud: he sinks in (lower, squashed) as he arrives, stays down while stuck, then pulls free. */
+    const sinkIn = () => { robot.classList.add('sink'); };
+    const struggle = async (at, ms) => {
+      const cell = cellAt(at[0], at[1]);
+      const bubble = span('mud-bubble');
+      bubble.setAttribute('aria-hidden', 'true');
+      cell.appendChild(bubble);
+      robot.classList.add('wiggle');
+      await sleep(Math.round(ms * 1.1));
+      robot.classList.remove('wiggle');
+      bubble.remove();
+    };
+    const leaveMud = (ms) => {
+      if (!robot.classList.contains('sink')) return;
+      robot.classList.remove('sink');
+      robot.classList.add('pull');
+      setTimeout(() => robot.classList.remove('pull'), Math.round(ms * 0.8));
+    };
     await sleep(250);
     for (let i = 1; i <= last; i++) {
       if (cancelled()) return false;
       mark(sim.steps[i - 1]);
       if (onMove) onMove(i);
       const via = sim.via[i];
-      if (via) {
+      const trail = sim.trails ? sim.trails[i] : null; // rules v5 only; v4 replays take the branches below as before
+      const stuckMove = !!sim.stuck && sim.stuck.includes(i);
+      const dest = trail && trail.length ? trail[trail.length - 1] : null;
+      const sliding = !!dest && !stuckMove && (trail.length > 1 || tileAt(dest) === '*');
+      if (sim.trails && !stuckMove) leaveMud(stepMs); // pulls free of the mud he was stuck in (not on the stuck move itself)
+      if (dest && !stuckMove && isGateAt(dest)) openGate(dest); // swings open as he comes
+      if (stuckMove) {
+        await struggle(sim.steps[i], stepMs);
+      } else if (sliding) {
+        await glide(sim.steps[i - 1], trail, stepMs);
+        if (cancelled()) return false;
+        if (via) { mark(via); await teleportFrom(i, via, stepMs); }
+        else if (tileAt(dest) === '&') sinkIn();
+      } else if (via) {
         // Step onto the stump, hop on and sink in, then pop out of its twin.
         setGnome(robot, face(sim.steps[i - 1], via), 'walk');
         moveRobot(via, { ms: stepMs * 0.45 });
         await sleep(stepMs * 0.45);
         if (cancelled()) return false;
         mark(via);
-        // Dive and pop scale with the step time, so speeding up the replay speeds up teleports too.
-        const diveMs = Math.round(stepMs * 2.55);
-        const popMs = Math.round(stepMs * 2.36);
-        robot.style.setProperty('--dive-ms', `${diveMs}ms`);
-        robot.style.setProperty('--pop-ms', `${popMs}ms`);
-        await playOnce(robot, 'dive', diveMs, { keep: true });
-        if (cancelled()) { robot.classList.remove('dive'); return false; }
-        pulse(via, 'flash');
-        pulse(sim.steps[i], 'flash');
-        const link = drawLink(via, sim.steps[i], 'jump');
-        moveRobot(sim.steps[i], { instant: true });
-        robot.classList.remove('dive');
-        await playOnce(robot, 'pop', popMs);
-        removeLink(link);
-        if (cancelled()) return false;
+        await teleportFrom(i, via, stepMs);
       } else {
         setGnome(robot, face(sim.steps[i - 1], sim.steps[i]), 'walk');
         moveRobot(sim.steps[i], { ms: stepMs * 0.75 });
         await sleep(stepMs);
+        if (sim.trails && tileAt(sim.steps[i]) === '&') sinkIn();
       }
+      if (cancelled()) return false;
+      if (sim.trails) shutGates(sim.steps[i]);
     }
     if (cancelled()) return false;
     mark(sim.steps[last]);

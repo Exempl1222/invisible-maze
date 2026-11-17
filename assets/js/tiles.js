@@ -2,16 +2,17 @@
 // level always looks the same in both. Deterministic: no randomness, only the tile's position.
 // The art itself is picked in assets/css/sprites.css from these data attributes and classes.
 
-const isPortal = (c) => c >= 'a' && c <= 'z';
+// In rules v5 the letter v is the down gate, not a teleporter.
+const isPortal = (c, rules) => c >= 'a' && c <= 'z' && !(rules === 'v5' && c === 'v');
 
 /** The teleporter letters used in a level, sorted, so pair numbers are stable (a = 1, b = 2, ...). */
-export const portalLetters = (tiles) => [...new Set(tiles.join('').split('').filter(isPortal))].sort();
+export const portalLetters = (tiles, rules) => [...new Set(tiles.join('').split('').filter((c) => isPortal(c, rules)))].sort();
 
 /**
  * Mark the element for tile (x, y) of an n x n level: grass and rock variants, bridge direction,
  * river banks, teleporter pair number, and the four board corners (they follow the frame's radius).
  */
-export function decorateTile(el, tiles, n, x, y, letters) {
+export function decorateTile(el, tiles, n, x, y, letters, rules) {
   const ch = tiles[y][x];
   if (y === 0 && x === 0) el.classList.add('c-tl');
   if (y === 0 && x === n - 1) el.classList.add('c-tr');
@@ -44,7 +45,7 @@ export function decorateTile(el, tiles, n, x, y, letters) {
     if (y < n - 1 && !water(x, y + 1)) el.classList.add('bank-d');
     if (x > 0 && !water(x - 1, y)) el.classList.add('bank-l');
   }
-  if (isPortal(ch)) {
+  if (isPortal(ch, rules)) {
     el.dataset.pairN = String(letters.indexOf(ch) + 1);
   }
 }
