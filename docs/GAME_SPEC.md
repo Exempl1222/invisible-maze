@@ -82,7 +82,7 @@ A robot wants to reach the beacon and always takes the shortest route. Before it
 | 7x7 | Medium tier (v5); pack 1's main levels; the Easy daily |
 | 9x9 | Hard tier (v5); pack 1's hard levels; the Hard daily |
 
-Pack 1 below is live until the Easy pack ships (see "Rules v5", Tiers).
+Pack 1 below: its 5x5 tutorial is Easy 1 to 5, its 7x7 levels retired with Medium, and its 9x9 levels show as Play levels 41 to 55 until Hard ships (see "Rules v5", Tiers).
 
 - **Level pack 1 (v4):** 30 levels, budget par + 2, a single par answer not required.
   - 1 to 5: hand-authored **5x5** tutorial (par 1 to 3), one idea each.
@@ -104,7 +104,7 @@ v5 is v4 plus the tiles and tools below. A v4 level parses and plays exactly as 
 | Medium | `assets/levels/medium.json` | 7x7 | 21 to 40 | 3 to 5 | Ice, mud, gates |
 | Hard | `assets/levels/hard.json` | 9x9 | 41 to 60 | 4 to 7 (at least one 7) | One gnome tool per level, Medium tiles from level 56 |
 
-- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1's levels 6 to 30 stay playable as levels 21 to 45 until the Medium and Hard packs replace them.
+- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1's 7x7 levels (6 to 15) retired when Medium shipped; its 9x9 levels (16 to 30) stay playable as levels 41 to 55 until Hard replaces them.
 - Budget stays par + 2. Stars, hints and the no-cut rule are unchanged.
 - Each new mechanic is introduced in order: 1 level where it alone decides par, then 2 where it combines with a known idea, then it joins the mix. Medium: ice 21 to 25, mud 26 to 30, gates 31 to 34, mixed 35 to 40. Hard: ladder 41 to 45, pickaxe 46 to 50, plank 51 to 55, mixed 56 to 60.
 - All tiers are open in development; at launch each tier unlocks when the one before is finished.
