@@ -7,7 +7,7 @@
 //   6-9    par 2, rocks only        10-13  par 2-3, river and bridges    14-17  par 3, a teleporter pair
 //   18-20  par 3-4, mixes (river, bridges and a teleporter); level 20 is par 4
 // Metrics enforced (throws): par as above, slack 2-5, parAnswers <= 10 on 6-13, the river and bridges (10-13, the
-// answer must also fence a bridge end) or the teleporter pair (14-17) load-bearing for the stored answer, valid bridges, no duplicate boards.
+// answer must also fence a bridge end) or the teleporter pair (14-17) load-bearing for the stored answer, valid bridges, no duplicate boards, no look-alike boards within a group (lookAlike).
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -100,12 +100,25 @@ export function checkEasy(levels) {
     if (invalidBridges(l.tiles).length) throw new Error(`easy ${n}: bridge does not span a river`);
     if (seen.has(l.tiles.join('/'))) throw new Error(`easy ${n}: duplicate board`);
     seen.add(l.tiles.join('/'));
+    const groupStart = [6, 10, 14, 18].filter((g) => g <= n).pop();
+    for (let m = groupStart; m && m < n; m++) if (lookAlike(levels[m - 1].tiles, l.tiles)) throw new Error(`easy ${n}: looks like easy ${m}`);
     if (n > 5) {
       const slack = l.moveLimit - (findPath(parseLevel(l), []).positions.length - 1);
       if (slack < 2 || slack > 5) throw new Error(`easy ${n}: slack ${slack}`);
       if (n <= 13 && l.parAnswers > 10) throw new Error(`easy ${n}: ${l.parAnswers} par answers`);
     }
   });
+}
+
+/** Two boards of one group that would feel like the same level: the same river layout (direction, and middle or off-centre), or under 10 tiles apart. */
+export function lookAlike(a, b) {
+  const river = (t) => {
+    const row = t.findIndex((r) => /^[~=]+$/.test(r));
+    const col = [...t[0]].findIndex((_, x) => t.every((r) => '~='.includes(r[x])));
+    return row >= 0 ? `h${row === 2}` : col >= 0 ? `v${col === 2}` : null;
+  };
+  if (river(a) && river(a) === river(b)) return true;
+  return [...a.join('')].filter((c, i) => c !== b.join('')[i]).length < 10;
 }
 
 export function buildEasy() {
@@ -124,7 +137,7 @@ export function buildEasy() {
       for (let i = 0; got < want; i++) {
         if (i > 20000) throw new Error(`easy group ${gi + 1}: not enough par ${par} candidates`);
         const c = candidate(g.kind, `easy-g${gi + 1}-par${par}`, i, par, g.parAnswersMax);
-        if (!c || used.has(c.level.tiles.join('/'))) continue;
+        if (!c || used.has(c.level.tiles.join('/')) || group.some((o) => lookAlike(o.level.tiles, c.level.tiles))) continue;
         used.add(c.level.tiles.join('/'));
         group.push(c);
         got++;
