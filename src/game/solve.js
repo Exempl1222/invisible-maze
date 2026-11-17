@@ -161,11 +161,15 @@ export function solve(level, opts = {}) {
  * A set counts only if it leaves a route and that route is longer than the move limit.
  * Exact below the cap; returns `cap` when there are at least that many.
  * For k above par this includes sets that merely contain a smaller winning set (as long as they still leave a route).
+ * `opts.maxNodes`: optional work budget (search states, like solve's); returns null when exceeded. Absent: unbounded, as before.
  */
 // SPEC-QUESTION: the spec says "how many k-wall answers exist" without saying whether a
 // k-wall set that contains a smaller winning set is an answer. Conservative choice: yes
 // (any k-subset of buildable lines that wins). At k = par the two readings are identical.
-export function countAnswers(level, k, cap = 50) {
+export function countAnswers(level, k, cap = 50, opts = {}) {
+  const maxNodes = opts.maxNodes ?? Infinity; // optional deterministic work budget (search states); null result when exceeded
+  let nodes = 0;
+  const OUT_OF_WORK = Symbol('out of work');
   const { buildable, pool: all, take, drop } = setup(level);
   const v5 = level.rules === 'v5';
   const mask = new Uint8Array(level.size * level.size * 2);
@@ -189,6 +193,7 @@ export function countAnswers(level, k, cap = 50) {
       return r !== null && (!v5 || isWin(level, r)) && addFound();
     }
     for (let i = from; i <= pool.length - left; i++) {
+      if (++nodes > maxNodes) throw OUT_OF_WORK;
       if (!take(pool[i])) continue; // would break the v4 side cap: illegal
       chosen.push(pool[i]);
       mask[pool[i]] = 1;
@@ -202,6 +207,7 @@ export function countAnswers(level, k, cap = 50) {
   }
 
   function dfs() {
+    if (++nodes > maxNodes) throw OUT_OF_WORK;
     const route = routeWithMask(level, mask);
     if (route === null && !v5) return false; // dead end: cut off, and more walls can't reconnect
     if (route !== null && isWin(level, route)) {
@@ -232,6 +238,11 @@ export function countAnswers(level, k, cap = 50) {
     return false;
   }
 
-  dfs();
+  try {
+    dfs();
+  } catch (e) {
+    if (e !== OUT_OF_WORK) throw e;
+    return null;
+  }
   return Math.min(found.size, cap);
 }

@@ -379,3 +379,16 @@ test('exactPar must be a non-negative integer', () => {
   assert.throws(() => solve(lv, { exactPar: -1 }), /exactPar/);
   assert.throws(() => solve(lv, { exactPar: 2.5 }), /exactPar/);
 });
+
+test('countAnswers maxNodes: a work budget; null when exceeded, unchanged when absent or generous', () => {
+  const v4 = parseLevel(SPEC_LEVEL);
+  const base4 = countAnswers(v4, 5);
+  assert.equal(base4, 1);
+  assert.equal(countAnswers(v4, 5, 50, { maxNodes: 1e9 }), base4, 'v4 generous budget: same count');
+  assert.equal(countAnswers(v4, 5, 50, { maxNodes: 1 }), null, 'v4 tiny budget: null');
+  const v5 = parseLevel({ id: 't', size: 5, tiles: ['..R..', '.###.', '*****', '.###.', 'B....'], rules: 'v5', moveLimit: 9, wallBudget: 6 });
+  const base5 = countAnswers(v5, 3, 50);
+  assert.ok(base5 > 0);
+  assert.equal(countAnswers(v5, 3, 50, { maxNodes: 1e9 }), base5, 'v5 generous budget: same count');
+  assert.equal(countAnswers(v5, 3, 50, { maxNodes: 1 }), null, 'v5 tiny budget: null');
+});

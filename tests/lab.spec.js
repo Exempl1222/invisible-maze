@@ -6,9 +6,10 @@ import { parseLevel, solve, cutsAllRoutes, buildableLines, wouldBreakCap, capVio
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const easy = readJson('../assets/levels/easy.json');
+const medium = readJson('../assets/levels/medium.json');
 const pack = readJson('../assets/levels/pack-01.json');
 const labData = readJson('../assets/levels/lab.json');
-const levels = [...easy.levels, ...pack.levels.filter((l) => l.size !== 5)].map((l) => parseLevel(l)); // as listed on /play/ (45)
+const levels = [...easy.levels, ...medium.levels, ...pack.levels.filter((l) => l.size === 9)].map((l) => parseLevel(l)); // as listed on /play/ (55)
 const labLevels = labData.levels.map((l) => parseLevel(l));
 
 const PROGRESS = 'invisible-maze:progress:v1';
@@ -81,7 +82,7 @@ test('lab: the tab lists 5 levels with the experiments note', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Lab 1, not played' })).toBeVisible();
   // the other tabs still work from here
   await tabs.getByRole('link', { name: 'Levels' }).click();
-  await expect(page.locator('#select-view .level-btn')).toHaveCount(45);
+  await expect(page.locator('#select-view .level-btn')).toHaveCount(55);
 });
 
 test('lab: ?lab=N opens that lab level, and Back returns to the lab list', async ({ page }) => {
