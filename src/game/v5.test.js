@@ -338,3 +338,14 @@ test('solve under v5 honours exactPar, maxPar and maxNodes', () => {
   assert.equal(solve(lv, { maxPar: 0 }), null);
   assert.equal(solve(lv, { maxNodes: 1 }), null);
 });
+
+// Regression (independent review of 8c): the v4 packing lower bound is unsound under v5, because a gate feeding ice lets
+// fences on the first route create a second short route. With the bound on, these give par 3, null and 0.
+test('solve and countAnswers stay exact where the v4 packing bound would be wrong', () => {
+  const a = v5(['..R*..*', '.###...', '*#a#*..', '..*<.*.', '*#b#.#.', '.###&..', '#aBb#*&'], { moveLimit: 10 });
+  assert.equal(solve(a, { maxPar: 4 }).par, 2);
+  assert.equal(countAnswers(a, 2, 50), 12);
+  const b = v5(['.......', '.###...', '.#a#...', 'R.*<...', '.#b#...', '.###...', '#aBb#..'], { moveLimit: 14 });
+  assert.equal(solve(b, { maxPar: 1 }).par, 1);
+  assert.equal(countAnswers(b, 1, 50), 1);
+});

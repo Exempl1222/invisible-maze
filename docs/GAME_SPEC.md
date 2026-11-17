@@ -139,7 +139,7 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 ### Gates
 
 - A gate tile can only be entered moving in its arrow's direction, and only left moving in that direction. `>` lets him through left to right only.
-- A gate's entry and exit tiles (behind and in front of it along the arrow) must both be walkable land, never another gate, and on the board. The generator enforces it and the tests check every shipped gate, like bridges.
+- A gate's entry and exit tiles (behind and in front of it along the arrow) must both be walkable (grass, ice, mud, a bridge, a teleporter, the start or the house), never another gate, and on the board. The generator enforces it and the tests check every shipped gate, like bridges.
 - A gate is not ice; a slide that enters a gate stops on it.
 
 ### Gnome tools (Hard)

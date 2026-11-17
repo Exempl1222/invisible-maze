@@ -31,7 +31,7 @@ export function validateWalls(level, walls) {
   }
   const over = capViolation(level, walls);
   if (over) {
-    throw new Error(`walls touch more than ${SIDE_CAP} sides of the ${over === 'start' ? 'robot' : 'beacon'}: rules v4 allow at most ${SIDE_CAP}`);
+    throw new Error(`walls touch more than ${SIDE_CAP} sides of the ${over === 'start' ? 'robot' : 'beacon'}: the rules allow at most ${SIDE_CAP}`);
   }
 }
 
