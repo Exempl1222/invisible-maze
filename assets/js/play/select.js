@@ -4,11 +4,9 @@ import { bestStars } from './storage.js';
 import { starsMarkup } from './icons.js';
 import { sprite } from '../sprites.js';
 
-const TUTORIAL_COUNT = 5; // the first five levels teach one idea each
-
-function groupFor(level, i) {
-  if (level.size === 9) return 'The Wild Wood \u00b7 9x9';
-  return i < TUTORIAL_COUNT ? 'Seedlings \u00b7 7x7' : 'The Garden \u00b7 7x7';
+function groupFor(level) {
+  if (level.size === 5) return 'Easy \u00b7 5x5';
+  return level.size === 9 ? 'The Wild Wood \u00b7 9x9' : 'The Garden \u00b7 7x7';
 }
 
 /** Tabs shared by the select screens. `current` is "levels", "daily" or "lab". */
@@ -60,7 +58,7 @@ export function renderSelect(root, levels, { onPick, onMode }) {
   let current = null;
   let grid = null;
   levels.forEach((level, i) => {
-    const group = groupFor(level, i);
+    const group = groupFor(level);
     if (group !== current) {
       current = group;
       const h = document.createElement('h2');

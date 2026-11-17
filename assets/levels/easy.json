@@ -1,0 +1,610 @@
+{
+  "id": "easy",
+  "levels": [
+    {
+      "id": "easy-01",
+      "size": 5,
+      "tiles": [
+        "R...B",
+        ".....",
+        ".....",
+        ".....",
+        "....."
+      ],
+      "rules": "v4",
+      "moveLimit": 6,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 4,
+      "answer": [
+        [
+          2,
+          0,
+          "R"
+        ],
+        [
+          2,
+          1,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-02",
+      "size": 5,
+      "tiles": [
+        "...R.",
+        "....#",
+        "...#.",
+        ".#..#",
+        "...B."
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 3,
+      "par": 1,
+      "parAnswers": 1,
+      "answer": [
+        [
+          2,
+          2,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-03",
+      "size": 5,
+      "tiles": [
+        "..~.B",
+        "..=..",
+        "R.~..",
+        "..=..",
+        "..~.."
+      ],
+      "rules": "v4",
+      "moveLimit": 6,
+      "wallBudget": 3,
+      "par": 1,
+      "parAnswers": 2,
+      "answer": [
+        [
+          1,
+          1,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-04",
+      "size": 5,
+      "tiles": [
+        "a....",
+        ".R...",
+        ".....",
+        "....a",
+        "....B"
+      ],
+      "rules": "v4",
+      "moveLimit": 5,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 3,
+      "answer": [
+        [
+          0,
+          0,
+          "R"
+        ],
+        [
+          0,
+          0,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-05",
+      "size": 5,
+      "tiles": [
+        ".....",
+        ".....",
+        "...R.",
+        "##...",
+        "B...."
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 1,
+      "answer": [
+        [
+          2,
+          2,
+          "D"
+        ],
+        [
+          3,
+          2,
+          "R"
+        ],
+        [
+          3,
+          2,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-06",
+      "size": 5,
+      "tiles": [
+        "R##..",
+        "....B",
+        ".....",
+        "#...#",
+        ".#..."
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 2,
+      "answer": [
+        [
+          1,
+          1,
+          "R"
+        ],
+        [
+          1,
+          2,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-07",
+      "size": 5,
+      "tiles": [
+        "B....",
+        "....#",
+        "#....",
+        "#..#.",
+        "R...#"
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 1,
+      "answer": [
+        [
+          1,
+          1,
+          "D"
+        ],
+        [
+          2,
+          1,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-08",
+      "size": 5,
+      "tiles": [
+        ".....",
+        "R...#",
+        ".....",
+        ".###B",
+        "....."
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 2,
+      "answer": [
+        [
+          0,
+          1,
+          "D"
+        ],
+        [
+          3,
+          2,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-09",
+      "size": 5,
+      "tiles": [
+        ".....",
+        "...#.",
+        ".#.##",
+        ".#.R.",
+        "B#..."
+      ],
+      "rules": "v4",
+      "moveLimit": 10,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 3,
+      "answer": [
+        [
+          2,
+          3,
+          "R"
+        ],
+        [
+          3,
+          3,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-10",
+      "size": 5,
+      "tiles": [
+        ".B...",
+        "~=~=~",
+        "..#..",
+        ".....",
+        "..R.."
+      ],
+      "rules": "v4",
+      "moveLimit": 7,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 2,
+      "answer": [
+        [
+          1,
+          1,
+          "D"
+        ],
+        [
+          3,
+          2,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-11",
+      "size": 5,
+      "tiles": [
+        ".....",
+        "..R..",
+        "~=~=~",
+        ".....",
+        "B..#."
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 4,
+      "par": 2,
+      "parAnswers": 2,
+      "answer": [
+        [
+          1,
+          1,
+          "D"
+        ],
+        [
+          2,
+          1,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-12",
+      "size": 5,
+      "tiles": [
+        ".B...",
+        "~=~=~",
+        "....R",
+        "...#.",
+        "....#"
+      ],
+      "rules": "v4",
+      "moveLimit": 7,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 8,
+      "answer": [
+        [
+          3,
+          1,
+          "D"
+        ],
+        [
+          1,
+          2,
+          "R"
+        ],
+        [
+          1,
+          3,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-13",
+      "size": 5,
+      "tiles": [
+        "..~#.",
+        "..=..",
+        "#.~..",
+        "..=..",
+        "B.~.R"
+      ],
+      "rules": "v4",
+      "moveLimit": 10,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 6,
+      "answer": [
+        [
+          3,
+          2,
+          "D"
+        ],
+        [
+          2,
+          3,
+          "R"
+        ],
+        [
+          4,
+          3,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-14",
+      "size": 5,
+      "tiles": [
+        "#.B..",
+        ".....",
+        "..#..",
+        "#..aR",
+        "..a.."
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 10,
+      "answer": [
+        [
+          4,
+          2,
+          "D"
+        ],
+        [
+          3,
+          3,
+          "R"
+        ],
+        [
+          2,
+          4,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-15",
+      "size": 5,
+      "tiles": [
+        ".....",
+        ".....",
+        "B....",
+        "aa##R",
+        "....."
+      ],
+      "rules": "v4",
+      "moveLimit": 9,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 1,
+      "answer": [
+        [
+          0,
+          2,
+          "R"
+        ],
+        [
+          0,
+          2,
+          "D"
+        ],
+        [
+          4,
+          2,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-16",
+      "size": 5,
+      "tiles": [
+        "a..B.",
+        "....#",
+        ".....",
+        ".R##.",
+        "..a.."
+      ],
+      "rules": "v4",
+      "moveLimit": 9,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 2,
+      "answer": [
+        [
+          1,
+          0,
+          "R"
+        ],
+        [
+          1,
+          1,
+          "R"
+        ],
+        [
+          1,
+          2,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-17",
+      "size": 5,
+      "tiles": [
+        ".B...",
+        "..#..",
+        "...a.",
+        ".#.#R",
+        "a...."
+      ],
+      "rules": "v4",
+      "moveLimit": 10,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 6,
+      "answer": [
+        [
+          1,
+          2,
+          "R"
+        ],
+        [
+          4,
+          2,
+          "D"
+        ],
+        [
+          1,
+          4,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-18",
+      "size": 5,
+      "tiles": [
+        ".a~..",
+        "..=.R",
+        "..~..",
+        "Ba=..",
+        "..~.."
+      ],
+      "rules": "v4",
+      "moveLimit": 9,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 8,
+      "answer": [
+        [
+          2,
+          1,
+          "R"
+        ],
+        [
+          3,
+          1,
+          "R"
+        ],
+        [
+          4,
+          1,
+          "D"
+        ]
+      ]
+    },
+    {
+      "id": "easy-19",
+      "size": 5,
+      "tiles": [
+        ".a...",
+        "..B..",
+        "~=~~~",
+        ".....",
+        "a..R."
+      ],
+      "rules": "v4",
+      "moveLimit": 8,
+      "wallBudget": 5,
+      "par": 3,
+      "parAnswers": 9,
+      "answer": [
+        [
+          1,
+          3,
+          "R"
+        ],
+        [
+          3,
+          3,
+          "D"
+        ],
+        [
+          2,
+          4,
+          "R"
+        ]
+      ]
+    },
+    {
+      "id": "easy-20",
+      "size": 5,
+      "tiles": [
+        "a~...",
+        ".~...",
+        "a~#..",
+        ".=...",
+        "B~..R"
+      ],
+      "rules": "v4",
+      "moveLimit": 11,
+      "wallBudget": 6,
+      "par": 4,
+      "parAnswers": 2,
+      "answer": [
+        [
+          3,
+          1,
+          "R"
+        ],
+        [
+          3,
+          2,
+          "R"
+        ],
+        [
+          3,
+          3,
+          "R"
+        ],
+        [
+          3,
+          4,
+          "R"
+        ]
+      ]
+    }
+  ]
+}

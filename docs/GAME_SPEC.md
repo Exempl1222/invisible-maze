@@ -104,7 +104,7 @@ v5 is v4 plus the tiles and tools below. A v4 level parses and plays exactly as 
 | Medium | `assets/levels/medium.json` | 7x7 | 21 to 40 | 3 to 5 | Ice, mud, gates |
 | Hard | `assets/levels/hard.json` | 9x9 | 41 to 60 | 4 to 7 (at least one 7) | One gnome tool per level, Medium tiles from level 56 |
 
-- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1 retires when the Easy pack ships.
+- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1's levels 6 to 30 stay playable as levels 21 to 45 until the Medium and Hard packs replace them.
 - Budget stays par + 2. Stars, hints and the no-cut rule are unchanged.
 - Each new mechanic is introduced in order: 1 level where it alone decides par, then 2 where it combines with a known idea, then it joins the mix. Medium: ice 21 to 25, mud 26 to 30, gates 31 to 34, mixed 35 to 40. Hard: ladder 41 to 45, pickaxe 46 to 50, plank 51 to 55, mixed 56 to 60.
 - All tiers are open in development; at launch each tier unlocks when the one before is finished.
@@ -166,7 +166,7 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 
 | Metric | Target |
 |---|---|
-| Load-bearing | A mechanic is load-bearing on a level if swapping it for grass (tiles) or removing it (tool) changes par or makes the stored answer lose. 100% on its intro levels, at least 70% across the tier |
+| Load-bearing | A mechanic is load-bearing on a level if swapping it for grass (tiles) or removing it (tool) changes par or makes the stored answer lose. For bridges the swap is the whole river (river and bridge tiles become grass), since a bridge alone walks like grass, and the stored answer must fence a bridge end. 100% on its intro levels, at least 70% across the tier |
 | Slack (move limit minus base route) | Easy 2 to 5, Medium 3 to 7, Hard 5 to 10 |
 | Par answers | At most 10 on intro levels and Easy 6 to 13 |
 | Density on 7x7 | Ice 3 to 8 tiles, mud 2 to 5, gates 1 to 3 |

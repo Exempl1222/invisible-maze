@@ -17,6 +17,11 @@ export function loadProgress() {
     for (const [id, n] of Object.entries(saved.best)) {
       if (clean(n) > (best[id] || 0)) best[id] = clean(n);
     }
+    // Pack 1's 5x5 tutorial became Easy 1 to 5: carry the stars over (keep the higher)
+    for (let i = 1; i <= 5; i++) {
+      const old = best[`p01-0${i}`] || 0;
+      if (old > (best[`easy-0${i}`] || 0)) best[`easy-0${i}`] = old;
+    }
   } catch {
     // Unavailable or corrupt: start from what we have in memory.
   }

@@ -26,7 +26,7 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 | 6 | **Polish and launch** | Daily level, packs of 30, hints, final name, analytics, custom domain, then ads | Mixed | Not started |
 | 7 | **Gnome retheme** | sprites in game, menus rethemed | Builder (Sonnet), reviewed by Opus | In review |
 | 8a | **Spec v5** | `docs/GAME_SPEC.md` "Rules v5" (tiers, ice, mud, gates, gnome tools, metrics), `REVIEW_CONTEXT.md` updated. Plan: `docs/PLAY_PLAN.md` | Orchestrator (Opus) | Done 11 Nov 2026 |
-| 8b | **Easy pack** | 20 levels 5x5, par 1 to 4, to the v5 metrics; tier select on the Play page; pack 1 stars for 1 to 5 carried | Builder (Sonnet) | Not started |
+| 8b | **Easy pack** | 20 levels 5x5, par 1 to 4, to the v5 metrics; tier select on the Play page; pack 1 stars for 1 to 5 carried | Builder (Sonnet) | In review |
 | 8c | **Engine: ice, mud, gates** | Tests first; solver exact vs brute force on small boards; v4 levels unchanged | Builder (Sonnet), verified by Opus | Not started |
 | 8d | **Art + animation: Medium tiles** | Sprites from `build-sprites.mjs`, slide, sink and gate animations, reduced-motion fallbacks | Builder (Sonnet) | Not started |
 | 8e | **Lab round 1** | 5 Lab levels per Medium mechanic, Eric playtests | Eric + QA (Sonnet) | Not started |

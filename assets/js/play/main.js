@@ -8,7 +8,8 @@ import { starsMarkup } from './icons.js';
 import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
 import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 
-const PACK_URL = '../assets/levels/pack-01.json';
+const EASY_URL = '../assets/levels/easy.json';
+const PACK_URL = '../assets/levels/pack-01.json'; // levels 6 to 30 stay as levels 21 to 45 until Medium and Hard replace them
 const LAB_URL = '../assets/levels/lab.json';
 const STEP_MS = 220;
 
@@ -415,10 +416,11 @@ async function boot() {
   const art = preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...VILLAIN_SPRITES]);
   art.catch(() => {}); // handled where it is awaited below
   try {
-    const res = await fetch(PACK_URL);
-    if (!res.ok) throw new Error(`${res.status}`);
-    const pack = await res.json();
-    levels = pack.levels.map((l) => parseLevel(l));
+    const [easyRes, packRes] = await Promise.all([fetch(EASY_URL), fetch(PACK_URL)]);
+    if (!easyRes.ok || !packRes.ok) throw new Error(`${easyRes.status} ${packRes.status}`);
+    const [easy, pack] = await Promise.all([easyRes.json(), packRes.json()]);
+    // Easy 1 to 20, then pack 1's 7x7 and 9x9 levels (its 5x5 tutorial is Easy 1 to 5)
+    levels = [...easy.levels, ...pack.levels.filter((l) => l.size !== 5)].map((l) => parseLevel(l));
   } catch (err) {
     loading.textContent = '';
     const p = document.createElement('p');

@@ -86,6 +86,10 @@ node tools/build-daily.js [--days 180] [--start 2026-10-27] [--seed 20261027] [-
 
 Every day is generated on its own sub-seed (`buildDay(i)`), so the batch is a pure function of the seed, start date and day index, and adding days never changes earlier ones. The full build takes about 9 minutes on 2 threads; `--from`/`--to` builds a range and merges it into `--out`, for runs under a time limit. `tools/daily.test.js` checks every level against the engine and proves par exactly on the first 14 days and every 5th day after.
 
+## Easy pack
+
+`tools/build-easy.js` builds `assets/levels/easy.json` (shipped), `{ "id": "easy", "levels": [...] }`: `easy-01` to `easy-05` are pack 1's hand-authored tutorial (`TUTORIAL` in `tools/build-pack.js`), `easy-06` to `easy-20` are generated 5x5 (rocks 6-9, river and bridges 10-13, teleporters 14-17, mixes 18-20), all rules v4, `wallBudget = par + 2`, deterministic from fixed seeds. The build throws if a metric from `docs/GAME_SPEC.md` (Design metrics) fails; `tools/easy.test.js` re-checks the shipped file. On the Play page the level list is Easy 1 to 20, then pack 1's levels 6 to 30 as 21 to 45.
+
 ## Lab pack
 
 `tools/build-lab.js` builds `assets/levels/lab.json` (shipped), `{ "id": "lab", "rules": "v4", "levels": [...] }`, kept as the archive of the five levels that introduced v4 (their bridges predate the bridge fix): five levels `lab-01` to `lab-05` (two 7x7 at par 3 and 4, then three 9x9 at par 5, 6 and 7, or the best found), each with `"rules": "v4"`, `wallBudget = par + 2`, the exact `par`, `parAnswers` (counted up to 50, uniqueness not required) and one par answer in `"answer"`. Move limits carry more slack over the free route than the pack's. The builder prefers candidates whose answer uses a newly allowed line, and uses a deterministic work budget (`maxNodes`) rather than a clock, so the output is a pure function of the script. `generateLevels` takes `rules`, `budgetExtra` and `maxNodes` for this; the default call is unchanged apart from the new `answer` field on each level. `tools/lab.test.js` checks the file against the engine.
