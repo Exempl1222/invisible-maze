@@ -152,7 +152,7 @@ test('moves left ticks once per move: a whole slide is one, the stuck move in mu
 });
 
 test('a replay through a gate opens it, and v4 levels never take the new animation classes', async ({ page }) => {
-  const gateK = levels.findIndex((lv) => lv.tiles.join('').match(/[<>^v]/) && !lv.tiles.join('').match(/[*&]/));
+  const gateK = levels.findIndex((lv) => lv.id === 'lab5-06'); // a gate-only level whose no-fence route goes through a gate
   await openV5(page, gateK);
   await watch(page);
   await go(page).click(); // no fences: he walks home through the gate

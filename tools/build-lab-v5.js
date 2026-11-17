@@ -31,12 +31,12 @@ export const BOARDS = [
   { id: 'lab5-03', mech: ['mud'], moveLimit: 10, tiles: ['R&...', '#....', '.....', '.....', '..B..'] },
   // Mud 2: three mud tiles along the winding way home.
   { id: 'lab5-04', mech: ['mud'], moveLimit: 11, tiles: ['R#&..', '..#..', '#&...', '..&..', '....B'] },
-  // Gate 1: a gate points up, in line with the house. He can only pass it going up.
-  { id: 'lab5-05', mech: ['gate'], moveLimit: 8, tiles: ['.B...', '..#..', '.^...', '#....', '.R...'] },
-  // Gate 2: the house sits behind a gate that points at it.
-  { id: 'lab5-06', mech: ['gate'], moveLimit: 9, tiles: ['.#.>B', '.....', '...#.', '.....', '.R...'] },
-  // Mix: ice, mud and a gate on one board.
-  { id: 'lab5-07', mech: ['ice', 'mud', 'gate'], moveLimit: 12, tiles: ['..#.R', '...>.', '...*&', '..*..', 'B#&..'] },
+  // Gate 1: left alone he walks round the gate; two fences send him the long way, up through it (the only way it opens).
+  { id: 'lab5-05', mech: ['gate'], moveLimit: 8, tiles: ['.....', '....^', 'B##..', '...R.', '..#..'] },
+  // Gate 2: two up-gates on his way home; the fences leave him only the gate that costs him most.
+  { id: 'lab5-06', mech: ['gate'], moveLimit: 8, tiles: ['#...#', '.^.B.', '..^..', '.....', '.R..#'] },
+  // Mix: ice, mud and a gate on one board; the answer's route goes through the gate.
+  { id: 'lab5-07', mech: ['ice', 'mud', 'gate'], moveLimit: 12, tiles: ['.>.B.', '*.##.', '.&..#', '....R', '.#***'] },
 ];
 
 const SWAP = { '*': '.', '&': '.', '>': '.', '<': '.', '^': '.', v: '.' };
@@ -129,6 +129,10 @@ export function buildLevel(spec) {
     }
     loadBearing[mech] = parChanged || !wins(swapRaw, answer);
     if (!loadBearing[mech]) throw new Error(`${spec.id}: ${mech} is not load-bearing (the answer still wins on grass and par is the same)`);
+  }
+  // A gate level must show the gate in use: the stored answer's route passes through a gate (QA 8d F1).
+  if (spec.mech.includes('gate') && !simulate(level, answer).steps.some(([x, y]) => MECH_TILES.gate.includes(level.tile(x, y)))) {
+    throw new Error(`${spec.id}: the stored answer never sends him through a gate`);
   }
   const slideFences = slideLinesInAnswer(level, answer);
   return { level: { ...raw, par, parAnswers, answer }, info: { loadBearing, slideFences } };

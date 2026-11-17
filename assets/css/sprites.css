@@ -21,6 +21,8 @@
 .play-board .cell.bridge               { background-image: url(../sprites/tile-bridge-h.svg); }
 .play-board .cell.bridge.across-v      { background-image: url(../sprites/tile-bridge-v.svg); }
 .play-board .cell.ice                  { background-image: url(../sprites/tile-ice.svg); }
+/* A light trail on ice, so a passed ice tile still reads as ice, not sand (QA 8d F3). */
+.play-board .cell.ice.trail::before    { background: color-mix(in srgb, var(--gold) 14%, transparent); }
 .play-board .cell.mud                  { background-image: url(../sprites/tile-mud.svg); }
 .play-board .cell.gate[data-gate="r"]  { background-image: url(../sprites/tile-gate-r.svg); }
 .play-board .cell.gate[data-gate="d"]  { background-image: url(../sprites/tile-gate-d.svg); }

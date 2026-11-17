@@ -83,6 +83,13 @@ test('lab-v5: the mechanic is load-bearing (swap its tiles for grass and the sto
   }
 });
 
+test('lab-v5: every gate level sends him through a gate when its stored answer is played', () => {
+  for (const raw of lab.levels.filter((r) => mechsOf(r).includes('gate'))) {
+    const lv = parseLevel(raw);
+    assert.ok(simulate(lv, raw.answer).steps.some(([x, y]) => '><^v'.includes(lv.tile(x, y))), `${raw.id} answer route uses a gate`);
+  }
+});
+
 test('lab-v5: at least one ice level has a fence across a slide in its answer', () => {
   const hits = lab.levels.filter((raw) => mechsOf(raw).includes('ice') && slideLinesInAnswer(parseLevel(raw), raw.answer).length > 0);
   assert.ok(hits.length >= 1, 'a fence across a slide is part of an answer');
