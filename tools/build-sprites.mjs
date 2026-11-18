@@ -30,6 +30,7 @@ const C = {
   cap: '#c94a32', cap2: '#a8382a', stem: '#f2e6cf', stem2: '#dccbab', door: '#8d5d38',
   shadow: '#2d4a1f',
   ice: '#dff3f8', ice2: '#c3e4ee', ice3: '#f2fbfd', shine: '#ffffff',
+  iron: '#5f6f7a', iron2: '#46545e', ironHi: '#b4c2cb', plank: '#e3d2a8', plank2: '#c9b184', ladder: '#7b5434',
   peat: '#6b5232', peat2: '#54402a', peat3: '#8a6c46', peatHi: '#b39266', cream: '#fff6e0',
 };
 const GLOW = { a: '#5ff0d8', b: '#c79bff', c: '#ffcf5a' }; // teleporter pairs 1, 2, 3
@@ -656,7 +657,7 @@ function svgDoc(w, h, css, body, label, root = '') {
   return `<svg xmlns="http://www.w3.org/2000/svg"${cls} viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${label}">` +
     (css ? `<style>${scope(css.replace(/\s*\n\s*/g, ''), '.' + root)}</style>` : '') + body.replace(/\n\s*/g, '') + `</svg>\n`;
 }
-const manifest = { version: 1, generatedBy: 'tools/build-sprites.mjs', gnome: {}, tiles: {}, teleporter: {}, wall: {}, villain: {}, icon: {} };
+const manifest = { version: 1, generatedBy: 'tools/build-sprites.mjs', gnome: {}, tiles: {}, teleporter: {}, wall: {}, villain: {}, icon: {}, prop: {} };
 function write(name, svg, meta, group) {
   writeFileSync(join(OUT, name), svg);
   manifest[group][name.replace('.svg', '')] = { file: `assets/sprites/${name}`, ...meta };
@@ -711,7 +712,32 @@ cid = 0; PFX = 'gsg-icon-';
   write('icon-gnome.svg', svg, { size: [64, 64], crop: 'head of gnome-down-idle' }, 'icon');
   writeFileSync(join(ROOT, 'assets', 'favicon.svg'), svg);
 }
+/* ---------- gnome tools (parcel 8g): props he carries and uses, drawn 64 x 64, static (the page animates them) ----------
+   None uses hat red, timber, gold, teleporter glow or lime. Ladder: dark bark rails. Iron: cool blue-grey, not stone grey.
+   Plank: pale driftwood, far from timber and log brown. Appended after every older sprite so older files stay byte-identical. */
+const ladderArt = () =>
+  [12, 24, 36, 48].map((y) => part(`M25 ${y} H39 V${y + 5} H25 Z`, C.ladder, null, null, 1.6)).join('') +
+  part('M20 3 H27 V61 H20 Z', C.ladder, 'M25 3 H27 V61 H25 Z', C.bark2, T) +
+  part('M37 3 H44 V61 H37 Z', C.ladder, 'M42 3 H44 V61 H42 Z', C.bark2, T);
+const pickHead = () => part('M6 16 C20 4 44 4 58 16 C46 13 38 14 36 19 H28 C26 14 18 13 6 16 Z', C.iron, 'M6 16 C20 4 44 4 58 16 C46 13 38 14 36 19 H28 Z', C.iron2, T) +
+  `<path d="M14 13 C24 8 40 8 50 13" fill="none" stroke="${C.ironHi}" stroke-width="2" stroke-linecap="round"/>`;
+const pickaxeArt = () => `<g transform="rotate(38 32 32)">` + part('M29 15 H35 V62 H29 Z', C.ladder, 'M33 15 H35 V62 H33 Z', C.bark2, T) + pickHead() + `</g>`;
+const scytheArt = () => `<g transform="rotate(-32 32 32)">` + part('M29 6 H35 V62 H29 Z', C.ladder, 'M33 6 H35 V62 H33 Z', C.bark2, T) +
+  part('M33 8 C50 4 62 14 62 30 C56 20 46 16 33 18 Z', C.iron, 'M33 14 C48 12 58 20 62 30 C56 22 46 18 33 18 Z', C.iron2, T) +
+  `<path d="M38 11 C48 9 55 14 58 20" fill="none" stroke="${C.ironHi}" stroke-width="1.8" stroke-linecap="round"/></g>`;
+const plankArt = () => part('M7 21 H57 C59 21 60 22 60 24 V40 C60 42 59 43 57 43 H7 C5 43 4 42 4 40 V24 C4 22 5 21 7 21 Z', C.plank, 'M4 34 H60 V44 H4 Z', C.plank2, T) +
+  `<path d="M12 28 H34 M26 37 H50 M40 28 H52" fill="none" stroke="${C.plank2}" stroke-width="1.6" stroke-linecap="round"/>
+   <circle cx="11" cy="32" r="2" fill="${C.iron2}" ${O(1)}/><circle cx="53" cy="32" r="2" fill="${C.iron2}" ${O(1)}/>`;
+const prop = (name, body, label, meta = {}) => { cid = 0; PFX = `gsg-${name}-`; write(`${name}.svg`, svgDoc(64, 64, '', body, label), { size: [64, 64], ...meta }, 'prop'); };
+prop('prop-ladder', ladderArt(), 'Ladder', { use: 'rules v5 gnome tool; stands upright, the page leans it on a fence' });
+prop('prop-pickaxe', pickaxeArt(), 'Pickaxe', { use: 'rules v5 gnome tool, for a rock' });
+prop('prop-scythe', scytheArt(), 'Scythe', { use: 'rules v5 gnome tool, drawn for a berry bush (a rock in the engine)' });
+prop('prop-plank', plankArt(), 'Plank', { use: 'rules v5 gnome tool; laid across a river tile' });
+tile('tile-pebbles', grass(0) +
+  [[22, 40, 7, 4.6], [38, 34, 6, 4], [34, 47, 5, 3.4], [47, 44, 4, 2.8], [18, 30, 3.4, 2.4]]
+    .map(([x, y, rx, ry]) => part(`M${x - rx} ${y} a${rx} ${ry} 0 1 0 ${2 * rx} 0 a${rx} ${ry} 0 1 0 ${-2 * rx} 0 Z`, C.stone, `M${x} ${y} h${rx} v${ry} h${-rx} Z`, C.stone2, 1.4)).join(''),
+  'Pebbles, where a rock was dug out', { use: 'rules v5; a rock after the pickaxe' });
 manifest.palette = { glow: GLOW, wood: C.stake, hat: C.hat, water: C.water, grass: C.grass, outline: C.ink };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-const count = ['gnome', 'tiles', 'teleporter', 'wall', 'villain', 'icon'].reduce((n, g) => n + Object.keys(manifest[g]).length, 0);
+const count = ['gnome', 'tiles', 'teleporter', 'wall', 'villain', 'icon', 'prop'].reduce((n, g) => n + Object.keys(manifest[g]).length, 0);
 console.log(`wrote ${count} sprites and manifest.json to assets/sprites`);

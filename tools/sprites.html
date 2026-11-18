@@ -31,7 +31,8 @@
 <h2>Teleporters</h2><div class="grid" id="tele"></div>
 <h2>Sir Croakwell</h2><p>Four back-view moods for the board border (390 x 200) and two face-on poses (390 x 460). Inline, like the gnome.</p><div class="grid wide" id="villain"></div>
 <h2>Icon</h2><div class="grid" id="icon"></div>
-<h2>Tiles</h2><p>Includes the rules v5 ice, mud and one-way gate tiles. The gate's door leaf is drawn in CSS (assets/css/sprites.css), so it is not in these files.</p><div class="grid" id="tiles"></div>
+<h2>Gnome tools</h2><p>The ladder, pickaxe, scythe (for a berry bush) and plank the gnome carries on tool levels (rules v5). Static; the Play page animates them (assets/css/sprites.css).</p><div class="grid" id="props"></div>
+<h2>Tiles</h2><p>Includes the rules v5 ice, mud and one-way gate tiles and the pebbles a dug rock leaves. The gate's door leaf is drawn in CSS (assets/css/sprites.css), so it is not in these files.</p><div class="grid" id="tiles"></div>
 <script type="module">
   import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../assets/js/sprites.js';
   import { VILLAIN_SPRITES } from '../assets/js/villain.js';
@@ -49,6 +50,7 @@
   document.getElementById('rebuild').addEventListener('click', drawWalls);
   document.getElementById('tele').innerHTML = Object.entries(m.teleporter).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
   document.getElementById('icon').innerHTML = Object.entries(m.icon || {}).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
+  document.getElementById('props').innerHTML = Object.entries(m.prop || {}).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
   document.getElementById('tiles').innerHTML = Object.entries(m.tiles).map(([n, v]) => fig(n, `<img src="../${v.file}" alt="">`)).join('');
 </script>
 </body>

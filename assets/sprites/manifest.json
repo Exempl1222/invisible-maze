@@ -284,6 +284,14 @@
       ],
       "use": "rules v5; the door leaf is drawn in CSS",
       "direction": "u"
+    },
+    "tile-pebbles": {
+      "file": "assets/sprites/tile-pebbles.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5; a rock after the pickaxe"
     }
   },
   "teleporter": {
@@ -434,6 +442,40 @@
         64
       ],
       "crop": "head of gnome-down-idle"
+    }
+  },
+  "prop": {
+    "prop-ladder": {
+      "file": "assets/sprites/prop-ladder.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5 gnome tool; stands upright, the page leans it on a fence"
+    },
+    "prop-pickaxe": {
+      "file": "assets/sprites/prop-pickaxe.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5 gnome tool, for a rock"
+    },
+    "prop-scythe": {
+      "file": "assets/sprites/prop-scythe.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5 gnome tool, drawn for a berry bush (a rock in the engine)"
+    },
+    "prop-plank": {
+      "file": "assets/sprites/prop-plank.svg",
+      "size": [
+        64,
+        64
+      ],
+      "use": "rules v5 gnome tool; laid across a river tile"
     }
   },
   "palette": {
