@@ -39,6 +39,9 @@ export const SLOTS = [
   { group: 'd', mech: ['ice', 'mud'], par: 5 }, { group: 'd', mech: ['ice', 'gate'], par: 5 }, { group: 'd', mech: ['ice', 'mud', 'gate'], par: 5 },
 ];
 
+/** Most par answers a slot may have (docs/GAME_SPEC.md Design metrics): 10 on intro levels, 5 on level 40, 12 on the mixes 35 to 40, else 20. */
+export const parCap = (i) => (SLOTS[i].intro ? 10 : i === 19 ? 5 : i >= 14 ? 12 : 20);
+
 const GROUP_FROM = { a: 0, b: 5, c: 10, d: 14 };
 const groupOf = (i) => SLOTS[i].group;
 
@@ -75,6 +78,23 @@ export function loadBearing(raw, mech, par, answer, maxNodes = NODES) {
   return par > 0 && solve(parseLevel({ ...raw, tiles }), { maxPar: par - 1, maxNodes }) !== null;
 }
 
+/** Moves of the stored answer's replay in which he slides (a trail of 2 or more tiles). */
+export function slidesInAnswer(level) {
+  const r = simulate(parseLevel(level), level.answer);
+  return (r.trails || []).filter((t) => t.length >= 2).length;
+}
+
+/**
+ * Does the level's new mechanic decide par: with every ice, mud and gate tile turned to grass (same move limit) par is not the same.
+ * Sound: the grass solves run to the end (no work budget), so a null is a real "no answer", never an exhausted budget.
+ */
+export function mechanicDecidesPar(raw, par) {
+  const tiles = raw.tiles.map((r) => [...r].map((c) => ('*&><^v'.includes(c) ? '.' : c)).join(''));
+  const grass = parseLevel({ ...raw, tiles });
+  if (solve(grass, { maxPar: par - 1 }) !== null) return true;
+  return solve(grass, { maxPar: par }) === null;
+}
+
 export function slackOf(level) {
   return level.moveLimit - (findPath(parseLevel(level), []).positions.length - 1);
 }
@@ -100,13 +120,13 @@ export function buildLevel(slot, board, id) {
   if (parAnswers === null) throw new Error(`${id}: parAnswers ran out of work`);
   const lb = {};
   for (const m of slot.mech) lb[m] = loadBearing(raw, m, par, answer);
-  return { level: { ...raw, par, parAnswers, answer }, info: { loadBearing: lb } };
+  return { level: { ...raw, par, parAnswers, answer }, info: { loadBearing: lb, decides: mechanicDecidesPar(raw, par) } };
 }
 
 /** Throws unless the levels meet the Medium design metrics. `infos` (from buildLevel) carries the load-bearing verdicts. */
 export function checkMedium(levels, infos) {
   const seen = new Set();
-  let present = 0, bearing = 0, slideLevels = 0, passLevels = 0;
+  let present = 0, bearing = 0, slideLevels = 0, passLevels = 0, decide = 0;
   levels.forEach((l, i) => {
     const n = i + 21;
     const slot = SLOTS[i];
@@ -128,20 +148,24 @@ export function checkMedium(levels, infos) {
       if (infos[i].loadBearing[m]) bearing++;
       else if (i < 14 || slot.intro) throw new Error(`medium ${n}: ${m} is not load-bearing`);
     }
-    if (slot.intro && l.parAnswers > 10) throw new Error(`medium ${n}: ${l.parAnswers} par answers on an intro level`);
+    if (l.parAnswers > parCap(i)) throw new Error(`medium ${n}: ${l.parAnswers} par answers, at most ${parCap(i)}`);
+    if (infos[i].decides) decide++;
+    else if (slot.intro) throw new Error(`medium ${n}: intro level: par is the same without its mechanic`);
     if (/[~=a-z]/.test(l.tiles.join('').replace(/[v]/g, '')) && slot.intro) throw new Error(`medium ${n}: intro level has river, bridges or teleporters`);
     const lv = parseLevel(l);
     if (l.answer.length !== l.par || simulate(lv, l.answer).result !== 'win') throw new Error(`medium ${n}: stored answer`);
     if (capViolation(lv, l.answer)) throw new Error(`medium ${n}: side cap`);
     if (slot.slide && !slideLinesInAnswer(lv, l.answer).length) throw new Error(`medium ${n}: answer has no fence across a slide`);
     if (slideLinesInAnswer(lv, l.answer).length && slot.mech.includes('ice')) slideLevels++;
+    if (slot.mech.includes('ice') && !slidesInAnswer(l)) throw new Error(`medium ${n}: ice level, but the answer's replay has no slide`);
     if (visited(l).some((c) => '><^v'.includes(c))) passLevels++;
     else if (slot.mech.includes('gate')) throw new Error(`medium ${n}: the gnome does not pass a gate when the answer is played`);
   });
   if (levels.length !== 20) throw new Error('medium: need 20 levels');
   if (slideLevels < 2) throw new Error('medium: fewer than 2 ice levels with a fence across a slide');
+  if (decide < 15) throw new Error(`medium: the mechanic decides par on only ${decide} of 20 levels`);
   if (bearing / present < 0.7) throw new Error(`medium: load-bearing rate ${bearing}/${present}`);
-  return { present, bearing, slideLevels, passLevels };
+  return { present, bearing, slideLevels, passLevels, decide };
 }
 
 export function buildMedium(log = () => {}) {
@@ -149,7 +173,7 @@ export function buildMedium(log = () => {}) {
   const levels = built.map((b) => b.level);
   const stats = checkMedium(levels, built.map((b) => b.info));
   built.forEach(({ level: l, info }, i) => log(`${l.id} ${SLOTS[i].mech.join('+')} par ${l.par} parAnswers ${l.parAnswers} moveLimit ${l.moveLimit} slack ${slackOf(l)} ice ${countTiles(l.tiles, '*')} mud ${countTiles(l.tiles, '&')} gates ${countTiles(l.tiles, '><^v')} loadBearing ${JSON.stringify(info.loadBearing)}`));
-  log(`load-bearing ${stats.bearing}/${stats.present}, ice levels with a slide fence ${stats.slideLevels}, levels where he passes a gate ${stats.passLevels}`);
+  log(`load-bearing ${stats.bearing}/${stats.present}, ice levels with a slide fence ${stats.slideLevels}, levels where he passes a gate ${stats.passLevels}, levels where the mechanic decides par ${stats.decide}`);
   return { pack: { id: 'medium', levels }, stats };
 }
 
@@ -247,9 +271,14 @@ function candidate(slot, rng, tag) {
   if (slot.mech.includes('gate') && !visited({ ...raw, par: s.par, answer }).some((c) => '><^v'.includes(c))) return null;
   F('slidepass');
   const parAnswers = countAnswers(lv, s.par, 50, { maxNodes: SEARCH_NODES });
-  if (parAnswers === null || (slot.intro && parAnswers > 10)) return null;
+  if (parAnswers === null || parAnswers > parCap(slot.index)) return null;
+  if (slot.mech.includes('ice') && !slidesInAnswer({ ...raw, par: s.par, answer })) return null;
+  F('capslide');
+  if (!mechanicDecidesPar(raw, s.par)) return null;
+  F('decides');
   const lb = {};
   for (const m of slot.mech) { lb[m] = loadBearing(raw, m, s.par, answer, SEARCH_NODES); if (!lb[m]) return null; }
+  F('loadbearing');
   return { tiles, moveLimit, par: s.par, parAnswers, route };
 }
 const SEARCH_NODES = 30000;
@@ -267,13 +296,15 @@ function search(groups, log) {
       for (const [bi, b] of BOARDS.entries()) if (b && bi !== si && SLOTS[bi].group === slot.group && !used.includes(b.tiles)) used.push(b.tiles);
       let tried = 0, hit = null;
       FUNNEL = {};
-      for (let i = 0; !hit && i < 400000; i++) {
+      const deadline = process.env.MEDIUM_SECONDS ? Date.now() + 1000 * Number(process.env.MEDIUM_SECONDS) : Infinity; // --search only: stop after this many seconds and print the funnel
+      for (let i = 0; !hit && i < 400000 && Date.now() < deadline; i++) {
         tried++;
-        const c = candidate(slot, createRng(`medium-${si + 21}${SEED_TAG}:${i}`), `m${si}`);
-        if (!c || used.some((u) => lookAlike(u, c.tiles))) continue;
+        const c = candidate({ ...slot, index: si }, createRng(`medium-${si + 21}${SEED_TAG}:${i}`), `m${si}`);
+        if (!c) continue;
+        if (used.some((u) => lookAlike(u, c.tiles))) { FUNNEL.lookalike = (FUNNEL.lookalike || 0) + 1; continue; }
         hit = c;
       }
-      if (!hit) { log(`# slot ${si + 21} (${slot.mech}) par ${slot.par}: nothing in ${tried} candidates`); return; }
+      if (!hit) { log(`# funnel ${JSON.stringify(FUNNEL)}`); log(`# slot ${si + 21} (${slot.mech}) par ${slot.par}: nothing in ${tried} candidates`); return; }
       log(`# funnel ${JSON.stringify(FUNNEL)}`);
       used.push(hit.tiles);
       found.push({ slot: si, ...hit });
@@ -284,28 +315,28 @@ function search(groups, log) {
   return found;
 }
 
-// BOARDS-BEGIN (frozen search results; edit only by pasting --search output. 39 and 40 came from MEDIUM_SEED_TAG=x or y --search 39 / 40, the rest from the default seeds; the comment gives par, parAnswers and candidates tried)
+// BOARDS-BEGIN (frozen search results (33 and 39 from MEDIUM_SEED_TAG=c and h); edit only by pasting --search output. 39 and 40 came from MEDIUM_SEED_TAG=x or y --search 39 / 40, the rest from the default seeds; the comment gives par, parAnswers and candidates tried)
 export const BOARDS = [
-  { moveLimit: 9, tiles: ['.....#.', '.......', '...*...', '###*###', '...*..B', '.R.*...', '..#*...'] }, // 21: par 3 parAnswers 1 candidates 98
+  { moveLimit: 12, tiles: ['##.#...', '....B..', '######.', '.......', '..*****', '.......', '.....R.'] }, // 21: par 3 parAnswers 3 candidates (v5b seeds) 434
   { moveLimit: 9, tiles: ['#......', '...#...', '####.##', 'R.*....', '#.*..#.', '..*.B..', '.#.#...'] }, // 22: par 3 parAnswers 4 candidates 40
   { moveLimit: 8, tiles: ['#..#.R.', '......*', '#.####*', '...#.#*', '..##..*', '...#.#*', '...#B.*'] }, // 23: par 3 parAnswers 2 candidates 5
-  { moveLimit: 9, tiles: ['..R##..', '*****..', '......B', '....#..', '......#', '.......', '##.....'] }, // 24: par 3 parAnswers 24 candidates 11
+  { moveLimit: 12, tiles: ['.B##...', '..##...', '#...*.*', '..#.*.*', '..#.*.*', '..##..*', '..#.R.*'] }, // 24: par 3 parAnswers 10 candidates 182 (v5b seeds)
   { moveLimit: 11, tiles: ['..****#', '.......', '.#*....', '.B*....', '..*....', '...#...', '....R..'] }, // 25: par 4 parAnswers 18 candidates 455
   { moveLimit: 15, tiles: ['......#', '......&', '&..B#..', '.&..#..', '..&##.&', '....#..', '#...#.R'] }, // 26: par 3 parAnswers 3 candidates 39
   { moveLimit: 13, tiles: ['....#B.', '&...&..', '##....&', '.&.#...', '.......', '.R..#..', '..#&...'] }, // 27: par 3 parAnswers 8 candidates 1
   { moveLimit: 14, tiles: ['....R..', '..&....', '####&#.', '.&.....', '.#...#.', '...B...', '&#.....'] }, // 28: par 4 parAnswers 2 candidates 82
-  { moveLimit: 16, tiles: ['#..##&.', '#...#..', '.......', '..#.#.R', '..&.#..', '.#.....', '.B&&#.#'] }, // 29: par 4 parAnswers 20 candidates 51
-  { moveLimit: 12, tiles: ['.......', '.&.....', '.#....&', '#.#####', '....#&B', '...&...', '.&R....'] }, // 30: par 4 parAnswers 21 candidates 942
+  { moveLimit: 16, tiles: ['B&...&#', '....#..', '....&#&', '#......', '...#..&', '.......', '.#.R...'] }, // 29: par 4 parAnswers 19 candidates (v5b seeds) 100
+  { moveLimit: 15, tiles: ['#.R#...', '...#...', '.......', '.......', '...#..&', '.&.#&.B', '#&.#...'] }, // 30: par 4 parAnswers 2 candidates 1152 (v5b seeds)
   { moveLimit: 12, tiles: ['..#....', '.......', 'R#.#...', '...#..#', '...>B..', '.....#v', '.#.....'] }, // 31: par 4 parAnswers 2 candidates 587
-  { moveLimit: 13, tiles: ['......#', '..B<...', '.#.....', '#.#....', '#####.^', '...#...', '......R'] }, // 32: par 4 parAnswers 3 candidates 2991
-  { moveLimit: 11, tiles: ['.R#.##.', '..#.<..', '.v..#..', '...##..', '#v.####', '....##.', '.B.....'] }, // 33: par 4 parAnswers 27 candidates 7663
+  { moveLimit: 11, tiles: ['..#..B.', '.####..', '..#.>..', '#.#...^', '..#R...', '..#....', '...#...'] }, // 32: par 4 parAnswers 4 candidates (v5b seeds) 13756
+  { moveLimit: 13, tiles: ['#R.#...', '....^..', '.^...B.', '.......', '#.#####', '...#...', '..>..#.'] }, // 33: par 4 parAnswers 6 candidates (MEDIUM_SEED_TAG=c) 6781
   { moveLimit: 12, tiles: ['###..>B', '.###...', '..##...', '.#.#..#', '..##...', '...#..^', '..##..R'] }, // 34: par 4 parAnswers 3 candidates 5330
-  { moveLimit: 10, tiles: ['B..#&..', '...#.#.', '..*#...', '..*..#&', '&.*....', '...#...', 'R..#&..'] }, // 35: par 4 parAnswers 35 candidates 206
-  { moveLimit: 12, tiles: ['#...R..', '......v', '*****..', '.......', '.......', 'B.....#', '.......'] }, // 36: par 4 parAnswers 2 candidates 777
+  { moveLimit: 10, tiles: ['.......', '#.&....', '#.##.##', '*****&B', '#......', '.......', '..R....'] }, // 35: par 4 parAnswers 11 candidates (v5b seeds) 2300
+  { moveLimit: 13, tiles: ['R>...#.', '***....', '.....##', '#......', '.......', '..v...#', '.....B.'] }, // 36: par 4 parAnswers 3 candidates (v5b seeds) 5127
   { moveLimit: 13, tiles: ['...#&..', '.<.&&..', '#.#####', '...R..&', '.......', '...&#^.', '......B'] }, // 37: par 4 parAnswers 2 candidates 3646
   { moveLimit: 14, tiles: ['..#&&#&', '#.#..*.', '..&&.*.', '..#..*R', '.....*.', '.....*.', '.B.....'] }, // 38: par 5 parAnswers 3 candidates 853
-  { moveLimit: 11, tiles: ['...<.#.', '#R..#..', '.......', '*****..', '.#..B.#', 'v......', '..#....'] }, // 39: par 5 parAnswers 50 candidates 15585
-  { moveLimit: 13, tiles: ['....&.&', '..#.*..', '^...*B#', '..v^*..', '#..&.&#', '.#.&...', '...R...'] }, // 40: par 5 parAnswers 50 candidates 4288
+  { moveLimit: 13, tiles: ['#....#.', '#.*...#', '..*B<..', '..*..^.', '..*....', '#.#....', '..#..R.'] }, // 39: par 5 parAnswers 6 candidates (MEDIUM_SEED_TAG=h) 3155
+  { moveLimit: 12, tiles: ['......&', '.B....*', '....v#*', '#&...&*', '&.....*', '.....R.', '.......'] }, // 40: par 5 parAnswers 3 candidates 21403 (v5b seeds, MEDIUM_SEED_TAG=x or y)
 ];
 // BOARDS-END
 

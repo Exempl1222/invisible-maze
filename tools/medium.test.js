@@ -108,6 +108,32 @@ test('medium: at least 2 ice levels fence across a slide; on every gate level th
   }
 });
 
+test('medium: par answers at most 20 (12 on 35-40, 5 on 40, 10 on intros); ice is seen sliding in the stored answer', () => {
+  L.forEach((l, i) => {
+    const cap = [0, 5, 10].includes(i) ? 10 : i === 19 ? 5 : i >= 14 ? 12 : 20;
+    assert.ok(l.parAnswers <= cap, `${l.id} parAnswers ${l.parAnswers} > ${cap}`);
+    if (mechsOf(l).includes('ice')) {
+      const trails = simulate(parseLevel(l), l.answer).trails || [];
+      assert.ok(trails.some((t) => t.length >= 2), `${l.id}: no slide in the stored answer's replay`);
+    }
+  });
+});
+
+test('medium: the mechanic decides par (ice, mud and gates to grass changes par) on 21, 26, 31 and at least 15 of 20', () => {
+  let decide = 0;
+  const failed = [];
+  L.forEach((raw, i) => {
+    const tiles = raw.tiles.map((row) => [...row].map((c) => ('*&><^v'.includes(c) ? '.' : c)).join(''));
+    const grass = parseLevel({ ...raw, tiles });
+    const s = solve(grass, { maxPar: raw.par });
+    const changed = s === null || s.par !== raw.par;
+    if (changed) decide++;
+    else failed.push(i + 21);
+  });
+  for (const n of [21, 26, 31]) assert.ok(!failed.includes(n), `${n}: par unchanged without the mechanic`);
+  assert.ok(decide >= 15, `mechanic decides par on ${decide} of 20; unchanged on ${failed}`);
+});
+
 test('medium: bridges span rivers, no duplicate boards, no look-alikes within a group', () => {
   for (const l of L) assert.deepEqual(invalidBridges(l.tiles), [], l.id);
   assert.equal(new Set(L.map((l) => l.tiles.join('/'))).size, 20);
