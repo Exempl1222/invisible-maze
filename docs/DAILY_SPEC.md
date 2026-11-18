@@ -35,7 +35,7 @@ The daily as its own page, so it can ship alone with a link to the full game lat
 
 ### See the optimal solution
 - Only once the day is done (Submitted or all 5 tries used), also on archive days. Button `See the optimal solution` under the score, toggling to `Hide the solution`.
-- Solves in the browser (above), scrolls the board into view, draws the par answer in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk (respecting reduced motion). Hiding puts the player's own fences back. It changes nothing saved. This is where par is revealed, and only here.
+- Solves in the browser (above), scrolls the board into view, draws the par answer in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk (stepped, no flourishes, under reduced motion). Hiding puts the player's own fences back. It changes nothing saved. This is where par is revealed, and only here.
 
 ### Where it lives, dates, archive
 - Page: `daily/index.html`, served at `/daily/` on gnomesweetgnome.app; the shared link. Code in `assets/js/daily/`. It reuses the engine (`src/game/`), `assets/js/play/board.js`, `lines.js`, `icons.js`, `daily.js` and `assets/js/sprites.js`, and must not import `assets/js/play/main.js` or `storage.js`.

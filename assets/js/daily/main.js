@@ -522,8 +522,7 @@ async function run() {
   setStatus('The gnome is on the move.');
 
   await g.board.play(sim, {
-    stepMs: STEP_MS,
-    instant: reducedMotion(),
+    stepMs: STEP_MS, // reduced motion still steps tile by tile; the CSS drops the glide and flourishes
     onMove: (i) => { movesLeftEl.textContent = String(g.level.moveLimit - i); },
   });
 
@@ -668,7 +667,7 @@ async function toggleSolution(button, note) {
   g.solution = !g.solution;
   board.resetRun();
   board.clearWalls({ all: true });
-  const instant = g.solution ? reducedMotion() : true;
+  const instant = !g.solution; // hiding the solution jumps back; showing it walks (stepped under reduced motion)
   let walls;
   if (g.solution) {
     walls = g.answer.map((w) => [...w]);
