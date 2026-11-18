@@ -88,17 +88,6 @@ let playToken = 0; // bumps whenever the board replays, so a walk cut short by a
 
 /* ---------- page chrome ---------- */
 
-function setupWordmark() {
-  if (!APP_LINK.enabled) return;
-  const old = $('wordmark');
-  const a = document.createElement('a');
-  a.className = old.className;
-  a.id = old.id;
-  a.href = APP_LINK.href;
-  a.append(...old.childNodes);
-  old.replaceWith(a);
-}
-
 function setupTabs() {
   for (const m of MODES) {
     const a = $(`tab-${m}`);
@@ -263,7 +252,6 @@ async function boot() {
 
   const asked = query.get('mode');
   mode = MODES.includes(asked) ? asked : MODES.includes(lastMode()) ? lastMode() : DEFAULT_MODE;
-  setupWordmark();
   setupTabs();
   dateLineEl.textContent = formatDaily(date);
 
