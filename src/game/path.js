@@ -271,8 +271,8 @@ function routeV5(level, lineMask) {
 // path in a state graph with a "tool used?" bit:
 //  - layer 0: tool still unused. Normal moves stay in layer 0. The tool move (first step of a move,
 //    never mid-slide) goes to layer 1, or for the plank onto the river tile (layer 2).
-//  - layer 1: tool used. Only normal moves (a dug rock tile is grass; he never needs to re-enter it
-//    because a shortest route never revisits a state).
+//  - layer 1: tool used. Only normal moves. For the pickaxe the dug rock is grass from then on, for
+//    slides too, so routeV5Tool runs the graph once per diggable rock (review of 8g, C1).
 //  - layer 2 (plank): standing on the river tile; the only moves are normal ones to land (a normal
 //    move never targets river, so he never goes on to another river tile), into layer 1.
 // Costs: ladder and pickaxe step 2 (+1 for mud after it), plank step 1. A ladder or pickaxe step is
@@ -288,7 +288,31 @@ function routeV5(level, lineMask) {
 
 /** Cheapest tool route if it is strictly cheaper than the tool-free one (`freeDist`, -1 if none), else null. */
 function routeV5Tool(level, mask, freeDist) {
+  if (level.tool !== 'pickaxe') return routeV5ToolOnce(level, mask, freeDist, -1);
+  // Pickaxe: after the dig, that rock is grass for every later move, slides included, so the layer-1
+  // graph depends on which rock was dug. Try each rock with an open neighbour; keep the cheapest
+  // (ties: the first in reading order, cosmetic).
+  const { size, grid } = level;
+  let best = null;
+  for (let r = 0; r < size * size; r++) {
+    const x = r % size;
+    const y = (r - x) / size;
+    if (grid[y][x] !== '#') continue;
+    const open = [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]].some(([a, b]) => a >= 0 && b >= 0 && a < size && b < size && grid[b][a] !== '#' && grid[b][a] !== '~');
+    if (!open) continue;
+    const t = routeV5ToolOnce(level, mask, freeDist, r);
+    if (t !== null && (best === null || t.positions.length < best.positions.length)) best = t;
+  }
+  return best;
+}
+
+/** One pass of the tool graph. `dug`: for the pickaxe, the only rock he may dig (grass in layer 1); else -1. */
+function routeV5ToolOnce(level, mask, freeDist, dug) {
   const { size, grid, beacon, start, tool } = level;
+  // Layer 1 sees the dug rock as grass.
+  const after = dug === -1 ? level : Object.assign(Object.create(level), {
+    grid: grid.map((row, y) => row.map((c, x) => (y * size + x === dug ? '.' : c))),
+  });
   const n = size * size;
   const goal = beacon[1] * size + beacon[0];
   const s = start[1] * size + start[0];
@@ -306,12 +330,13 @@ function routeV5Tool(level, mask, freeDist) {
       const m = moveV5(level, mask, u, d);
       if (m !== null) {
         if (land) add(u, d, m.end, m);
-        if (land || (tool === 'pickaxe' && c === '#')) add(n + u, d, n + m.end, m);
         if (c === '~' && tool === 'plank') add(2 * n + u, d, n + m.end, m);
       }
+      const m1 = dug === -1 ? m : moveV5(after, mask, u, d);
+      if (m1 !== null && (land || u === dug)) add(n + u, d, n + m1.end, m1);
       if (land) {
         const t = moveV5(level, mask, u, d, tool);
-        if (t !== null) add(u, d, (tool === 'plank' ? 2 * n : n) + t.end, t);
+        if (t !== null && (dug === -1 || t.tiles[0] === dug)) add(u, d, (tool === 'plank' ? 2 * n : n) + t.end, t);
       }
     }
   }
