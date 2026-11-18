@@ -154,6 +154,9 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 | Pickaxe | Step onto one rock tile, which becomes grass for the rest of that replay (the art shows a pickaxe on a rock, a scythe on a berry bush, which is a rock in the engine) | 2 moves |
 | Plank | Step onto one river tile. His next move must step off it onto land; the plank never carries him on to another river tile | 1 move |
 
+- A 2-move tool step shows as a prep move where he stays put (setting the ladder, swinging the pickaxe), then the crossing. If his moves run out after the prep move, he ends on the near side.
+- If two routes that both use the tool cost the same, which one he takes is cosmetic (the usual up, right, down, left order).
+- A level where he can only get home with his tool, even with no fences, has no legal fence set, so the generator never ships one.
 - After the tool step every other rule applies: landing on ice starts a slide, landing on mud adds its extra move, landing on a teleporter jumps him.
 - **The no-cut rule ignores the tool.** A fence set is legal only if he has a route home without the tool. So the tool never decides whether a fence is refused.
 - Par, the stored `answer` and hints are exact against the gnome using his tool.
