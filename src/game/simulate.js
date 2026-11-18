@@ -88,9 +88,11 @@ export function simulate(level, walls) {
   };
 }
 
-/** Gnome tool fields (only on a level that has a tool): toolStep and toolUse, null if the tool step is past move m. */
+/** Gnome tool fields (only on a level that has a tool): toolStep (null if past move m) and toolUse (kept if its prep move is within m). */
 function toolFields(route, m) {
   if (!('toolStep' in route)) return {};
   const used = route.toolStep !== null && route.toolStep <= m;
-  return { toolStep: used ? route.toolStep : null, toolUse: used ? route.toolUse : null };
+  // Out of moves right after the prep move: he ends on the near side, but the UI still shows the prep.
+  const prepped = route.toolUse !== null && route.toolUse.prep !== null && route.toolUse.prep <= m;
+  return { toolStep: used ? route.toolStep : null, toolUse: used || prepped ? route.toolUse : null };
 }

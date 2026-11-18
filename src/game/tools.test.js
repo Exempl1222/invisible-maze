@@ -273,7 +273,9 @@ test('simulate: win/lose, steps and the tool fields, cut at the move limit like 
   const early = simulate(lv(open, 'ladder', { moveLimit: 2 }), walls);
   assert.equal(early.steps.length, 3);
   assert.equal(early.toolStep, null); // moves ran out before he crossed
-  assert.equal(early.toolUse, null);
+  assert.equal(early.toolUse.prep, 2); // ...but after the prep move, which the UI still shows (spec; review M2)
+  const before = simulate(lv(open, 'ladder', { moveLimit: 1 }), walls);
+  assert.equal(before.toolUse, null); // out of moves before the prep move: nothing to show
   assert.equal('toolStep' in simulate(lv(open), walls), false);
 });
 
@@ -298,4 +300,31 @@ test('solve: a tool-using level where no tool-free route is left is not a win (n
   // nothing the player fences can be a legal answer unless it reconnects a tool-free route (it cannot).
   const l = strip('R#..B', 'pickaxe', { moveLimit: 2, wallBudget: 4 });
   assert.equal(solve(l, { maxPar: 4 }), null);
+});
+
+// Regression (independent review of 8g, C1): after he digs, the dug tile is grass for every later move,
+// including slides. A slide toward it must not stop on the ice before it as if the rock were still there.
+test('pickaxe: a later slide runs on over the dug tile (it is grass, not rock)', () => {
+  const tiny = lv(['#.###', 'B*###', '#####', '#.###', '#R###'], 'pickaxe', { moveLimit: 20 });
+  assert.equal(findPath(tiny, []), null, 'the only stop on the ice would be the phantom one: no route at all');
+  const big = lv(['###.###', '..B*###', '.######', '.##.###', '...R###', '#######', '#######'], 'pickaxe', { moveLimit: 7 });
+  const r = findPath(big, []);
+  assert.equal(r.toolStep, null, 'digging does not help: the slide goes on down onto the dug tile');
+  assert.equal(moves(r), 8);
+  assert.equal(simulate(big, []).result, 'win');
+});
+
+test('pickaxe: solve and countAnswers agree with the review oracle on a dug-rock slide board', () => {
+  const a = lv(['*Ra#', '.#**', '&*.B', '.a##'], 'pickaxe', { moveLimit: 6 });
+  assert.equal(countAnswers(a, 4, 50), 3);
+});
+
+// Review M2: when his moves run out right after the prep move, the UI must still know it was a prep move.
+test('simulate: moves running out after the prep move keep toolUse (toolStep stays null)', () => {
+  const l = lv(['R#.B', '.##.', '....', '....'], 'pickaxe', { moveLimit: 1 });
+  const s = simulate(l, []);
+  assert.deepEqual(s.steps, [[0, 0], [0, 0]]);
+  assert.equal(s.toolStep, null);
+  assert.equal(s.toolUse.tool, 'pickaxe');
+  assert.equal(s.toolUse.prep, 1);
 });
