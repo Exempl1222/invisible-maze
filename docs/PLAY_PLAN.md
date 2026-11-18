@@ -45,7 +45,7 @@ Design metrics (the build script checks these and fails the build otherwise):
 - Par exactly as in the table; budget par + 2 (unchanged rule).
 - Par answers at most 10 on levels 6 to 13 (a crisp answer helps learning), no cap after.
 - Slack 2 to 5.
-- Each tier-idea level is load-bearing for its idea (a bridge level stops winning if the bridge becomes river or grass).
+- Each tier-idea level is load-bearing for its idea (a bridge level's answer stops winning if the whole river becomes grass).
 
 ## New board tiles (Medium)
 

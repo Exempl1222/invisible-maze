@@ -4,6 +4,16 @@
 // part of legality: a set over the cap is illegal and no superset fixes it (counts only grow),
 // so the search treats it like a cut state and never branches into it.
 //
+// Rules v5 (ice, mud, gates) breaks two of the facts below, because a fence can stop a slide on a
+// tile with a way on: adding a fence can SHORTEN the cheapest route and can RECONNECT a cut board.
+// So under v5: (1) a cut state is not a dead end, it branches on every unchosen buildable line;
+// (2) the packing lower bound is off (it assumes monotone routes); (3) a state that wins with fewer
+// than k walls does not make every k-superset a winner, so countAnswers checks each one. What stays
+// sound is branching on the lines the current cheapest route crosses: if a winning set W contains
+// the current set S but none of those lines, the same route survives under W (a new fence off the
+// route changes none of its moves, and the fences that stop its slides are still there), so W
+// would not win. The v4 side cap still applies (a set over the cap has no legal superset).
+//
 // A wall set wins only if it leaves the robot a route AND that route is longer than the move
 // limit (rules v3.1: cutting every route is illegal). Key facts:
 //  - A winning set must contain a buildable line the robot's current shortest route crosses
@@ -14,9 +24,12 @@
 import { routeWithMask } from './path.js';
 import { buildableLines, lineIndex, lineWall, SIDE_CAP } from './level.js';
 
-/** Wins only with a route left that is longer than the limit. A null route is illegal. */
+/**
+ * Wins only with a route left that is longer than the limit. A null route is illegal. Gnome tools:
+ * the no-cut rule ignores the tool, so a set that leaves only a tool route is illegal too.
+ */
 function isWin(level, route) {
-  return route !== null && route.positions.length - 1 > level.moveLimit;
+  return route !== null && route.toolFreeRoute !== false && route.positions.length - 1 > level.moveLimit;
 }
 
 /**
@@ -61,7 +74,7 @@ function setup(level) {
   }
   // Counts of chosen walls touching the start / beacon. take() refuses a line that would break the cap.
   const cnt = { start: 0, beacon: 0 };
-  const capped = level.rules === 'v4';
+  const capped = level.rules === 'v4' || level.rules === 'v5';
   const take = (i) => {
     if (capped) {
       const s = touch[i] & 1;
@@ -81,6 +94,20 @@ function setup(level) {
   return { buildable, pool, take, drop };
 }
 
+/**
+ * Rules v5: the lines to branch on. A route may cross a line twice; a cut board allows any line.
+ * Gnome tools: a board with only a tool route (no tool-free route, toolFreeRoute false) is cut for the
+ * no-cut rule, so any line may reconnect it (like a null route). Otherwise the cheapest route R
+ * (tool included) fits the limit or the set would already win; any winning superset W that adds no
+ * fence on R's lines leaves R intact (a ladder still has its fence; pickaxe and plank steps cross no
+ * buildable line), so W's cheapest route is no longer than R and W does not win. R's ladder line is
+ * already fenced, so it is skipped.
+ */
+function branchLines(route, pool, mask) {
+  if (route === null || route.toolFreeRoute === false) return pool.filter((i) => !mask[i]);
+  return [...new Set(route.lines)].filter((i) => !mask[i]);
+}
+
 function toWalls(level, idxs) {
   return idxs.slice().sort((a, b) => a - b).map((i) => lineWall(level, i));
 }
@@ -98,6 +125,7 @@ export function solve(level, opts = {}) {
     throw new Error(`exactPar must be a non-negative integer, got ${opts.exactPar}`);
   }
   const { buildable, pool, take, drop } = setup(level);
+  const v5 = level.rules === 'v5';
   const limit = Math.min(pool.length, opts.exactPar ?? opts.maxPar ?? Infinity);
   const mask = new Uint8Array(level.size * level.size * 2);
   const chosen = [];
@@ -110,14 +138,14 @@ export function solve(level, opts = {}) {
   function dfs(rem) {
     if (++nodes > maxNodes) throw OUT_OF_WORK;
     const route = routeWithMask(level, mask);
-    if (route === null) return false; // every route cut: illegal, and more walls can't undo it
-    if (isWin(level, route)) return true;
+    if (route === null && !v5) return false; // every route cut: illegal, and more walls can't undo it
+    if (route !== null && isWin(level, route)) return true;
     if (rem === 0) return false;
-    if (packingBound(level, mask, buildable, rem) > rem) return false; // can't be blocked in the walls left
+    if (!v5 && packingBound(level, mask, buildable, rem) > rem) return false; // can't be blocked in the walls left
     const key = chosen.slice().sort((a, b) => a - b).join(',');
     if (seen.has(key)) return false;
     seen.add(key);
-    for (const i of route.lines) {
+    for (const i of v5 ? branchLines(route, pool, mask) : route.lines) {
       if (!buildable[i] || !take(i)) continue;
       mask[i] = 1;
       chosen.push(i);
@@ -145,12 +173,17 @@ export function solve(level, opts = {}) {
  * A set counts only if it leaves a route and that route is longer than the move limit.
  * Exact below the cap; returns `cap` when there are at least that many.
  * For k above par this includes sets that merely contain a smaller winning set (as long as they still leave a route).
+ * `opts.maxNodes`: optional work budget (search states, like solve's); returns null when exceeded. Absent: unbounded, as before.
  */
 // SPEC-QUESTION: the spec says "how many k-wall answers exist" without saying whether a
 // k-wall set that contains a smaller winning set is an answer. Conservative choice: yes
 // (any k-subset of buildable lines that wins). At k = par the two readings are identical.
-export function countAnswers(level, k, cap = 50) {
+export function countAnswers(level, k, cap = 50, opts = {}) {
+  const maxNodes = opts.maxNodes ?? Infinity; // optional deterministic work budget (search states); null result when exceeded
+  let nodes = 0;
+  const OUT_OF_WORK = Symbol('out of work');
   const { buildable, pool: all, take, drop } = setup(level);
+  const v5 = level.rules === 'v5';
   const mask = new Uint8Array(level.size * level.size * 2);
   const chosen = [];
   const found = new Set();
@@ -166,8 +199,13 @@ export function countAnswers(level, k, cap = 50) {
   // Extra walls can still cut every route, so each full set is re-checked (a set that is
   // still connected is still too long: walls never shorten a route).
   function fill(from, left, pool) {
-    if (left === 0) return routeWithMask(level, mask) !== null && addFound();
+    if (left === 0) {
+      const r = routeWithMask(level, mask);
+      // v4: still too long if still connected. v5: adding fences can shorten a route, so check it.
+      return r !== null && (!v5 || isWin(level, r)) && addFound();
+    }
     for (let i = from; i <= pool.length - left; i++) {
+      if (++nodes > maxNodes) throw OUT_OF_WORK;
       if (!take(pool[i])) continue; // would break the v4 side cap: illegal
       chosen.push(pool[i]);
       mask[pool[i]] = 1;
@@ -181,19 +219,25 @@ export function countAnswers(level, k, cap = 50) {
   }
 
   function dfs() {
+    if (++nodes > maxNodes) throw OUT_OF_WORK;
     const route = routeWithMask(level, mask);
-    if (route === null) return false; // dead end: cut off, and more walls can't reconnect
-    if (isWin(level, route)) {
+    if (route === null && !v5) return false; // dead end: cut off, and more walls can't reconnect
+    if (route !== null && isWin(level, route)) {
       if (chosen.length === k) return addFound();
+      if (v5) {
+        const winKey = chosen.slice().sort((a, b) => a - b).join(',');
+        if (seen.has(winKey)) return false;
+        seen.add(winKey);
+      }
       const pool = all.filter((i) => !mask[i]);
       return fill(0, k - chosen.length, pool);
     }
     if (chosen.length === k) return false;
-    if (packingBound(level, mask, buildable, k - chosen.length) > k - chosen.length) return false;
+    if (!v5 && packingBound(level, mask, buildable, k - chosen.length) > k - chosen.length) return false;
     const key = chosen.slice().sort((a, b) => a - b).join(',');
     if (seen.has(key)) return false;
     seen.add(key);
-    for (const i of route.lines) {
+    for (const i of v5 ? branchLines(route, all, mask) : route.lines) {
       if (!buildable[i] || !take(i)) continue;
       mask[i] = 1;
       chosen.push(i);
@@ -206,6 +250,11 @@ export function countAnswers(level, k, cap = 50) {
     return false;
   }
 
-  dfs();
+  try {
+    dfs();
+  } catch (e) {
+    if (e !== OUT_OF_WORK) throw e;
+    return null;
+  }
   return Math.min(found.size, cap);
 }

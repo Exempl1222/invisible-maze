@@ -82,7 +82,7 @@ A robot wants to reach the beacon and always takes the shortest route. Before it
 | 7x7 | Medium tier (v5); pack 1's main levels; the Easy daily |
 | 9x9 | Hard tier (v5); pack 1's hard levels; the Hard daily |
 
-Pack 1 below is live until the Easy pack ships (see "Rules v5", Tiers).
+Pack 1 below: its 5x5 tutorial is Easy 1 to 5, its 7x7 levels retired with Medium, and its 9x9 levels show as Play levels 41 to 55 until Hard ships (see "Rules v5", Tiers).
 
 - **Level pack 1 (v4):** 30 levels, budget par + 2, a single par answer not required.
   - 1 to 5: hand-authored **5x5** tutorial (par 1 to 3), one idea each.
@@ -104,7 +104,7 @@ v5 is v4 plus the tiles and tools below. A v4 level parses and plays exactly as 
 | Medium | `assets/levels/medium.json` | 7x7 | 21 to 40 | 3 to 5 | Ice, mud, gates |
 | Hard | `assets/levels/hard.json` | 9x9 | 41 to 60 | 4 to 7 (at least one 7) | One gnome tool per level, Medium tiles from level 56 |
 
-- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1 retires when the Easy pack ships.
+- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1's 7x7 levels (6 to 15) retired when Medium shipped; its 9x9 levels (16 to 30) stay playable as levels 41 to 55 until Hard replaces them.
 - Budget stays par + 2. Stars, hints and the no-cut rule are unchanged.
 - Each new mechanic is introduced in order: 1 level where it alone decides par, then 2 where it combines with a known idea, then it joins the mix. Medium: ice 21 to 25, mud 26 to 30, gates 31 to 34, mixed 35 to 40. Hard: ladder 41 to 45, pickaxe 46 to 50, plank 51 to 55, mixed 56 to 60.
 - All tiers are open in development; at launch each tier unlocks when the one before is finished.
@@ -127,6 +127,8 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 - Sliding onto mud stops him there and adds mud's extra move. Sliding onto a teleporter jumps him and ends the slide; he never slides out of the partner tile. Sliding onto the house reaches it.
 - A move that starts on ice (he stopped there) is a normal step in any direction; if it lands on ice, a new slide starts.
 - A slide crosses every line between the tiles it passes; a fence on any of them changes it.
+- A fence can help him on ice: stopping a slide early can open a shorter way, or the only way. So under v5 more fences don't always mean a longer route (the solver accounts for it).
+- The no-cut rule is still checked as each fence is placed. A level ships only if its stored answer can be placed in some order without ever leaving him no route.
 
 ### Mud
 
@@ -137,7 +139,7 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 ### Gates
 
 - A gate tile can only be entered moving in its arrow's direction, and only left moving in that direction. `>` lets him through left to right only.
-- A gate's entry and exit tiles (behind and in front of it along the arrow) must both be walkable land, never another gate, and on the board. The generator enforces it and the tests check every shipped gate, like bridges.
+- A gate's entry and exit tiles (behind and in front of it along the arrow) must both be walkable (grass, ice, mud, a bridge, a teleporter, the start or the house), never another gate, and on the board. The generator enforces it and the tests check every shipped gate, like bridges.
 - A gate is not ice; a slide that enters a gate stops on it.
 
 ### Gnome tools (Hard)
@@ -152,6 +154,9 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 | Pickaxe | Step onto one rock tile, which becomes grass for the rest of that replay (the art shows a pickaxe on a rock, a scythe on a berry bush, which is a rock in the engine) | 2 moves |
 | Plank | Step onto one river tile. His next move must step off it onto land; the plank never carries him on to another river tile | 1 move |
 
+- A 2-move tool step shows as a prep move where he stays put (setting the ladder, swinging the pickaxe), then the crossing. If his moves run out after the prep move, he ends on the near side.
+- If two routes that both use the tool cost the same, which one he takes is cosmetic (the usual up, right, down, left order).
+- A level where he can only get home with his tool, even with no fences, has no legal fence set, so the generator never ships one.
 - After the tool step every other rule applies: landing on ice starts a slide, landing on mud adds its extra move, landing on a teleporter jumps him.
 - **The no-cut rule ignores the tool.** A fence set is legal only if he has a route home without the tool. So the tool never decides whether a fence is refused.
 - Par, the stored `answer` and hints are exact against the gnome using his tool.
@@ -166,9 +171,16 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 
 | Metric | Target |
 |---|---|
-| Load-bearing | A mechanic is load-bearing on a level if swapping it for grass (tiles) or removing it (tool) changes par or makes the stored answer lose. 100% on its intro levels, at least 70% across the tier |
+| Load-bearing | A mechanic is load-bearing on a level if swapping it for grass (tiles) or removing it (tool) changes par or makes the stored answer lose. For bridges the swap is the whole river (river and bridge tiles become grass), since a bridge alone walks like grass, and the stored answer must fence a bridge end. 100% on its intro levels, at least 70% across the tier |
 | Slack (move limit minus base route) | Easy 2 to 5, Medium 3 to 7, Hard 5 to 10 |
-| Par answers | At most 10 on intro levels and Easy 6 to 13 |
+| Par answers | At most 10 on intro levels and Easy 6 to 13. Medium: at most 20 on any level, at most 12 on the mixes (35 to 40) and at most 5 on level 40, so the finale is tight, not loose |
+| Ice in use | On every level with ice, the stored answer's replay includes at least one slide (he is seen sliding on a winning run) |
+| Mechanic decides par | Removing the level's new tiles (all ice, mud and gates become grass) changes par on the intro levels (21, 26, 31) and on at least 15 of the 20 Medium levels |
+| Hard ramp | Ladder 41 to 45 (par 4, 4, 5, 5, 5), pickaxe 46 to 50 (4, 5, 5, 5, 6), plank 51 to 55 (5, 5, 5, 6, 6), mixes 56 to 60 with Medium tiles (5, 6, 6, 6, 7). 41, 46 and 51 have only their tool (no ice, mud or gates) |
+| Tool in use (Hard) | On every Hard level the stored answer's replay uses the tool (the player sees it), and the gnome has a tool-free route with no fences |
+| Tool decides par (Hard) | Removing the tool changes par on 41, 46, 51 and on at least 15 of the 20 Hard levels |
+| Par answers (Hard) | At most 10 on 41, 46, 51; at most 20 on any level; at most 12 on 56 to 60; at most 5 on level 60 |
+| Gates in use | On every level with a gate, the stored answer's route goes through a gate (a gate only ever used as a decoy doesn't teach it) |
 | Density on 7x7 | Ice 3 to 8 tiles, mud 2 to 5, gates 1 to 3 |
 | Solve | Every level's `solve` finishes within the build's node budget |
 

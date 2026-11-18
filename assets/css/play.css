@@ -93,7 +93,7 @@
 }
 .level-grid:has(.next) { padding-top: 26px; } /* room for the gnome peeking over the next level */
 /* Cream stepping stones. */
-.level-btn {
+.level-btn, .lab-new-btn, .lab-tool-btn {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -111,9 +111,9 @@
   cursor: pointer;
   transition: transform 80ms ease, box-shadow 80ms ease;
 }
-.level-btn .num { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); line-height: 1; }
-.level-btn:hover { background: #fff; }
-.level-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--outline); }
+:is(.level-btn, .lab-new-btn, .lab-tool-btn) .num { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); line-height: 1; }
+:is(.level-btn, .lab-new-btn, .lab-tool-btn):hover { background: #fff; }
+:is(.level-btn, .lab-new-btn, .lab-tool-btn):active { transform: translateY(3px); box-shadow: 0 0 0 var(--outline); }
 .level-btn.next { box-shadow: 0 0 0 3px var(--page), 0 0 0 6px var(--robot), 0 3px 0 6px var(--robot); }
 .level-btn.next:active { transform: none; }
 /* A third of the stone's height of gnome looks over its top edge. */
@@ -144,6 +144,8 @@
   grid-template-areas: "stats" "board" "villain" "side";
 }
 .stats { grid-area: stats; }
+.top > .stats { grid-area: auto; }
+.top { grid-area: stats; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
 .play-board { grid-area: board; }
 .side { grid-area: side; }
 
@@ -190,6 +192,18 @@
 @media (min-width: 880px) { .stat { flex-direction: row; justify-content: space-between; align-items: baseline; padding: 6px 12px; } }
 .stat-label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .stat strong { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); font-variant-numeric: tabular-nums; }
+.tool-badge {
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px;
+  background: var(--panel); border: 2px solid var(--outline); border-radius: 10px; line-height: 1.25; min-width: 0;
+}
+.tool-badge[hidden] { display: none; }
+.tool-icon { flex: none; width: 44px; height: 44px; background: #8cbf5a center / 90% no-repeat; border: 2px solid var(--outline); border-radius: 8px; }
+.tool-icon[data-tool="ladder"]  { background-image: url(../sprites/prop-ladder.svg); }
+.tool-icon[data-tool="pickaxe"] { background-image: url(../sprites/prop-pickaxe.svg); }
+.tool-icon[data-tool="plank"]   { background-image: url(../sprites/prop-plank.svg); }
+.tool-text { margin: 0; font-size: 0.875rem; min-width: 0; }
+.tool-text strong { font-weight: 800; }
+.tool-sub { color: var(--muted); display: block; font-size: 0.8125rem; }
 .stat.refused { animation: refuse 320ms ease; border-color: var(--refuse); }
 @keyframes refuse { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
@@ -330,7 +344,7 @@
 @media (prefers-reduced-motion: reduce) {
   .play-board .robot { transition: none; }
   .stat.refused, .hint.refused, .line-hint.pulse, .tele-link.jump, .result-stars .star.on { animation: none; }
-  .level-btn { transition: none; }
+  .level-btn, .lab-new-btn, .lab-tool-btn { transition: none; }
 }
 
 /* ---------- lab ---------- */

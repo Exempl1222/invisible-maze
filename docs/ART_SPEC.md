@@ -5,7 +5,7 @@ Source of truth for the game's art. Pairs with `docs/GAME_SPEC.md` (rules). If t
 ## What's in the pack
 
 ```
-assets/sprites/            36 SVGs (35 sprites and icon-gnome.svg) + manifest.json (generated, don't hand-edit)
+assets/sprites/            47 SVGs (46 sprites and icon-gnome.svg) + manifest.json (generated, don't hand-edit)
 assets/js/sprites.js       loader: preload, inline copies, gnome state swap, one-shot helper
 assets/css/sprites.css     tile backgrounds, wall placement, gnome placement, teleport and goal animations
 tools/build-sprites.mjs    builds every sprite from one file. `node tools/build-sprites.mjs`
@@ -23,6 +23,7 @@ docs/ART_SPEC.md           this file
 | Sir Croakwell (back) | `toad-back-{idle,cast,gloat,sulk}.svg` (4) | 390 x 200 | Board border, seen from behind. `overflow: visible`: the cast pose reaches about 40px above the canvas. Loops: idle breathe 3.2s and a fly, gloat bounce 0.5s. Sulk: he lets go of the board, raised shaking fist (0.4s every 1.6s) with an anger mark, limp right hand, hat fallen with the snail, "Rats!" speech bubble above his head. Inline from `assets/js/villain.js` |
 | Sir Croakwell (front) | `toad-front-{smug,point}.svg` (2) | 390 x 460 | Home hero (`smug`, wink) and the How to play dialog (`point`). Fly orbit and blink; finger spark |
 | Tiles | `tile-grass-{1,2,3}`, `tile-rock`, `tile-bush`, `tile-river`, `tile-bridge-h`, `tile-bridge-v`, `tile-house`, `tile-start` | 64 x 64 | Full bleed. River is seamless in every direction |
+| Rules v5 tiles | `tile-ice`, `tile-mud`, `tile-gate-{r,d,l,u}` (6) | 64 x 64 | Ice: frosted sheet, white shine streaks, an ink crack, no glow. Mud: dark peat with bubbles and a boot print. Gate: grass with two stone pillars either side of the path and a cream arrow; one drawing turned for the four directions (`r` is the way the arrow points). The gate's door leaf is not in the art: `board.js` adds a `.gate-frame > .gate-leaf` to the tile so CSS can swing it |
 
 `manifest.json` lists every file with its size, anchor and timing, so code never hard-codes a path it can't check.
 
@@ -49,8 +50,21 @@ Replaces rule 6 in `CLAUDE.md` once the gnome lands.
 | Lime glow / spark core | `#d8f26a` / `#f4ffc4` | Croakwell's fence magic. Only he and the fences he conjures glow lime. He never wears hat red (his acorn button is gold) |
 | Water | `#5aa9d6` | River |
 | Log brown | `#a0703f` | Bridge |
-| Stone grey, bush green | `#9aa3a6`, `#3f7a34` | Pre-built, permanent |
+| Stone grey, bush green | `#9aa3a6`, `#3f7a34` | Pre-built, permanent. The one-way gate is stone grey too |
+| Ice | `#dff3f8` (shade `#c3e4ee`, shine `#ffffff`) | Ice, frosted and never glowing (glow means magic) |
+| Peat | `#6b5232` (shade `#54402a`, bubbles `#8a6c46`) | Mud. Reads apart from bridge log brown `#a0703f` by being darker and greyer, with bubbles |
+| Cream | `#fff6e0` | The gate's arrow |
 | Outline | `#3b2618` | Every shape. Never black |
+
+## Rules v5 animation (Play page replay, `assets/js/play/board.js`, `assets/css/sprites.css`)
+
+Driven by `trails` and `stuck` from `simulate()`; v4 levels never take these branches.
+
+- **Ice:** a move that slides (its trail has more than one tile, or it lands on ice) is one continuous glide over the whole trail, `0.35 + 0.2 x tiles` step times, eased out. No walk cycle: the idle gnome leans into the slide (`.robot.skid`, tilt by direction) with five frost bits spraying behind him (`.frost`, white and ice with the outline, no glow). If he stops on ice a fence or obstacle stopped him: a squash and nudge (`.robot.bump`).
+- **Mud:** on arriving he sinks (`.robot.sink`: lower, squashed, clipped 10% from the tile's bottom so his boots go under). The stuck move wiggles (`.wiggle`) while a bubble grows and pops (`.mud-bubble`). On the next move he pulls free (`.pull`, a small upward hop).
+- **Gate:** the leaf (`.gate-leaf`) folds flat (`.cell.gate-open`) when the move onto the gate starts and swings shut after the move that takes him off it.
+- **Gnome tools** (`prop-*.svg`, static 64 x 64, animated by CSS in `sprites.css`; driven by `toolUse` and `toolStep`): props are drawn over the tiles, under the gnome, and removed when done. Ladder: set against the fence on his side (`.tool-prop.set`) on the prep move, he hops over it (`.robot.hop`), then it tips over and fades (`.tip`). Pickaxe (a scythe when the rock is a berry bush): three swings on the prep move (`.swing`), three chips fly (`.tool-chip`), the tile crumbles (`.cell.crumble`) and is pebbles from then on (`.cell.dug`, `tile-pebbles.svg`), then he steps on. Plank: drops across the river tile (`.lay`, turned to the crossing direction), he walks over, and it floats off (`.float`) once he is off it. The prep move is a stay-put move, so moves-left ticks once per move. Colours: ladder rails dark bark `#7b5434`; iron `#5f6f7a` (blue-grey, not stone grey); plank pale driftwood `#e3d2a8`. None uses hat red, timber, gold, teleporter glow or lime.
+- **Reduced motion:** the replay is skipped to its final frame (every passed tile still marked) and every animation above is `none` in CSS, and a dug rock shows as pebbles (cleared) with no prop drawn. The moves-left counter ticks once per move in the animated replay (a slide is 1, the stuck move is 1).
 
 ## Geometry (computed, not eyeballed)
 

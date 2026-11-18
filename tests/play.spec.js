@@ -6,9 +6,12 @@ import { readFileSync } from 'node:fs';
 import { parseLevel, solve, simulate, findPath, buildableLines, cutsAllRoutes } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
+const easy = readJson('../assets/levels/easy.json');
+const medium = readJson('../assets/levels/medium.json');
 const pack = readJson('../assets/levels/pack-01.json');
-const levels = pack.levels.map((l) => parseLevel(l));
-const num = (i) => i + 1; // pack index -> level number in the URL
+// the page lists Easy 1 to 20, Medium 21 to 40, then pack 1's 9x9 levels as 41 to 55
+const levels = [...easy.levels, ...medium.levels, ...pack.levels.filter((l) => l.size === 9)].map((l) => parseLevel(l));
+const num = (i) => i + 1; // list index -> level number in the URL
 
 const tile = (page, x, y) => page.locator(`#board .cell[data-x="${x}"][data-y="${y}"]`);
 const bars = (page) => page.locator('#board .wall-bar');
@@ -297,12 +300,12 @@ test('keyboard: arrows move between tiles, Shift+arrow walls a side and announce
   await expect(page.locator('#status')).toHaveAttribute('role', 'status');
 });
 
-test('level select: all 30 levels are open, and stars persist across reloads', async ({ page }) => {
+test('level select: all 55 levels are open, and stars persist across reloads', async ({ page }) => {
   await page.goto('/play/');
   const buttons = page.locator('#select-view .level-btn');
-  await expect(buttons).toHaveCount(30);
+  await expect(buttons).toHaveCount(55);
   for (const b of await buttons.all()) await expect(b).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Level 30, not played' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Level 55, not played' })).toBeEnabled();
   await expect(page.locator('#play-next')).toHaveText('Play level 1');
 
   await page.getByRole('button', { name: /^Level 1, / }).click();
@@ -332,9 +335,76 @@ test('"Play level N" points at the first level without 3 stars', async ({ page }
 });
 
 test('?level=N opens that level', async ({ page }) => {
-  await open(page, 12);
-  await expect(page.locator('h1')).toHaveText('Level 12');
+  await open(page, 26);
+  await expect(page.locator('h1')).toHaveText('Level 26');
   await expect(page.locator('#board .cell')).toHaveCount(49);
+});
+
+test('level select: Easy has 20 buttons, Medium 20, level 21 is medium-01, and stars carry from pack 1', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('invisible-maze:progress:v1', JSON.stringify({ v: 1, best: { 'p01-02': 2 } }));
+  });
+  await page.goto('/play/');
+  const titles = page.locator('#select-view .group-title');
+  await expect(titles).toHaveText(['Easy \u00b7 5x5', 'Medium \u00b7 7x7', 'The Wild Wood \u00b7 9x9']);
+  const grids = page.locator('#select-view .level-grid');
+  await expect(grids.nth(0).locator('.level-btn')).toHaveCount(20);
+  await expect(grids.nth(1).locator('.level-btn')).toHaveCount(20); // Medium
+  await expect(grids.nth(2).locator('.level-btn')).toHaveCount(15); // pack 1's 9x9
+  await expect(page.getByRole('button', { name: 'Level 2, 2 stars' })).toBeVisible(); // p01-02 stars count for easy-02
+  await page.getByRole('button', { name: /^Level 21, / }).click();
+  const m1 = medium.levels[0];
+  expect(m1.id).toBe('medium-01');
+  expect(levels[20].tiles).toEqual(m1.tiles);
+  await expect(page.locator('#par')).toHaveText(String(m1.par));
+  await expect(page.locator('#board .cell')).toHaveCount(49);
+  expect(levels[40].tiles).toEqual(pack.levels.filter((l) => l.size === 9)[0].tiles); // 41 is pack 1's first 9x9
+});
+
+test('the intro line shows on Medium levels 21, 26 and 31 (also on a deep link), and on no other level', async ({ page }) => {
+  const intro = page.locator('#intro-note');
+  for (const [n, re] of [[21, /^Ice:/], [26, /^Mud:/], [31, /^Gate:/]]) {
+    await open(page, n);
+    await expect(intro).toBeVisible();
+    await expect(intro).toHaveText(re);
+  }
+  for (const n of [1, 22, 40, 41]) {
+    await open(page, n);
+    await expect(intro).toBeHidden();
+  }
+});
+
+test('Medium: every level is won at 3 stars with its stored answer', async ({ page }, info) => {
+  test.skip(info.project.name !== 'phone', 'phone project only; the answers are the same on desktop');
+  test.setTimeout(240000);
+  for (let k = 0; k < medium.levels.length; k++) {
+    const raw = medium.levels[k];
+    await open(page, 21 + k);
+    await expect(page.locator('#board .cell')).toHaveCount(49);
+    await placeAll(page, raw.answer);
+    await go(page).click();
+    await expect(result(page)).toHaveAttribute('data-result', 'win');
+    await expect(page.getByRole('button', { name: 'Next level' })).toBeVisible();
+    await expect(result(page).getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
+  }
+});
+
+test('Medium: no horizontal scroll at 390px on levels 21, 26, 31, 40', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const n of [21, 26, 31, 40]) {
+    await open(page, n);
+    const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(over, `level ${n} overflows by ${over}px`).toBeLessThanOrEqual(0);
+  }
+});
+
+test('an Easy level (a generated one) is won with its stored answer', async ({ page }) => {
+  const i = 19; // Easy 20, the par 4 boss
+  await open(page, num(i));
+  await expect(page.locator('#board .cell')).toHaveCount(25);
+  await placeAll(page, easy.levels[i].answer);
+  await go(page).click();
+  await expect(result(page)).toHaveAttribute('data-result', 'win');
 });
 
 test('the game works when storage is blocked', async ({ page }) => {
@@ -397,7 +467,7 @@ test.describe('play/?daily goes to the daily page', () => {
     const tabs = page.getByRole('navigation', { name: 'Mode' });
     await expect(tabs.getByRole('link', { name: 'Daily' })).toHaveAttribute('href', '../daily/');
     await expect(page.locator('#daily-break')).toHaveCount(0);
-    await expect(page.locator('#select-view .level-btn')).toHaveCount(30);
+    await expect(page.locator('#select-view .level-btn')).toHaveCount(55);
   });
 });
 
@@ -454,7 +524,7 @@ for (const [w, h, label] of [[390, 844, 'phone 390x844'], [1366, 625, 'laptop 13
 
 test('the board still fits after the window is resized shorter', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
-  await open(page, 21);
+  await open(page, 46); // a 9x9 level
   await page.setViewportSize({ width: 1280, height: 585 });
   await expect.poll(() => page.evaluate(() => {
     const r = document.querySelector('#board').getBoundingClientRect();

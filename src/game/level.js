@@ -3,9 +3,16 @@
 
 const TELEPORTER = /^[a-z]$/;
 const KNOWN = new Set(['.', '#', '~', '=', 'R', 'B']);
+/** Rules v5 tiles: ice, mud and the four gates. */
+const V5_TILES = new Set(['*', '&', '>', '<', '^', 'v']);
+/** A gate's arrow as an index into DIRS in path.js (up, right, down, left). */
+export const GATE_DIR = new Map([['^', 0], ['>', 1], ['v', 2], ['<', 3]]);
+const GATE_STEP = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** Rule sets a level can declare. Absent means the live rules, v3.1. */
-export const RULES = ['v3.1', 'v4'];
+export const RULES = ['v3.1', 'v4', 'v5'];
+/** Rules v5 gnome tools (a level carries at most one). */
+export const TOOLS = ['ladder', 'pickaxe', 'plank'];
 /** Rules v4: a wall set may wall at most this many sides of the robot start, and of the beacon. */
 export const SIDE_CAP = 2;
 
@@ -68,7 +75,7 @@ export function sideCounts(level, walls) {
  * one walled on more than SIDE_CAP sides. Always null under v3.1 (those lines can't be walled).
  */
 export function capViolation(level, walls) {
-  if (level.rules !== 'v4') return null;
+  if (level.rules === 'v3.1') return null;
   const c = sideCounts(level, walls);
   if (c.start > SIDE_CAP) return 'start';
   if (c.beacon > SIDE_CAP) return 'beacon';
@@ -87,6 +94,11 @@ export function parseLevel(json) {
   if (json === null || typeof json !== 'object') fail('level must be an object');
   const rules = json.rules === undefined ? 'v3.1' : json.rules;
   if (!RULES.includes(rules)) fail(`rules must be one of ${RULES.map((r) => `"${r}"`).join(', ')}, got ${JSON.stringify(json.rules)}`);
+  const v5 = rules === 'v5';
+  if (json.tool !== undefined) {
+    if (!v5) fail('"tool" needs rules v5 (set "rules": "v5")');
+    if (!TOOLS.includes(json.tool)) fail(`tool must be one of ${TOOLS.map((t) => `"${t}"`).join(', ')}, got ${JSON.stringify(json.tool)}`);
+  }
   const { size, tiles, moveLimit, wallBudget } = json;
   if (!Number.isInteger(size) || size < 2) fail(`size must be an integer of at least 2, got ${size}`);
   if (!Array.isArray(tiles) || tiles.length !== size) {
@@ -107,14 +119,35 @@ export function parseLevel(json) {
     [...row].forEach((c, x) => {
       if (c === 'R') starts.push([x, y]);
       else if (c === 'B') beacons.push([x, y]);
-      else if (TELEPORTER.test(c)) {
+      else if (v5 && V5_TILES.has(c)) {
+        // ice, mud, gate: nothing to collect here (note 'v' is the down gate, never a teleporter, in v5)
+      } else if (TELEPORTER.test(c) && !(c === 'v' && v5)) {
         if (!letters.has(c)) letters.set(c, []);
         letters.get(c).push([x, y]);
-      } else if (!KNOWN.has(c)) fail(`unknown tile ${JSON.stringify(c)} at [${x}, ${y}]`);
+      } else if (!KNOWN.has(c)) {
+        fail(V5_TILES.has(c) && c !== 'v'
+          ? `tile ${JSON.stringify(c)} at [${x}, ${y}] needs rules v5 (set "rules": "v5")`
+          : `unknown tile ${JSON.stringify(c)} at [${x}, ${y}]`);
+      }
     });
   });
   if (starts.length !== 1) fail(`need exactly one robot start 'R', found ${starts.length}`);
   if (beacons.length !== 1) fail(`need exactly one beacon 'B', found ${beacons.length}`);
+
+  if (v5) {
+    // A gate's entry and exit tiles (behind and in front of it along the arrow) must be walkable
+    // land on the board and never another gate. The start and the house are never ice, mud or a
+    // gate by construction: they are their own tile.
+    const land = (x, y) => x >= 0 && y >= 0 && x < size && y < size
+      && grid[y][x] !== '#' && grid[y][x] !== '~' && !GATE_DIR.has(grid[y][x]);
+    grid.forEach((row, y) => row.forEach((c, x) => {
+      if (!GATE_DIR.has(c)) return;
+      const [dx, dy] = GATE_STEP[GATE_DIR.get(c)];
+      if (!land(x - dx, y - dy) || !land(x + dx, y + dy)) {
+        fail(`gate ${JSON.stringify(c)} at [${x}, ${y}] needs walkable land that is not a gate, on the board, on both ends of its arrow`);
+      }
+    }));
+  }
 
   const partners = new Map(); // cell index -> [x, y] of partner
   for (const [letter, cells] of letters) {
@@ -138,6 +171,8 @@ export function parseLevel(json) {
     moveLimit,
     wallBudget,
     rules,
+    /** Rules v5 gnome tool: "ladder", "pickaxe", "plank", or null. */
+    tool: json.tool ?? null,
     inBounds,
     tile,
     /** Teleporter partner of the tile at (x, y) as [x, y], or null. */
@@ -153,7 +188,7 @@ export function parseLevel(json) {
      * Can the line on the `dir` side of tile (x, y) take a wall? dir is "R" (between
      * (x, y) and (x + 1, y)) or "D" (between (x, y) and (x, y + 1)). Rules v3.1: both tiles
      * must be grass (never the border, the start, the beacon, a bridge, a teleporter, river or
-     * rock). Rules v4: both tiles must be walkable (never the border, river or rock). The v4
+     * rock). Rules v4 and v5: both tiles must be walkable (never the border, river or rock). The v4
      * cap on walled sides of the start and beacon belongs to a wall set, not a line: see
      * capViolation.
      */
@@ -161,7 +196,7 @@ export function parseLevel(json) {
       if (dir !== 'R' && dir !== 'D') return false;
       const x2 = dir === 'R' ? x + 1 : x;
       const y2 = dir === 'D' ? y + 1 : y;
-      if (rules === 'v4') return level.walkable(x, y) && level.walkable(x2, y2);
+      if (rules !== 'v3.1') return level.walkable(x, y) && level.walkable(x2, y2);
       return tile(x, y) === '.' && tile(x2, y2) === '.';
     },
   };

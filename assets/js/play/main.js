@@ -8,8 +8,12 @@ import { starsMarkup } from './icons.js';
 import { preloadSprites, sprite, GNOME_SPRITES, WALL_SPRITES } from '../sprites.js';
 import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 
-const PACK_URL = '../assets/levels/pack-01.json';
+const EASY_URL = '../assets/levels/easy.json';
+const MEDIUM_URL = '../assets/levels/medium.json';
+const PACK_URL = '../assets/levels/pack-01.json'; // its 9x9 levels (11 to 30) stay as levels 41 to 55 until Hard ships; its 7x7 retired with Medium
 const LAB_URL = '../assets/levels/lab.json';
+const LAB_V5_URL = '../assets/levels/lab-v5.json'; // rules v5: ice, mud, gates. Listed after the five v4 lab levels (?lab=6 and up)
+const LAB_V4_COUNT = 5;
 const STEP_MS = 220;
 
 const $ = (id) => document.getElementById(id);
@@ -23,6 +27,22 @@ const parEl = $('par');
 const limitEl = $('move-limit');
 const movesLeftEl = $('moves-left');
 const statusEl = $('status');
+const introEl = $('intro-note');
+// One plain-words line on the level that introduces a tile (Medium 21, 26, 31)
+const INTRO_NOTES = {
+  'medium-01': 'Ice: he slides until something stops him. The whole slide is one move.',
+  'medium-06': 'Mud: stepping onto it costs him 2 moves.',
+  'medium-11': 'Gate: he can only pass it the way its arrow points.',
+};
+const toolBadgeEl = $('tool-badge');
+const toolIconEl = $('tool-icon');
+const toolLineEl = $('tool-line');
+// Gnome tools (rules v5, parcel 8g): what he brought, shown before anything is placed.
+const TOOL_TEXT = {
+  ladder: ['ladder', 'He brought a ladder: he can climb one of your fences, once.'],
+  pickaxe: ['pickaxe', 'He brought a pickaxe: he can dig through one rock or berry bush, once.'],
+  plank: ['plank', 'He brought a plank: he can cross one river tile, once.'],
+};
 const controlsEl = $('controls');
 const goBtn = $('go');
 const clearBtn = $('clear');
@@ -31,7 +51,7 @@ const hintPanel = $('hint-panel');
 const resultEl = $('result');
 
 let levels = [];
-let labLevels = []; // lab pack (rules v4), parsed
+let labLevels = []; // lab pack (rules v4) then the rules v5 lab levels, parsed
 let labFailed = false;
 let game = null; // { kind: 'level' | 'lab', index, level, board, state: 'editing' | 'running' | 'result', token }
 
@@ -98,7 +118,7 @@ function showLab() {
   gameView.hidden = true;
   selectView.hidden = false;
   document.title = 'Lab · Gnome Sweet Gnome';
-  renderLab(selectView, labLevels, { onPick: toLabLevel, onMode: toMode, failed: labFailed });
+  renderLab(selectView, labLevels, { onPick: toLabLevel, onMode: toMode, failed: labFailed, v4Count: LAB_V4_COUNT });
 }
 
 /* ---------- game ---------- */
@@ -132,11 +152,23 @@ function startGame({ kind, index, level, title }) {
   parEl.textContent = String(level.par);
   limitEl.textContent = String(level.moveLimit);
   movesLeftEl.textContent = String(level.moveLimit);
+  const tool = TOOL_TEXT[level.tool];
+  toolBadgeEl.hidden = !tool;
+  if (tool) {
+    toolIconEl.dataset.tool = level.tool;
+    toolLineEl.textContent = tool[1];
+    toolBadgeEl.setAttribute('aria-label', `Gnome's tool: ${tool[0]}`);
+  } else {
+    toolLineEl.textContent = '';
+    toolBadgeEl.removeAttribute('aria-label');
+  }
   resultEl.hidden = true;
   resultEl.innerHTML = '';
   controlsEl.hidden = false;
   goBtn.disabled = false;
   hintPanel.hidden = true;
+  introEl.textContent = INTRO_NOTES[level.id] || '';
+  introEl.hidden = !introEl.textContent;
   setStatus("Tap a line between two tiles to place a fence. Make the gnome's route longer than his move limit. You must leave him a way through.");
   updateCounters();
 }
@@ -190,7 +222,8 @@ function onLine(target) {
   } else if (cutsAllRoutes(level, [...board.wallList(), line])) {
     // The robot must always keep a way to the beacon (a rule of every level): refuse the wall, counters unchanged.
     board.refuse(target);
-    refused('The gnome needs at least one way through.');
+    // On a tool level, say the tool doesn't count (QA 8g F1): the no-cut rule ignores it (GAME_SPEC v5).
+    refused(level.tool ? `The gnome needs at least one way through without his ${level.tool}.` : 'The gnome needs at least one way through.');
   } else {
     board.setWall(line, true, { magic: true });
     mood('idle');
@@ -295,7 +328,9 @@ function finish(sim, walls) {
     }
     resultEl.appendChild(actions);
     const lastLevel = g.kind === 'level' && g.index === levels.length - 1;
-    const lastLab = g.kind === 'lab' && g.index === labLevels.length - 1;
+    // The last level of its group: the v4 lab levels and the v5 ones each end on "All lab levels"
+    const next = labLevels[g.index + 1];
+    const lastLab = g.kind === 'lab' && (!next || g.index === LAB_V4_COUNT - 1 || !!next.tool !== !!labLevels[g.index].tool);
     if (g.kind === 'lab') focusTarget = lastLab ? button('All lab levels', true, toLab) : button('Next level', true, () => toLabLevel(g.index + 1));
     else if (lastLevel) focusTarget = button('All levels', true, toSelect);
     else focusTarget = button('Next level', true, () => toLevel(g.index + 1));
@@ -415,10 +450,11 @@ async function boot() {
   const art = preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...VILLAIN_SPRITES]);
   art.catch(() => {}); // handled where it is awaited below
   try {
-    const res = await fetch(PACK_URL);
-    if (!res.ok) throw new Error(`${res.status}`);
-    const pack = await res.json();
-    levels = pack.levels.map((l) => parseLevel(l));
+    const [easyRes, mediumRes, packRes] = await Promise.all([fetch(EASY_URL), fetch(MEDIUM_URL), fetch(PACK_URL)]);
+    if (!easyRes.ok || !mediumRes.ok || !packRes.ok) throw new Error(`${easyRes.status} ${mediumRes.status} ${packRes.status}`);
+    const [easy, medium, pack] = await Promise.all([easyRes.json(), mediumRes.json(), packRes.json()]);
+    // Easy 1 to 20, Medium 21 to 40, then pack 1's 9x9 levels as 41 to 55 (its 5x5 is Easy 1 to 5; its 7x7 retired)
+    levels = [...easy.levels, ...medium.levels, ...pack.levels.filter((l) => l.size === 9)].map((l) => parseLevel(l));
   } catch (err) {
     loading.textContent = '';
     const p = document.createElement('p');
@@ -437,6 +473,13 @@ async function boot() {
     labLevels = (await res.json()).levels.map((l) => parseLevel(l));
   } catch {
     labFailed = true; // the Lab tab says so; the rest of the game still works
+  }
+  if (!labFailed) {
+    try {
+      const res = await fetch(LAB_V5_URL);
+      if (!res.ok) throw new Error(`${res.status}`);
+      labLevels = [...labLevels, ...(await res.json()).levels.map((l) => parseLevel(l))];
+    } catch { /* the new-tiles levels are optional: the five v4 lab levels still show */ }
   }
   try {
     await art;
