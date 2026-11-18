@@ -36,8 +36,8 @@ export const SLOTS = [
   { tool: 'pickaxe', mech: [], par: 5 }, { tool: 'pickaxe', mech: [], par: 6 },
   { tool: 'plank', mech: [], par: 5, intro: true }, { tool: 'plank', mech: [], par: 5 }, { tool: 'plank', mech: [], par: 5 },
   { tool: 'plank', mech: [], par: 6 }, { tool: 'plank', mech: [], par: 6 },
-  { tool: 'ladder', mech: ['ice'], par: 5 }, { tool: 'pickaxe', mech: ['mud'], par: 6 }, { tool: 'plank', mech: ['gate'], par: 6 },
-  { tool: 'ladder', mech: ['ice', 'gate'], par: 6 }, { tool: 'pickaxe', mech: ['ice', 'mud'], par: 7 },
+  { tool: 'ladder', mech: ['ice'], par: 5 }, { tool: 'ladder', mech: ['mud'], par: 6 }, { tool: 'plank', mech: ['gate'], par: 6 },
+  { tool: 'ladder', mech: ['ice', 'gate'], par: 6 }, { tool: 'plank', mech: ['ice', 'mud'], par: 7 },
 ];
 export const parCap = (i) => (SLOTS[i].intro ? 10 : i === 19 ? 5 : i >= 15 ? 12 : 20);
 const GROUPS = [[0, 4], [5, 9], [10, 14], [15, 19]];
@@ -174,12 +174,12 @@ function terrain(rng, slot) {
   const dense = rng.chance(0.5);
   if (slot.tool === 'plank') {
     // a river running top to bottom with 1 or 2 bridges; start left of it, house right of it
-    let rx = rng.int(3, 5);
+    let rx = rng.int(2, 6);
     for (let y = 0; y < N; y++) {
       if (y > 0 && rng.chance(0.5)) { const nx = Math.max(2, Math.min(N - 3, rx + (rng.chance(0.5) ? 1 : -1))); g[y - 1][nx] = '~'; rx = nx; }
       g[y][rx] = '~';
     }
-    for (let k = rng.int(4, 12); k > 0; k--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
+    for (let k = rng.int(8, 16); k > 0; k--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
     const spots = rng.shuffle(cells('~').filter(([x, y]) => g[y][x - 1] && g[y][x - 1] !== '~' && g[y][x + 1] && g[y][x + 1] !== '~' && g[y - 1]?.[x] === '~' && g[y + 1]?.[x] === '~'));
     const want = rng.int(1, 2), used = [];
     for (const [x, y] of spots) {
@@ -203,7 +203,7 @@ function terrain(rng, slot) {
       const gap = (k + rng.int(0, 1)) % 2 === 0 ? rng.int(0, 1) : rng.int(N - 2, N - 1);
       for (let y = 0; y < N; y++) if (y !== gap) g[y][c] = '#';
     });
-    for (let r = rng.int(0, 5); r > 0; r--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
+    for (let r = rng.int(4, 9); r > 0; r--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
     const left = cells().filter(([x]) => x < cols[0]);
     const right = cells().filter(([x]) => x > cols[cols.length - 1]);
     if (!left.length || !right.length) return null;
@@ -370,7 +370,7 @@ export const BOARDS = [
   { moveLimit: 14, tiles: ['.........', '.........', '#.R......', '.........', '.........', '#........', '####.##.#', '.........', '....B....'] }, // 41: par 4 parAnswers 7 toolStep 2
   { moveLimit: 14, tiles: ['R......#.', '.........', '...#.....', '##...####', '.........', '#..######', '#..B#..#.', '.#.......', '##..#...#'] }, // 42: par 4 parAnswers 4 toolStep 12
   { moveLimit: 13, tiles: ['#.......#', '#...#...#', '.#.....R.', '####.##.#', '........#', '#........', '......#..', '#...#....', '..#..B..#'] }, // 43: par 5 parAnswers 13 toolStep 8
-  null, // 44
+  { moveLimit: 13, tiles: ['...R.....', '.........', '.#.#.....', '......#.#', '....#.#..', '##.##.###', '.........', '#.B..#...', '...#.....'] }, // 44: par 5 parAnswers 8 toolStep 12
   null, // 45
   { moveLimit: 14, tiles: ['.........', '.........', '..B.#....', '.########', '........R', '.......#.', '.#.......', '.....#...', '#........'] }, // 46: par 4 parAnswers 10 toolStep 14
   null, // 47
