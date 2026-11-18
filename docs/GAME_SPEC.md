@@ -176,6 +176,10 @@ The gnome start and the house are never ice, mud or a gate. Teleporter letters, 
 | Par answers | At most 10 on intro levels and Easy 6 to 13. Medium: at most 20 on any level, at most 12 on the mixes (35 to 40) and at most 5 on level 40, so the finale is tight, not loose |
 | Ice in use | On every level with ice, the stored answer's replay includes at least one slide (he is seen sliding on a winning run) |
 | Mechanic decides par | Removing the level's new tiles (all ice, mud and gates become grass) changes par on the intro levels (21, 26, 31) and on at least 15 of the 20 Medium levels |
+| Hard ramp | Ladder 41 to 45 (par 4, 4, 5, 5, 5), pickaxe 46 to 50 (4, 5, 5, 5, 6), plank 51 to 55 (5, 5, 5, 6, 6), mixes 56 to 60 with Medium tiles (5, 6, 6, 6, 7). 41, 46 and 51 have only their tool (no ice, mud or gates) |
+| Tool in use (Hard) | On every Hard level the stored answer's replay uses the tool (the player sees it), and the gnome has a tool-free route with no fences |
+| Tool decides par (Hard) | Removing the tool changes par on 41, 46, 51 and on at least 15 of the 20 Hard levels |
+| Par answers (Hard) | At most 10 on 41, 46, 51; at most 20 on any level; at most 12 on 56 to 60; at most 5 on level 60 |
 | Gates in use | On every level with a gate, the stored answer's route goes through a gate (a gate only ever used as a decoy doesn't teach it) |
 | Density on 7x7 | Ice 3 to 8 tiles, mud 2 to 5, gates 1 to 3 |
 | Solve | Every level's `solve` finishes within the build's node budget |
