@@ -35,9 +35,9 @@ export const SLOTS = [
   { tool: 'pickaxe', mech: [], par: 4, intro: true }, { tool: 'pickaxe', mech: [], par: 5 }, { tool: 'pickaxe', mech: [], par: 5 },
   { tool: 'pickaxe', mech: [], par: 5 }, { tool: 'pickaxe', mech: [], par: 6 },
   { tool: 'plank', mech: [], par: 5, intro: true }, { tool: 'plank', mech: [], par: 5 }, { tool: 'plank', mech: [], par: 5 },
-  { tool: 'plank', mech: [], par: 5 }, { tool: 'plank', mech: [], par: 6 },
+  { tool: 'plank', mech: [], par: 6 }, { tool: 'plank', mech: [], par: 6 },
   { tool: 'ladder', mech: ['ice'], par: 5 }, { tool: 'ladder', mech: ['mud'], par: 6 }, { tool: 'plank', mech: ['gate'], par: 6 },
-  { tool: 'ladder', mech: ['ice', 'gate'], par: 5 }, { tool: 'plank', mech: ['ice', 'mud'], par: 7 },
+  { tool: 'ladder', mech: ['ice', 'gate'], par: 6 }, { tool: 'plank', mech: ['ice', 'mud'], par: 7 },
 ];
 export const parCap = (i) => (SLOTS[i].intro ? 10 : i === 19 ? 5 : i >= 15 ? 12 : 20);
 const GROUPS = [[0, 4], [5, 9], [10, 14], [15, 19]];
