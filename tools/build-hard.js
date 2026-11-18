@@ -266,10 +266,11 @@ function terrain(rng, slot) {
 }
 
 /** One candidate for a slot, or null. Cheap checks first; the solver last, always with a work budget. */
-function candidate(slot, rng, tag, F) {
+function candidate(slot, rng, tag, F, used = []) {
   F('tried');
   const tiles = terrain(rng, slot);
   if (!tiles) return null;
+  if (used.some((u) => lookAlike(u, tiles))) { F('lookalike'); return null; } // cheap: before any solve
   for (const m of slot.mech) { const c = countTiles(tiles, MECH_TILES[m]); if (c < D[m][0] || c > D[m][1]) return null; }
   F('terrain');
   let probe, noTool;
@@ -322,7 +323,7 @@ if (!isMainThread && workerData?.hard) {
   let tried = 0;
   for (let i = w; Date.now() < deadline; i += W) {
     tried++;
-    const c = candidate({ ...slot, index: si }, createRng(`hard-${si + 41}${tag}:${i}`), `h${si}`, F);
+    const c = candidate({ ...slot, index: si }, createRng(`hard-${si + 41}${tag}:${i}`), `h${si}`, F, used);
     if (!c) continue;
     if (used.some((u) => lookAlike(u, c.tiles))) { F('lookalike'); continue; }
     parentPort.postMessage({ hit: c, i, funnel, tried });
@@ -378,7 +379,7 @@ export const BOARDS = [
   null, // 49
   null, // 50
   { moveLimit: 14, tiles: ['...~.....', '.#.=.....', '..B~.....', '..#~.....', '..~~.....', '..~......', '..~...R..', '..=......', '..~......'] }, // 51: par 5 parAnswers 1 toolStep 5
-  null, // 52
+  { moveLimit: 13, tiles: ['..#..#~..', '.#....~..', '.#...#~..', '.#B...~..', '.#....~..', '..#...~.#', '##....~R.', '##....=..', '....##~..'] }, // 52: par 5 parAnswers 7 toolStep 6
   null, // 53
   null, // 54
   null, // 55
