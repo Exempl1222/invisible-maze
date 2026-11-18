@@ -490,7 +490,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
         if (sim.trails) for (const t of sim.trails[i]) mark(t); // rules v5: every tile a slide passed
       }
       for (let i = 1; i <= last; i++) face(sim.steps[i - 1], sim.via[i] || sim.steps[i]); // a jump faces the stump he walked onto
-      if (sim.toolUse && sim.toolUse.tool === 'pickaxe') cellAt(sim.toolUse.tile[0], sim.toolUse.tile[1]).classList.add('dug'); // the rock is cleared, no motion
+      if (sim.toolUse && sim.toolStep != null && sim.toolUse.tool === 'pickaxe') cellAt(sim.toolUse.tile[0], sim.toolUse.tile[1]).classList.add('dug'); // the rock is cleared, no motion
       setGnome(robot, lastDir, 'idle');
       moveRobot(sim.steps[last], { instant: true });
       if (onMove) onMove(last);

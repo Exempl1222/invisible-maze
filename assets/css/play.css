@@ -144,6 +144,7 @@
   grid-template-areas: "stats" "board" "villain" "side";
 }
 .stats { grid-area: stats; }
+.top > .stats { grid-area: auto; }
 .top { grid-area: stats; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
 .play-board { grid-area: board; }
 .side { grid-area: side; }
