@@ -24,9 +24,12 @@
 import { routeWithMask } from './path.js';
 import { buildableLines, lineIndex, lineWall, SIDE_CAP } from './level.js';
 
-/** Wins only with a route left that is longer than the limit. A null route is illegal. */
+/**
+ * Wins only with a route left that is longer than the limit. A null route is illegal. Gnome tools:
+ * the no-cut rule ignores the tool, so a set that leaves only a tool route is illegal too.
+ */
 function isWin(level, route) {
-  return route !== null && route.positions.length - 1 > level.moveLimit;
+  return route !== null && route.toolFreeRoute !== false && route.positions.length - 1 > level.moveLimit;
 }
 
 /**
@@ -91,9 +94,18 @@ function setup(level) {
   return { buildable, pool, take, drop };
 }
 
-/** Rules v5: the lines to branch on. A route may cross a line twice; a cut board allows any line. */
+/**
+ * Rules v5: the lines to branch on. A route may cross a line twice; a cut board allows any line.
+ * Gnome tools: a board with only a tool route (no tool-free route, toolFreeRoute false) is cut for the
+ * no-cut rule, so any line may reconnect it (like a null route). Otherwise the cheapest route R
+ * (tool included) fits the limit or the set would already win; any winning superset W that adds no
+ * fence on R's lines leaves R intact (a ladder still has its fence; pickaxe and plank steps cross no
+ * buildable line), so W's cheapest route is no longer than R and W does not win. R's ladder line is
+ * already fenced, so it is skipped.
+ */
 function branchLines(route, pool, mask) {
-  return route === null ? pool.filter((i) => !mask[i]) : [...new Set(route.lines)];
+  if (route === null || route.toolFreeRoute === false) return pool.filter((i) => !mask[i]);
+  return [...new Set(route.lines)].filter((i) => !mask[i]);
 }
 
 function toWalls(level, idxs) {

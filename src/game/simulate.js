@@ -37,10 +37,12 @@ export function validateWalls(level, walls) {
 
 /**
  * True if the walls leave the robot no route to the beacon (the move is illegal in the game).
- * Checks routing only; use validateWalls for the other wall rules.
+ * Checks routing only; use validateWalls for the other wall rules. Rules v5 gnome tools: the
+ * tool is ignored here, so the walls cut unless a route exists without it.
  */
 export function cutsAllRoutes(level, walls) {
-  return findPath(level, walls) === null;
+  const r = findPath(level, walls);
+  return r === null || r.toolFreeRoute === false;
 }
 
 /**
@@ -55,7 +57,7 @@ export function cutsAllRoutes(level, walls) {
 export function simulate(level, walls) {
   validateWalls(level, walls);
   const route = findPath(level, walls);
-  if (route === null) {
+  if (route === null || route.toolFreeRoute === false) {
     throw new Error('The walls cut every route: the robot needs at least one way through to the beacon');
   }
   const length = route.positions.length - 1;
@@ -71,6 +73,7 @@ export function simulate(level, walls) {
       via: route.via.slice(0, m + 1),
       movesUsed: m,
       ...(v5 ? { trails: route.trails.slice(0, m + 1), stuck: route.stuck.filter((i) => i <= m) } : {}),
+      ...toolFields(route, m),
     };
   }
   return {
@@ -81,5 +84,13 @@ export function simulate(level, walls) {
     via: route.via,
     movesUsed: length,
     ...(v5 ? { trails: route.trails, stuck: route.stuck } : {}),
+    ...toolFields(route, length),
   };
+}
+
+/** Gnome tool fields (only on a level that has a tool): toolStep and toolUse, null if the tool step is past move m. */
+function toolFields(route, m) {
+  if (!('toolStep' in route)) return {};
+  const used = route.toolStep !== null && route.toolStep <= m;
+  return { toolStep: used ? route.toolStep : null, toolUse: used ? route.toolUse : null };
 }
