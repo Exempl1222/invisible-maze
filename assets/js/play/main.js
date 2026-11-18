@@ -222,7 +222,8 @@ function onLine(target) {
   } else if (cutsAllRoutes(level, [...board.wallList(), line])) {
     // The robot must always keep a way to the beacon (a rule of every level): refuse the wall, counters unchanged.
     board.refuse(target);
-    refused('The gnome needs at least one way through.');
+    // On a tool level, say the tool doesn't count (QA 8g F1): the no-cut rule ignores it (GAME_SPEC v5).
+    refused(level.tool ? `The gnome needs at least one way through without his ${level.tool}.` : 'The gnome needs at least one way through.');
   } else {
     board.setWall(line, true, { magic: true });
     mood('idle');

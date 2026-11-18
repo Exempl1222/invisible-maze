@@ -18,6 +18,8 @@
 .play-board .cell.rock                 { background-image: url(../sprites/tile-rock.svg); }
 .play-board .cell.rock[data-v="2"]     { background-image: url(../sprites/tile-bush.svg); } /* some rocks are berry bushes, for variety */
 .play-board .cell.river                { background-image: url(../sprites/tile-river.svg); }
+/* A river tile crossed on the plank keeps its water colour on the trail (QA 8g F4). */
+.play-board .cell.river.trail::before  { background: color-mix(in srgb, var(--gold) 14%, transparent); }
 .play-board .cell.bridge               { background-image: url(../sprites/tile-bridge-h.svg); }
 .play-board .cell.bridge.across-v      { background-image: url(../sprites/tile-bridge-v.svg); }
 .play-board .cell.ice                  { background-image: url(../sprites/tile-ice.svg); }

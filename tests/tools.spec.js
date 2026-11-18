@@ -2,7 +2,7 @@
 // Answers come from the engine in Node and are pressed into the real page. Lab 1 to 5 are v4, Lab 6 to 12 the new tiles, Lab 13 to 18 the tools.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { parseLevel, simulate } from '../src/game/index.js';
+import { parseLevel, simulate, buildableLines, cutsAllRoutes, wouldBreakCap } from '../src/game/index.js';
 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const labV4 = readJson('../assets/levels/lab.json');
@@ -195,4 +195,24 @@ test('no console errors and no sideways scroll across the tool levels, one full 
     expect(await overflow(page), `${all[i].id}`).toBeLessThanOrEqual(0);
   }
   expect(errors.filter((e) => !/fonts\.(googleapis|gstatic)/.test(e))).toEqual([]);
+});
+
+test('on a tool level the no-cut refusal says the tool does not count', async ({ page }) => {
+  // Engine: the first legal fence pair whose second fence leaves him no way home without his tool.
+  let k = -1, pair = null;
+  for (const i of toolIdx) {
+    const lv = all[i];
+    const lines = buildableLines(lv);
+    for (const a of lines) {
+      if (cutsAllRoutes(lv, [a])) continue;
+      const b = lines.find((l) => l !== a && !wouldBreakCap(lv, [a], l) && cutsAllRoutes(lv, [a, l]));
+      if (b) { pair = [a, b]; break; }
+    }
+    if (pair) { k = i; break; }
+  }
+  expect(pair).not.toBeNull();
+  await open(page, k);
+  await press(page, pair[0]);
+  await press(page, pair[1]);
+  await expect(page.locator('#status')).toHaveText(`The gnome needs at least one way through without his ${all[k].tool}.`);
 });
