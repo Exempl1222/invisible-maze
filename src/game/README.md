@@ -102,7 +102,7 @@ Every day is generated on its own sub-seed (`buildDay(i)`), so the batch is a pu
 
 ## Easy pack
 
-`tools/build-easy.js` builds `assets/levels/easy.json` (shipped), `{ "id": "easy", "levels": [...] }`: `easy-01` to `easy-05` are pack 1's hand-authored tutorial (`TUTORIAL` in `tools/build-pack.js`), `easy-06` to `easy-20` are generated 5x5 (rocks 6-9, river and bridges 10-13, teleporters 14-17, mixes 18-20), all rules v4, `wallBudget = par + 2`, deterministic from fixed seeds. The build throws if a metric from `docs/GAME_SPEC.md` (Design metrics) fails; `tools/easy.test.js` re-checks the shipped file. On the Play page the level list is Easy 1 to 20, then pack 1's levels 6 to 30 as 21 to 45.
+`tools/build-easy.js` builds `assets/levels/easy.json` (shipped), `{ "id": "easy", "levels": [...] }`: `easy-01` to `easy-05` are pack 1's hand-authored tutorial (`TUTORIAL` in `tools/build-pack.js`), `easy-06` to `easy-20` are generated 5x5 (rocks 6-9, river and bridges 10-13, teleporters 14-17, mixes 18-20), all rules v4, `wallBudget = par + 2`, deterministic from fixed seeds. The build throws if a metric from `docs/GAME_SPEC.md` (Design metrics) fails; `tools/easy.test.js` re-checks the shipped file. On the Play page the level list is Easy 1 to 20, Medium 21 to 40, Hard 41 to 60 (pack 1 is no longer loaded).
 
 ## Lab pack
 

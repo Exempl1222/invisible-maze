@@ -104,7 +104,7 @@ v5 is v4 plus the tiles and tools below. A v4 level parses and plays exactly as 
 | Medium | `assets/levels/medium.json` | 7x7 | 21 to 40 | 3 to 5 | Ice, mud, gates |
 | Hard | `assets/levels/hard.json` | 9x9 | 41 to 60 | 4 to 7 (at least one 7) | One gnome tool per level, Medium tiles from level 56 |
 
-- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1's 7x7 levels (6 to 15) retired when Medium shipped; its 9x9 levels (16 to 30) stay playable as levels 41 to 55 until Hard replaces them.
+- Easy 1 to 5 are pack 1's hand-authored tutorial, unchanged. Stars earned on `p01-01` to `p01-05` carry to Easy 1 to 5. Pack 1's 7x7 levels (6 to 15) retired when Medium shipped and its 9x9 levels (16 to 30) retired when Hard shipped; pack 1 is no longer on the Play page (progress on `p01-06` to `p01-30` is simply not shown).
 - Budget stays par + 2. Stars, hints and the no-cut rule are unchanged.
 - Each new mechanic is introduced in order: 1 level where it alone decides par, then 2 where it combines with a known idea, then it joins the mix. Medium: ice 21 to 25, mud 26 to 30, gates 31 to 34, mixed 35 to 40. Hard: ladder 41 to 45, pickaxe 46 to 50, plank 51 to 55, mixed 56 to 60.
 - All tiers are open in development; at launch each tier unlocks when the one before is finished.
