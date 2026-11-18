@@ -23,7 +23,7 @@ import { invalidBridges } from './generate.js';
 
 const SIZE = 9;
 export const NODES = 400000; // work budget for every solve and count the default build does
-const SEARCH_NODES = Number(process.env.HARD_NODES || 40000);
+let SEARCH_NODES = Number(process.env.HARD_NODES || 40000); // par 6 and 7 slots get 5 times this (set per slot in the worker)
 const MECH_TILES = { ice: '*', mud: '&', gate: '><^v' };
 export const mechsOf = (tiles) => Object.keys(MECH_TILES).filter((m) => [...MECH_TILES[m]].some((c) => tiles.join('').includes(c)));
 export const countTiles = (tiles, chars) => [...tiles.join('')].filter((c) => chars.includes(c)).length;
@@ -201,11 +201,12 @@ function terrain(rng, slot) {
     const cols = nw === 1 ? [rng.int(3, 5)] : [rng.int(2, 3), rng.int(5, 6)];
     cols.forEach((c, k) => {
       const gap = (k + rng.int(0, 1)) % 2 === 0 ? rng.int(0, 1) : rng.int(N - 2, N - 1);
-      for (let y = 0; y < N; y++) if (y !== gap) g[y][c] = '#';
+      const jog = rng.chance(0.6) ? rng.int(2, N - 3) : N; // from this row down the wall steps one column right (still a barrier)
+      for (let y = 0; y < N; y++) if (y !== gap) g[y][y >= jog ? c + 1 : c] = '#';
     });
-    for (let r = rng.int(4, 9); r > 0; r--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
+    for (let r = rng.int(6, 12); r > 0; r--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
     const left = cells().filter(([x]) => x < cols[0]);
-    const right = cells().filter(([x]) => x > cols[cols.length - 1]);
+    const right = cells().filter(([x]) => x > cols[cols.length - 1] + 1);
     if (!left.length || !right.length) return null;
     start = rng.pick(left); beacon = rng.pick(right);
   } else {
@@ -318,6 +319,7 @@ function candidate(slot, rng, tag, F, used = []) {
 if (!isMainThread && workerData?.hard) {
   // worker: walk candidates w, w + W, w + 2W ... of one slot until a hit or the deadline
   const { slot, si, tag, w, W, deadline, used } = workerData;
+  if (slot.par >= 6) SEARCH_NODES *= 5;
   const funnel = {};
   const F = (k) => { funnel[k] = (funnel[k] || 0) + 1; };
   let tried = 0;
