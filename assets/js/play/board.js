@@ -433,11 +433,12 @@ export function createBoard(root, level, { onLine, onHelp }) {
     },
     /** Put the robot back at the start and wipe trail and effects. Walls stay. */
     resetRun() {
-      for (const c of cells.values()) c.classList.remove('trail', 'reached', 'flash', 'linked', 'gate-open');
+      for (const c of cells.values()) c.classList.remove('trail', 'reached', 'flash', 'linked', 'gate-open', 'crumble', 'dug');
+      for (const f of root.querySelectorAll('.tool-prop, .tool-chip')) f.remove();
       for (const l of [...links]) removeLink(l);
       for (const f of root.querySelectorAll('.frost, .mud-bubble')) f.remove();
       robot.style.transitionTimingFunction = '';
-      robot.classList.remove('jolt', 'vanish', 'dive', 'pop', 'home', 'skid', 'bump', 'sink', 'wiggle', 'pull');
+      robot.classList.remove('jolt', 'vanish', 'dive', 'pop', 'home', 'skid', 'bump', 'sink', 'wiggle', 'pull', 'hop');
       setGnome(robot, 'down', 'idle');
       moveRobot(level.start, { instant: true });
     },
@@ -489,6 +490,7 @@ export function createBoard(root, level, { onLine, onHelp }) {
         if (sim.trails) for (const t of sim.trails[i]) mark(t); // rules v5: every tile a slide passed
       }
       for (let i = 1; i <= last; i++) face(sim.steps[i - 1], sim.via[i] || sim.steps[i]); // a jump faces the stump he walked onto
+      if (sim.toolUse && sim.toolUse.tool === 'pickaxe') cellAt(sim.toolUse.tile[0], sim.toolUse.tile[1]).classList.add('dug'); // the rock is cleared, no motion
       setGnome(robot, lastDir, 'idle');
       moveRobot(sim.steps[last], { instant: true });
       if (onMove) onMove(last);
@@ -562,6 +564,70 @@ export function createBoard(root, level, { onLine, onHelp }) {
       robot.classList.add('pull');
       setTimeout(() => robot.classList.remove('pull'), Math.round(ms * 0.8));
     };
+    /* ---------- gnome tools (parcel 8g): a prop on the board, driven by sim.toolUse and sim.toolStep ---------- */
+    const tu = sim.toolUse || null;
+    const toolLevel = !!level.tool;
+    const rectOf = (pos) => {
+      const b = root.getBoundingClientRect();
+      const r = cellAt(pos[0], pos[1]).getBoundingClientRect();
+      return { x: r.left - b.left + r.width / 2, y: r.top - b.top + r.height / 2, w: r.width };
+    };
+    /** A prop sprite centred on (x, y), `size` px wide. `name` is ladder, pickaxe, scythe or plank. */
+    const addProp = (name, x, y, size, cls, vars = {}) => {
+      const p = span(`tool-prop ${cls}`);
+      p.dataset.prop = name;
+      p.setAttribute('aria-hidden', 'true');
+      p.style.cssText = `left:${x - size / 2}px;top:${y - size / 2}px;width:${size}px;height:${size}px;`;
+      for (const [k, v] of Object.entries(vars)) p.style.setProperty(k, v);
+      root.appendChild(p);
+      return p;
+    };
+    const dropProp = (p, ms) => setTimeout(() => p.remove(), ms);
+    let plankProp = null;
+    let ladderProp = null;
+    /** Ladder and pickaxe: the prep move. He stays put and gets the tool out. */
+    const prepTool = async (ms) => {
+      const from = tu.from;
+      const to = tu.to;
+      setGnome(robot, face(from, to), 'idle');
+      const a = rectOf(from);
+      if (tu.tool === 'ladder') {
+        const q = rectOf(to);
+        const dx = Math.sign(q.x - a.x);
+        const dy = Math.sign(q.y - a.y);
+        // Props the ladder on the fence between the two tiles, leaning on it from his side.
+        const p = addProp('ladder', (a.x + q.x) / 2 - dx * a.w * 0.16, (a.y + q.y) / 2 - dy * a.w * 0.16 - a.w * 0.08, a.w * 1.1, 'set', { '--lean': `${dx * 14}deg`, '--set-ms': `${ms}ms` });
+        ladderProp = p;
+        await sleep(ms);
+      } else {
+        const q = rectOf(tu.tile);
+        const bush = level.tiles[tu.tile[1]][tu.tile[0]] === '#' && cellAt(tu.tile[0], tu.tile[1]).dataset.v === '2';
+        const swingMs = Math.round(ms * 0.55);
+        const p = addProp(bush ? 'scythe' : 'pickaxe', a.x + (q.x - a.x) * 0.5, a.y + (q.y - a.y) * 0.5 - a.w * 0.1, a.w * 0.9, 'swing', { '--swing-ms': `${swingMs}ms` });
+        const rockCell = cellAt(tu.tile[0], tu.tile[1]);
+        [[-1, -1], [1, -1.4], [0.2, 1]].forEach(([cx, cy], k) => {
+          const chip = span('tool-chip');
+          chip.setAttribute('aria-hidden', 'true');
+          chip.style.cssText = `--dx:${Math.round(cx * a.w * 0.45)}px;--dy:${Math.round(cy * a.w * 0.4)}px;animation-delay:${Math.round(swingMs * (k + 0.55))}ms;`;
+          rockCell.appendChild(chip);
+          setTimeout(() => chip.remove(), swingMs * 3 + 500);
+        });
+        await sleep(swingMs * 3);
+        if (cancelled()) return;
+        rockCell.classList.add('crumble');
+        await sleep(Math.round(ms * 0.8));
+        rockCell.classList.remove('crumble');
+        rockCell.classList.add('dug'); // pebbles from here on
+        p.remove();
+      }
+    };
+    /** Plank: it drops across the river tile before he steps on. */
+    const layPlank = async (ms) => {
+      const q = rectOf(tu.tile);
+      const horizontal = tu.from[1] === tu.to[1];
+      plankProp = addProp('plank', q.x, q.y, q.w * 0.95, 'lay', { '--rot': horizontal ? '0deg' : '90deg', '--lay-ms': `${Math.round(ms * 0.9)}ms` });
+      await sleep(Math.round(ms * 0.9));
+    };
     await sleep(250);
     for (let i = 1; i <= last; i++) {
       if (cancelled()) return false;
@@ -574,7 +640,13 @@ export function createBoard(root, level, { onLine, onHelp }) {
       const sliding = !!dest && !stuckMove && (trail.length > 1 || tileAt(dest) === '*');
       if (sim.trails && !stuckMove) leaveMud(stepMs); // pulls free of the mud he was stuck in (not on the stuck move itself)
       if (dest && !stuckMove && isGateAt(dest)) openGate(dest); // swings open as he comes
-      if (stuckMove) {
+      const isPrep = !!tu && tu.prep === i;
+      const isCross = !!tu && sim.toolStep === i;
+      if (isPrep) {
+        await prepTool(Math.round(stepMs * (tu.tool === 'ladder' ? 1.1 : 0.7)));
+      } else if (toolLevel && !tu && sim.trails && trail && trail.length === 0 && !stuckMove) {
+        await sleep(stepMs); // a tool move he did not finish (his moves ran out): he just stands there
+      } else if (stuckMove) {
         await struggle(sim.steps[i], stepMs);
       } else if (sliding) {
         await glide(sim.steps[i - 1], trail, stepMs);
@@ -589,16 +661,38 @@ export function createBoard(root, level, { onLine, onHelp }) {
         if (cancelled()) return false;
         mark(via);
         await teleportFrom(i, via, stepMs);
+      } else if (isCross && tu.tool === 'plank') {
+        await layPlank(stepMs);
+        if (cancelled()) return false;
+        setGnome(robot, face(sim.steps[i - 1], sim.steps[i]), 'walk');
+        moveRobot(sim.steps[i], { ms: stepMs * 0.75 });
+        await sleep(stepMs);
+      } else if (isCross && tu.tool === 'ladder') {
+        // Up and over the fence on the ladder, which then tips over and fades.
+        setGnome(robot, face(sim.steps[i - 1], sim.steps[i]), 'walk');
+        robot.style.setProperty('--hop-ms', `${Math.round(stepMs * 1.2)}ms`);
+        robot.classList.add('hop');
+        moveRobot(sim.steps[i], { ms: stepMs * 1.1 });
+        await sleep(Math.round(stepMs * 1.25));
+        robot.classList.remove('hop');
+        if (ladderProp) { ladderProp.classList.remove('set'); ladderProp.classList.add('tip'); dropProp(ladderProp, 600); ladderProp = null; }
       } else {
         setGnome(robot, face(sim.steps[i - 1], sim.steps[i]), 'walk');
         moveRobot(sim.steps[i], { ms: stepMs * 0.75 });
         await sleep(stepMs);
         if (sim.trails && tileAt(sim.steps[i]) === '&') sinkIn();
       }
+      if (plankProp && tu && sim.toolStep != null && i === sim.toolStep + 1) { // he is off the river: the plank floats away
+        plankProp.classList.remove('lay');
+        plankProp.classList.add('float');
+        dropProp(plankProp, 800);
+        plankProp = null;
+      }
       if (cancelled()) return false;
       if (sim.trails) shutGates(sim.steps[i]);
     }
     if (cancelled()) return false;
+    if (plankProp) { plankProp.classList.remove('lay'); plankProp.classList.add('float'); dropProp(plankProp, 800); plankProp = null; } // his moves ran out on the plank
     mark(sim.steps[last]);
     if (sim.result === 'lose') setGnome(robot, lastDir, 'idle');
     verdict();

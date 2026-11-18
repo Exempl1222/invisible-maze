@@ -34,6 +34,15 @@ const INTRO_NOTES = {
   'medium-06': 'Mud: stepping onto it costs him 2 moves.',
   'medium-11': 'Gate: he can only pass it the way its arrow points.',
 };
+const toolBadgeEl = $('tool-badge');
+const toolIconEl = $('tool-icon');
+const toolLineEl = $('tool-line');
+// Gnome tools (rules v5, parcel 8g): what he brought, shown before anything is placed.
+const TOOL_TEXT = {
+  ladder: ['ladder', 'He brought a ladder: he can climb one of your fences, once.'],
+  pickaxe: ['pickaxe', 'He brought a pickaxe: he can dig through one rock or berry bush, once.'],
+  plank: ['plank', 'He brought a plank: he can cross one river tile, once.'],
+};
 const controlsEl = $('controls');
 const goBtn = $('go');
 const clearBtn = $('clear');
@@ -143,6 +152,16 @@ function startGame({ kind, index, level, title }) {
   parEl.textContent = String(level.par);
   limitEl.textContent = String(level.moveLimit);
   movesLeftEl.textContent = String(level.moveLimit);
+  const tool = TOOL_TEXT[level.tool];
+  toolBadgeEl.hidden = !tool;
+  if (tool) {
+    toolIconEl.dataset.tool = level.tool;
+    toolLineEl.textContent = tool[1];
+    toolBadgeEl.setAttribute('aria-label', `Gnome's tool: ${tool[0]}`);
+  } else {
+    toolLineEl.textContent = '';
+    toolBadgeEl.removeAttribute('aria-label');
+  }
   resultEl.hidden = true;
   resultEl.innerHTML = '';
   controlsEl.hidden = false;
@@ -309,7 +328,8 @@ function finish(sim, walls) {
     resultEl.appendChild(actions);
     const lastLevel = g.kind === 'level' && g.index === levels.length - 1;
     // The last level of its group: the v4 lab levels and the v5 ones each end on "All lab levels"
-    const lastLab = g.kind === 'lab' && (g.index === labLevels.length - 1 || g.index === LAB_V4_COUNT - 1);
+    const next = labLevels[g.index + 1];
+    const lastLab = g.kind === 'lab' && (!next || g.index === LAB_V4_COUNT - 1 || !!next.tool !== !!labLevels[g.index].tool);
     if (g.kind === 'lab') focusTarget = lastLab ? button('All lab levels', true, toLab) : button('Next level', true, () => toLabLevel(g.index + 1));
     else if (lastLevel) focusTarget = button('All levels', true, toSelect);
     else focusTarget = button('Next level', true, () => toLevel(g.index + 1));

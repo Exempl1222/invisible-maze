@@ -31,7 +31,7 @@ The site goes live first and stays live. Each phase ships on its own, so there i
 | 8d | **Art + animation: Medium tiles** | Sprites from `build-sprites.mjs`, slide, sink and gate animations, reduced-motion fallbacks | Builder (Sonnet) | In review |
 | 8e | **Lab round 1** | Seven v5 Lab levels (`assets/levels/lab-v5.json`: ice x2, mud x2, gates x2, one mix) are in the Lab tab under "New tiles", ready for Eric to playtest. The full 5 per mechanic comes after his feedback | Eric + QA (Sonnet) | In review |
 | 8f | **Medium pack** | 20 levels 7x7 to the metrics: `assets/levels/medium.json` (Play levels 21 to 40), `node tools/build-medium.js` (frozen boards, seeded `--search`), `tools/medium.test.js` | Builder (Sonnet) | In review |
-| 8g | **Engine + UI: gnome tools** | Tool state in routing and solver, brute-force proof, tool badge, three animations | Builder (Sonnet), verified by Opus | Engine done; UI in progress |
+| 8g | **Engine + UI: gnome tools** | Tool state in routing and solver, brute-force proof, tool badge, three animations | Builder (Sonnet), verified by Opus | In review (engine and UI built; six tool levels in the v5 Lab, Lab 13 to 18) |
 | 8h | **Lab round 2 + Hard pack** | Tools playtested, then 20 levels 9x9 | Eric, then Builder | Not started |
 
 ## Why this order

@@ -5,7 +5,7 @@ Source of truth for the game's art. Pairs with `docs/GAME_SPEC.md` (rules). If t
 ## What's in the pack
 
 ```
-assets/sprites/            42 SVGs (41 sprites and icon-gnome.svg) + manifest.json (generated, don't hand-edit)
+assets/sprites/            47 SVGs (46 sprites and icon-gnome.svg) + manifest.json (generated, don't hand-edit)
 assets/js/sprites.js       loader: preload, inline copies, gnome state swap, one-shot helper
 assets/css/sprites.css     tile backgrounds, wall placement, gnome placement, teleport and goal animations
 tools/build-sprites.mjs    builds every sprite from one file. `node tools/build-sprites.mjs`
@@ -63,7 +63,8 @@ Driven by `trails` and `stuck` from `simulate()`; v4 levels never take these bra
 - **Ice:** a move that slides (its trail has more than one tile, or it lands on ice) is one continuous glide over the whole trail, `0.35 + 0.2 x tiles` step times, eased out. No walk cycle: the idle gnome leans into the slide (`.robot.skid`, tilt by direction) with five frost bits spraying behind him (`.frost`, white and ice with the outline, no glow). If he stops on ice a fence or obstacle stopped him: a squash and nudge (`.robot.bump`).
 - **Mud:** on arriving he sinks (`.robot.sink`: lower, squashed, clipped 10% from the tile's bottom so his boots go under). The stuck move wiggles (`.wiggle`) while a bubble grows and pops (`.mud-bubble`). On the next move he pulls free (`.pull`, a small upward hop).
 - **Gate:** the leaf (`.gate-leaf`) folds flat (`.cell.gate-open`) when the move onto the gate starts and swings shut after the move that takes him off it.
-- **Reduced motion:** the replay is skipped to its final frame (every passed tile still marked) and every animation above is `none` in CSS. The moves-left counter ticks once per move in the animated replay (a slide is 1, the stuck move is 1).
+- **Gnome tools** (`prop-*.svg`, static 64 x 64, animated by CSS in `sprites.css`; driven by `toolUse` and `toolStep`): props are drawn over the tiles, under the gnome, and removed when done. Ladder: set against the fence on his side (`.tool-prop.set`) on the prep move, he hops over it (`.robot.hop`), then it tips over and fades (`.tip`). Pickaxe (a scythe when the rock is a berry bush): three swings on the prep move (`.swing`), three chips fly (`.tool-chip`), the tile crumbles (`.cell.crumble`) and is pebbles from then on (`.cell.dug`, `tile-pebbles.svg`), then he steps on. Plank: drops across the river tile (`.lay`, turned to the crossing direction), he walks over, and it floats off (`.float`) once he is off it. The prep move is a stay-put move, so moves-left ticks once per move. Colours: ladder rails dark bark `#7b5434`; iron `#5f6f7a` (blue-grey, not stone grey); plank pale driftwood `#e3d2a8`. None uses hat red, timber, gold, teleporter glow or lime.
+- **Reduced motion:** the replay is skipped to its final frame (every passed tile still marked) and every animation above is `none` in CSS, and a dug rock shows as pebbles (cleared) with no prop drawn. The moves-left counter ticks once per move in the animated replay (a slide is 1, the stuck move is 1).
 
 ## Geometry (computed, not eyeballed)
 

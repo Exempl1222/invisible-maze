@@ -252,3 +252,69 @@
   .play-board .robot .frost, .mud-bubble { display: none; }
   .play-board .robot.sink, .play-board .robot.wiggle { clip-path: none; }
 }
+
+/* Gnome tools (parcel 8g). Props are sprites placed by board.js over the tiles (under the gnome); art is static, motion is here.
+   Ladder: set against the fence, tips over after the climb. Pickaxe or scythe: three swings, chips fly, the rock crumbles to pebbles.
+   Plank: drops across the river tile and floats off once he is across. Reduced motion never creates them (the replay jumps to the end). */
+.play-board .tool-prop {
+  position: absolute; display: block; pointer-events: none; z-index: 3;
+  background: center / contain no-repeat; transform: rotate(var(--lean, 0deg)); transform-origin: 50% 90%;
+}
+.play-board .tool-prop[data-prop="ladder"]  { background-image: url(../sprites/prop-ladder.svg); }
+.play-board .tool-prop[data-prop="pickaxe"] { background-image: url(../sprites/prop-pickaxe.svg); }
+.play-board .tool-prop[data-prop="scythe"]  { background-image: url(../sprites/prop-scythe.svg); }
+.play-board .tool-prop[data-prop="plank"]   { background-image: url(../sprites/prop-plank.svg); transform: rotate(var(--rot, 0deg)); transform-origin: 50% 50%; }
+.play-board .tool-prop.set   { animation: gsg-ladder-set var(--set-ms, 330ms) ease-out both; }
+@keyframes gsg-ladder-set {
+  0%   { transform: translateY(-40%) rotate(calc(var(--lean) * -3)) scale(.4); opacity: 0; }
+  70%  { transform: translateY(2%) rotate(calc(var(--lean) * 1.3)); opacity: 1; }
+  100% { transform: rotate(var(--lean)); opacity: 1; }
+}
+.play-board .tool-prop.tip   { animation: gsg-ladder-tip 560ms ease-in both; }
+@keyframes gsg-ladder-tip {
+  0%   { transform: rotate(var(--lean)); opacity: 1; }
+  100% { transform: translateY(8%) rotate(calc(var(--lean) * 6 + 24deg)); opacity: 0; }
+}
+.play-board .tool-prop.swing { transform-origin: 28% 80%; animation: gsg-swing var(--swing-ms, 170ms) ease-in-out 3 both; }
+@keyframes gsg-swing {
+  0%   { transform: rotate(-65deg); }
+  55%  { transform: rotate(20deg); }
+  100% { transform: rotate(-65deg); }
+}
+.play-board .tool-prop.lay   { animation: gsg-plank-lay var(--lay-ms, 280ms) ease-out both; }
+@keyframes gsg-plank-lay {
+  0%   { transform: translateY(-55%) rotate(calc(var(--rot) - 10deg)) scale(1.15); opacity: 0; }
+  100% { transform: rotate(var(--rot)); opacity: 1; }
+}
+.play-board .tool-prop.float { animation: gsg-plank-float 760ms ease-in both; }
+@keyframes gsg-plank-float {
+  0%   { transform: rotate(var(--rot)); opacity: 1; }
+  100% { transform: translate(35%, 45%) rotate(calc(var(--rot) + 16deg)); opacity: 0; }
+}
+.play-board .tool-chip {
+  position: absolute; left: 46%; top: 46%; width: 11%; height: 11%; box-sizing: border-box; display: block; pointer-events: none; z-index: 5;
+  background: #7c8588; border: 2px solid #3b2618; border-radius: 30%; opacity: 0;
+  animation: gsg-chip 520ms ease-out both;
+}
+@keyframes gsg-chip {
+  0%   { transform: translate(0, 0) rotate(0) scale(.4); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(160deg) scale(1); opacity: 0; }
+}
+.play-board .cell.crumble { animation: gsg-crumble 340ms ease-in both; }
+@keyframes gsg-crumble {
+  0%   { transform: none; filter: none; }
+  25%  { transform: scale(1.05) rotate(-2deg); }
+  50%  { transform: scale(.98) rotate(2deg); }
+  100% { transform: scale(.82); filter: brightness(1.15); opacity: .55; }
+}
+.play-board .cell.rock.dug, .play-board .cell.rock[data-v="2"].dug { background-image: url(../sprites/tile-pebbles.svg); }
+.play-board .robot.hop .gnome-sprite { animation: gsg-hop var(--hop-ms, 360ms) ease-in-out both; }
+@keyframes gsg-hop {
+  0%   { transform: none; }
+  50%  { transform: translateY(-34%); }
+  100% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .play-board .tool-prop, .play-board .tool-chip { display: none; animation: none; }
+  .play-board .cell.crumble, .play-board .robot.hop .gnome-sprite { animation: none; }
+}

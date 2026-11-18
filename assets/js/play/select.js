@@ -93,6 +93,9 @@ export function renderSelect(root, levels, { onPick, onMode }) {
 
 export const LAB_NOTE = 'Experiments: new rules are tried here before they reach the main game. These five levels introduced the current rules (their bridges predate the bridge fix).';
 
+export const LAB_TOOLS_TITLE = 'Gnome tools';
+export const LAB_TOOLS_NOTE = 'Rules v5, for the Hard tier. He brings one tool and uses it once, where it gives him a shorter way home: a ladder over one of your fences, a pickaxe through one rock, a plank over one river tile.';
+
 export const LAB_NEW_TITLE = 'New tiles: ice, mud, gates';
 export const LAB_NEW_NOTE = 'Rules v5, for the Medium tier. Ice: he slides until something stops him, and a fence across the slide stops him early. Mud: stepping in costs 2 moves. Gates: one way only, along the arrow.';
 
@@ -143,7 +146,24 @@ export function renderLab(root, levels, { onPick, onMode, failed = false, v4Coun
     root.appendChild(p);
     const g2 = document.createElement('div');
     g2.className = 'level-grid lab-grid lab-new-grid';
-    levels.slice(v4Count).forEach((level, k) => g2.appendChild(button(level, v4Count + k, 'lab-new-btn')));
+    levels.forEach((level, i) => { if (i >= v4Count && !level.tool) g2.appendChild(button(level, i, 'lab-new-btn')); });
     root.appendChild(g2);
+    if (levels.some((level) => level.tool)) {
+      // Gnome tools: a third group, same stepping stones.
+      const h3 = document.createElement('h2');
+      h3.className = 'group-title';
+      h3.id = 'lab-tools-title';
+      h3.textContent = LAB_TOOLS_TITLE;
+      root.appendChild(h3);
+      const p3 = document.createElement('p');
+      p3.className = 'lab-note';
+      p3.id = 'lab-tools-note';
+      p3.textContent = LAB_TOOLS_NOTE;
+      root.appendChild(p3);
+      const g3 = document.createElement('div');
+      g3.className = 'level-grid lab-grid lab-tools-grid';
+      levels.forEach((level, i) => { if (level.tool) g3.appendChild(button(level, i, 'lab-tool-btn')); });
+      root.appendChild(g3);
+    }
   }
 }

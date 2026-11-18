@@ -49,11 +49,17 @@
     <div id="select-view" hidden></div>
 
     <div id="game-view" class="game" hidden>
+      <div class="top">
       <div class="stats" aria-label="Level limits">
         <p class="stat"><span class="stat-label">Walls</span><strong id="walls-used">0 / 0</strong></p>
         <p class="stat"><span class="stat-label">Par</span><strong id="par">0</strong></p>
         <p class="stat"><span class="stat-label">Move limit</span><strong id="move-limit">0</strong></p>
         <p class="stat"><span class="stat-label">Moves left</span><strong id="moves-left">0</strong></p>
+      </div>
+      <div class="tool-badge" id="tool-badge" role="group" hidden>
+        <span class="tool-icon" id="tool-icon" aria-hidden="true"></span>
+        <p class="tool-text"><strong id="tool-line"></strong> <span class="tool-sub">He only uses it when it saves him moves.</span></p>
+      </div>
       </div>
 
       <div class="board play-board" id="board"></div>

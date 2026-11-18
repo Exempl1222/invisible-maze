@@ -57,7 +57,7 @@ test('lab tab: the five v4 levels, then the new tiles under their own heading', 
   await page.goto('/play/?lab');
   await expect(page.locator('#select-view .level-btn')).toHaveCount(V4);
   await expect(page.locator('#lab-new-title')).toHaveText('New tiles: ice, mud, gates');
-  await expect(page.locator('#select-view .lab-new-btn')).toHaveCount(levels.length);
+  await expect(page.locator('#select-view .lab-new-btn')).toHaveCount(levels.filter((l) => !l.tool).length); // the tool levels sit under their own heading (tools.spec.js)
   for (let i = 0; i < levels.length; i++) {
     await expect(page.getByRole('button', { name: `Lab ${V4 + i + 1}, not played` })).toBeVisible();
   }
@@ -113,8 +113,8 @@ for (let k = 0; k < 7; k++) {
     await expect(result(page).getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
     const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), PROGRESS);
     expect(saved.best[lv.id]).toBe(3);
-    // the last v5 level ends on "All lab levels", the others on "Next level"
-    await expect(result(page).getByRole('button', { name: k === levels.length - 1 ? 'All lab levels' : 'Next level' })).toBeVisible();
+    // the last new-tiles level (the tool levels follow under their own heading) ends on "All lab levels", the others on "Next level"
+    await expect(result(page).getByRole('button', { name: k === 6 ? 'All lab levels' : 'Next level' })).toBeVisible();
   });
 }
 
