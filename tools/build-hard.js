@@ -176,10 +176,10 @@ function terrain(rng, slot) {
     // a river running top to bottom with 1 or 2 bridges; start left of it, house right of it
     let rx = rng.int(3, 5);
     for (let y = 0; y < N; y++) {
-      if (y > 0 && rng.chance(0.3)) { const nx = Math.max(2, Math.min(N - 3, rx + (rng.chance(0.5) ? 1 : -1))); g[y - 1][nx] = '~'; rx = nx; }
+      if (y > 0 && rng.chance(0.5)) { const nx = Math.max(2, Math.min(N - 3, rx + (rng.chance(0.5) ? 1 : -1))); g[y - 1][nx] = '~'; rx = nx; }
       g[y][rx] = '~';
     }
-    for (let k = rng.int(2, 5); k > 0; k--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
+    for (let k = rng.int(4, 12); k > 0; k--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
     const spots = rng.shuffle(cells('~').filter(([x, y]) => g[y][x - 1] && g[y][x - 1] !== '~' && g[y][x + 1] && g[y][x + 1] !== '~' && g[y - 1]?.[x] === '~' && g[y + 1]?.[x] === '~'));
     const want = rng.int(1, 2), used = [];
     for (const [x, y] of spots) {
@@ -193,6 +193,19 @@ function terrain(rng, slot) {
     const rxs = (y) => g[y].map((c, x) => (c === '~' || c === '=' ? x : -1)).filter((x) => x >= 0);
     const left = cells().filter(([x, y]) => x < Math.min(...rxs(y)));
     const right = cells().filter(([x, y]) => x > Math.max(...rxs(y)));
+    if (!left.length || !right.length) return null;
+    start = rng.pick(left); beacon = rng.pick(right);
+  } else if (slot.tool === 'pickaxe') {
+    // one or two full rock walls (one tile thick) across the board, each with a single gap near an end: the way round is long, the pickaxe cuts through
+    const nw = rng.int(1, 2);
+    const cols = nw === 1 ? [rng.int(3, 5)] : [rng.int(2, 3), rng.int(5, 6)];
+    cols.forEach((c, k) => {
+      const gap = (k + rng.int(0, 1)) % 2 === 0 ? rng.int(0, 1) : rng.int(N - 2, N - 1);
+      for (let y = 0; y < N; y++) if (y !== gap) g[y][c] = '#';
+    });
+    for (let r = rng.int(0, 5); r > 0; r--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
+    const left = cells().filter(([x]) => x < cols[0]);
+    const right = cells().filter(([x]) => x > cols[cols.length - 1]);
     if (!left.length || !right.length) return null;
     start = rng.pick(left); beacon = rng.pick(right);
   } else {
@@ -270,10 +283,15 @@ function candidate(slot, rng, tag, F) {
   if (slot.tool !== 'ladder' && !(freeCost < plain.positions.length - 1)) return null; // the tool must matter with no fences
   if (freeCost < 6) return null;
   F('route');
-  const moveLimit = freeCost + rng.int(5, slot.par <= 5 ? 7 : 10);
-  const raw = rawOf(tag, tiles, slot.tool, moveLimit, slot.par + 2);
-  const lv = parseLevel(raw);
-  const s = solve(lv, { maxPar: slot.par, maxNodes: SEARCH_NODES });
+  // par only rises with the move limit: walk the slack up from 5 until par reaches the wanted value (null: it is already higher, or out of work)
+  let s = null, raw, lv, moveLimit;
+  for (let slack = 5; slack <= 10; slack++) {
+    moveLimit = freeCost + slack;
+    raw = rawOf(tag, tiles, slot.tool, moveLimit, slot.par + 2);
+    lv = parseLevel(raw);
+    s = solve(lv, { maxPar: slot.par, maxNodes: SEARCH_NODES });
+    if (!s || s.par === slot.par) break;
+  }
   if (!s || s.par !== slot.par) return null;
   F('par');
   const answer = placeableOrder(lv, s.answer);
@@ -347,6 +365,26 @@ async function search(nums, log) {
 
 // BOARDS-BEGIN (frozen search results; edit only by pasting --search output; the comment gives par, parAnswers and tool step)
 export const BOARDS = [
+  null, // 41
+  null, // 42
+  null, // 43
+  null, // 44
+  null, // 45
+  { moveLimit: 14, tiles: ['.........', '.........', '..B.#....', '.########', '........R', '.......#.', '.#.......', '.....#...', '#........'] }, // 46: par 4 parAnswers 10 toolStep 14
+  null, // 47
+  null, // 48
+  null, // 49
+  null, // 50
+  { moveLimit: 14, tiles: ['...~.....', '.#.=.....', '..B~.....', '..#~.....', '..~~.....', '..~......', '..~...R..', '..=......', '..~......'] }, // 51: par 5 parAnswers 1 toolStep 5
+  null, // 52
+  null, // 53
+  null, // 54
+  null, // 55
+  null, // 56
+  null, // 57
+  null, // 58
+  null, // 59
+  null, // 60
 ];
 // BOARDS-END
 
