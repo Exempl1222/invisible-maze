@@ -380,7 +380,7 @@ export const BOARDS = [
   null, // 53
   null, // 54
   null, // 55
-  null, // 56
+  { moveLimit: 12, tiles: ['....#...*', '.B...##.*', '#...*...*', '..#.*...*', '..#.*....', '....*...#', '.........', '.........', '.....R...'] }, // 56: par 5 parAnswers 2 toolStep 2
   null, // 57
   null, // 58
   null, // 59
