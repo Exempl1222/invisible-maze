@@ -13,6 +13,9 @@
 // the current set S but none of those lines, the same route survives under W (a new fence off the
 // route changes none of its moves, and the fences that stop its slides are still there), so W
 // would not win. The v4 side cap still applies (a set over the cap has no legal superset).
+// Only ice breaks monotonicity: on a v5 board with no ice tile (mud, gates, teleports and the gnome
+// tools all only remove or lengthen options when a fence is added) the v4 facts hold again, so
+// `monotone` boards get the cut-state prune and the packing bound back (tools-brute and v5-brute check it).
 //
 // A wall set wins only if it leaves the robot a route AND that route is longer than the move
 // limit (rules v3.1: cutting every route is illegal). Key facts:
@@ -91,8 +94,11 @@ function setup(level) {
       cnt.beacon -= (touch[i] >> 1) & 1;
     }
   };
-  return { buildable, pool, take, drop };
+  const monotone = level.rules !== 'v5' || !level.grid.some((row) => row.includes('*'));
+  return { buildable, pool, take, drop, monotone };
 }
+/** Dead end on a monotone board: no tool-free route, and more fences can never bring one back. */
+const deadCut = (route) => route === null || route.toolFreeRoute === false;
 
 /**
  * Rules v5: the lines to branch on. A route may cross a line twice; a cut board allows any line.
@@ -124,7 +130,7 @@ export function solve(level, opts = {}) {
   if (opts.exactPar !== undefined && (!Number.isInteger(opts.exactPar) || opts.exactPar < 0)) {
     throw new Error(`exactPar must be a non-negative integer, got ${opts.exactPar}`);
   }
-  const { buildable, pool, take, drop } = setup(level);
+  const { buildable, pool, take, drop, monotone } = setup(level);
   const v5 = level.rules === 'v5';
   const limit = Math.min(pool.length, opts.exactPar ?? opts.maxPar ?? Infinity);
   const mask = new Uint8Array(level.size * level.size * 2);
@@ -138,10 +144,10 @@ export function solve(level, opts = {}) {
   function dfs(rem) {
     if (++nodes > maxNodes) throw OUT_OF_WORK;
     const route = routeWithMask(level, mask);
-    if (route === null && !v5) return false; // every route cut: illegal, and more walls can't undo it
+    if (monotone && deadCut(route)) return false; // every route cut: illegal, and more walls can't undo it
     if (route !== null && isWin(level, route)) return true;
     if (rem === 0) return false;
-    if (!v5 && packingBound(level, mask, buildable, rem) > rem) return false; // can't be blocked in the walls left
+    if (monotone && packingBound(level, mask, buildable, rem) > rem) return false; // can't be blocked in the walls left
     const key = chosen.slice().sort((a, b) => a - b).join(',');
     if (seen.has(key)) return false;
     seen.add(key);
@@ -182,7 +188,7 @@ export function countAnswers(level, k, cap = 50, opts = {}) {
   const maxNodes = opts.maxNodes ?? Infinity; // optional deterministic work budget (search states); null result when exceeded
   let nodes = 0;
   const OUT_OF_WORK = Symbol('out of work');
-  const { buildable, pool: all, take, drop } = setup(level);
+  const { buildable, pool: all, take, drop, monotone } = setup(level);
   const v5 = level.rules === 'v5';
   const mask = new Uint8Array(level.size * level.size * 2);
   const chosen = [];
@@ -221,7 +227,7 @@ export function countAnswers(level, k, cap = 50, opts = {}) {
   function dfs() {
     if (++nodes > maxNodes) throw OUT_OF_WORK;
     const route = routeWithMask(level, mask);
-    if (route === null && !v5) return false; // dead end: cut off, and more walls can't reconnect
+    if (monotone && deadCut(route)) return false; // dead end: cut off, and more walls can't reconnect
     if (route !== null && isWin(level, route)) {
       if (chosen.length === k) return addFound();
       if (v5) {
@@ -233,7 +239,7 @@ export function countAnswers(level, k, cap = 50, opts = {}) {
       return fill(0, k - chosen.length, pool);
     }
     if (chosen.length === k) return false;
-    if (!v5 && packingBound(level, mask, buildable, k - chosen.length) > k - chosen.length) return false;
+    if (monotone && packingBound(level, mask, buildable, k - chosen.length) > k - chosen.length) return false;
     const key = chosen.slice().sort((a, b) => a - b).join(',');
     if (seen.has(key)) return false;
     seen.add(key);
