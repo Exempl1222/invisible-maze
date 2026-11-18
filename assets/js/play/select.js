@@ -6,7 +6,7 @@ import { sprite } from '../sprites.js';
 
 function groupFor(level) {
   if (level.size === 5) return 'Easy \u00b7 5x5';
-  return level.size === 9 ? 'The Wild Wood \u00b7 9x9' : 'Medium \u00b7 7x7';
+  return level.size === 9 ? 'Hard \u00b7 9x9' : 'Medium \u00b7 7x7';
 }
 
 /** Tabs shared by the select screens. `current` is "levels", "daily" or "lab". */
