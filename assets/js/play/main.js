@@ -253,7 +253,8 @@ async function run() {
   setStatus('The gnome is on the move.');
 
   const done = await g.board.play(sim, {
-    stepMs: STEP_MS, // reduced motion still steps tile by tile; the CSS drops the glide and flourishes
+    stepMs: STEP_MS,
+    instant: reducedMotion(),
     cancelled,
     onMove: (i) => { movesLeftEl.textContent = String(g.level.moveLimit - i); },
   });

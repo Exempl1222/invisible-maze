@@ -960,6 +960,20 @@ test('the countdown catches up when the tab becomes visible again', async ({ pag
   await expect(page.locator('#countdown')).toHaveText('Next gnome in 4h 0m');
 });
 
+test('with reduced motion the gnome still walks tile by tile (he does not jump to the end)', async ({ page }) => {
+  await openDay(page);
+  await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+  await tryBtn(page).click();
+  const seen = new Set();
+  for (let i = 0; i < 12; i++) {
+    seen.add(await page.locator('#board .robot').evaluate((r) => `${r.dataset.x},${r.dataset.y}`));
+    await page.clock.runFor(220);
+  }
+  expect(seen.size).toBeGreaterThan(3);
+  await page.clock.runFor(8000);
+  await settle(page);
+});
+
 test('tapping the wordmark goes back to the home page', async ({ page }) => {
   await openDay(page);
   await page.locator('#wordmark').click();
