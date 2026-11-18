@@ -368,8 +368,8 @@ async function search(nums, log) {
 // BOARDS-BEGIN (frozen search results; edit only by pasting --search output; the comment gives par, parAnswers and tool step)
 export const BOARDS = [
   { moveLimit: 14, tiles: ['.........', '.........', '#.R......', '.........', '.........', '#........', '####.##.#', '.........', '....B....'] }, // 41: par 4 parAnswers 7 toolStep 2
-  null, // 42
-  null, // 43
+  { moveLimit: 14, tiles: ['R......#.', '.........', '...#.....', '##...####', '.........', '#..######', '#..B#..#.', '.#.......', '##..#...#'] }, // 42: par 4 parAnswers 4 toolStep 12
+  { moveLimit: 13, tiles: ['#.......#', '#...#...#', '.#.....R.', '####.##.#', '........#', '#........', '......#..', '#...#....', '..#..B..#'] }, // 43: par 5 parAnswers 13 toolStep 8
   null, // 44
   null, // 45
   { moveLimit: 14, tiles: ['.........', '.........', '..B.#....', '.########', '........R', '.......#.', '.#.......', '.....#...', '#........'] }, // 46: par 4 parAnswers 10 toolStep 14
