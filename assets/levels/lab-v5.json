@@ -222,6 +222,210 @@
      "R"
     ]
    ]
+  },
+  {
+   "id": "lab5-08",
+   "size": 5,
+   "tiles": [
+    "...#.",
+    ".#...",
+    "....R",
+    "B#...",
+    "....."
+   ],
+   "rules": "v5",
+   "moveLimit": 7,
+   "wallBudget": 5,
+   "tool": "ladder",
+   "par": 3,
+   "parAnswers": 18,
+   "answer": [
+    [
+     1,
+     2,
+     "R"
+    ],
+    [
+     3,
+     2,
+     "R"
+    ],
+    [
+     4,
+     2,
+     "D"
+    ]
+   ]
+  },
+  {
+   "id": "lab5-09",
+   "size": 5,
+   "tiles": [
+    "....R",
+    "..#..",
+    "..##.",
+    "..B..",
+    ".#..."
+   ],
+   "rules": "v5",
+   "moveLimit": 7,
+   "wallBudget": 5,
+   "tool": "ladder",
+   "par": 3,
+   "parAnswers": 38,
+   "answer": [
+    [
+     1,
+     0,
+     "D"
+    ],
+    [
+     4,
+     0,
+     "D"
+    ],
+    [
+     4,
+     1,
+     "D"
+    ]
+   ]
+  },
+  {
+   "id": "lab5-10",
+   "size": 5,
+   "tiles": [
+    "...R.",
+    "....#",
+    "#B#..",
+    ".....",
+    "...#."
+   ],
+   "rules": "v5",
+   "moveLimit": 6,
+   "wallBudget": 5,
+   "tool": "pickaxe",
+   "par": 3,
+   "parAnswers": 1,
+   "answer": [
+    [
+     2,
+     0,
+     "D"
+    ],
+    [
+     3,
+     0,
+     "D"
+    ],
+    [
+     1,
+     1,
+     "D"
+    ]
+   ]
+  },
+  {
+   "id": "lab5-11",
+   "size": 5,
+   "tiles": [
+    "...R.",
+    ".#...",
+    "#....",
+    "..#.#",
+    "..B.."
+   ],
+   "rules": "v5",
+   "moveLimit": 7,
+   "wallBudget": 5,
+   "tool": "pickaxe",
+   "par": 3,
+   "parAnswers": 12,
+   "answer": [
+    [
+     2,
+     0,
+     "R"
+    ],
+    [
+     3,
+     0,
+     "D"
+    ],
+    [
+     3,
+     2,
+     "D"
+    ]
+   ]
+  },
+  {
+   "id": "lab5-12",
+   "size": 5,
+   "tiles": [
+    "#..~.",
+    "B..=.",
+    "...~R",
+    "...~.",
+    "...~#"
+   ],
+   "rules": "v5",
+   "moveLimit": 7,
+   "wallBudget": 5,
+   "tool": "plank",
+   "par": 3,
+   "parAnswers": 1,
+   "answer": [
+    [
+     0,
+     1,
+     "R"
+    ],
+    [
+     0,
+     2,
+     "R"
+    ],
+    [
+     0,
+     3,
+     "R"
+    ]
+   ]
+  },
+  {
+   "id": "lab5-13",
+   "size": 5,
+   "tiles": [
+    ".~...",
+    ".~...",
+    ".~...",
+    "B~...",
+    ".=.R."
+   ],
+   "rules": "v5",
+   "moveLimit": 7,
+   "wallBudget": 5,
+   "tool": "plank",
+   "par": 3,
+   "parAnswers": 4,
+   "answer": [
+    [
+     3,
+     3,
+     "R"
+    ],
+    [
+     3,
+     3,
+     "D"
+    ],
+    [
+     2,
+     4,
+     "R"
+    ]
+   ]
   }
  ]
 }

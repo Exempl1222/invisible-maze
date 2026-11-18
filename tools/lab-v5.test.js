@@ -12,16 +12,16 @@ const MECH = { ice: '*', mud: '&', gate: '><^v' };
 /** Which of ice, mud, gate a board uses. */
 const mechsOf = (raw) => Object.keys(MECH).filter((m) => [...MECH[m]].some((c) => raw.tiles.join('').includes(c)));
 
-test('lab-v5: shape, 7 levels lab5-01 to lab5-07, all rules v5, 5x5 or 7x7, boards differ', () => {
+test('lab-v5: shape, 13 levels lab5-01 to lab5-13, all rules v5, 5x5 or 7x7, boards differ', () => {
   assert.equal(lab.id, 'lab-v5');
   assert.equal(lab.rules, 'v5');
-  assert.equal(lab.levels.length, 7);
+  assert.equal(lab.levels.length, 13);
   lab.levels.forEach((l, i) => {
-    assert.equal(l.id, `lab5-0${i + 1}`);
+    assert.equal(l.id, `lab5-${String(i + 1).padStart(2, '0')}`);
     assert.equal(l.rules, 'v5', l.id);
     assert.ok(l.size === 5 || l.size === 7, `${l.id} size ${l.size}`);
   });
-  assert.equal(new Set(lab.levels.map((l) => l.tiles.join('/'))).size, 7, 'all boards differ');
+  assert.equal(new Set(lab.levels.map((l) => l.tiles.join('/'))).size, 13, 'all boards differ');
 });
 
 test('lab-v5: ice x2, mud x2, gates x2, then one mix', () => {
@@ -30,6 +30,28 @@ test('lab-v5: ice x2, mud x2, gates x2, then one mix', () => {
   assert.deepEqual(kinds.slice(2, 4), ['mud', 'mud']);
   assert.deepEqual(kinds.slice(4, 6), ['gate', 'gate']);
   assert.ok(mechsOf(lab.levels[6]).length >= 2, `the last level mixes: ${kinds[6]}`);
+});
+
+test('lab-v5: then six tool levels: ladder x2, pickaxe x2, plank x2, none with new tiles', () => {
+  assert.deepEqual(lab.levels.slice(7).map((l) => l.tool), ['ladder', 'ladder', 'pickaxe', 'pickaxe', 'plank', 'plank']);
+  assert.deepEqual(lab.levels.slice(0, 7).map((l) => l.tool), Array(7).fill(undefined));
+  for (const l of lab.levels.slice(7)) assert.equal(mechsOf(l).length, 0, l.id);
+});
+
+test('lab-v5: the tool is load-bearing, is used when the stored answer is played, and is not needed to get home', () => {
+  for (const raw of lab.levels.filter((l) => l.tool)) {
+    const lv = parseLevel(raw);
+    const { tool: _t, ...noTool } = raw;
+    const nl = parseLevel(noTool);
+    const s = solve(nl, { maxPar: raw.par + 1 });
+    assert.ok(!s || s.par !== raw.par || simulate(nl, raw.answer).result !== 'win', `${raw.id}: the ${raw.tool} is not load-bearing`);
+    const sim = simulate(lv, raw.answer);
+    assert.equal(sim.result, 'win', raw.id);
+    assert.notEqual(sim.toolStep, null, `${raw.id}: the gnome uses his ${raw.tool} on the stored answer`);
+    assert.equal(sim.toolUse.tool, raw.tool, raw.id);
+    assert.notEqual(findPath(lv, []).toolFreeRoute, false, `${raw.id}: he gets home without the tool`);
+    assert.ok(raw.par >= 2 && raw.par <= 4, raw.id);
+  }
 });
 
 test('lab-v5: every level is consistent with the engine (par 2 to 4, budget par + 2, answer wins, the gnome wins with no fences)', () => {
@@ -96,7 +118,7 @@ test('lab-v5: at least one ice level has a fence across a slide in its answer', 
 });
 
 test('lab-v5: the shipped file is exactly what the build script makes (no hand edits)', () => {
-  assert.equal(BOARDS.length, 7);
+  assert.equal(BOARDS.length, 13);
   BOARDS.forEach((spec, i) => {
     const { level } = buildLevel(spec);
     assert.deepEqual(level, lab.levels[i], `${spec.id} matches the shipped file`);

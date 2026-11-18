@@ -37,6 +37,19 @@ export const BOARDS = [
   { id: 'lab5-06', mech: ['gate'], moveLimit: 8, tiles: ['#...#', '.^.B.', '..^..', '.....', '.R..#'] },
   // Mix: ice, mud and a gate on one board; the answer's route goes through the gate.
   { id: 'lab5-07', mech: ['ice', 'mud', 'gate'], moveLimit: 12, tiles: ['.>.B.', '*.##.', '.&..#', '....R', '.#***'] },
+  // Gnome tools (parcel 8g, "Gnome tools (Hard)" in the spec): he brings one tool and uses it once, where it gives him a shorter way home.
+  // Ladder 1: fence the way round and he props his ladder on a fence he meets.
+  { id: 'lab5-08', mech: [], tool: 'ladder', moveLimit: 7, tiles: ['...#.', '.#...', '....R', 'B#...', '.....'] },
+  // Ladder 2: three fences, and he climbs one of them.
+  { id: 'lab5-09', mech: [], tool: 'ladder', moveLimit: 7, tiles: ['....R', '..#..', '..##.', '..B..', '.#...'] },
+  // Pickaxe 1: a rock across his way; the fences leave the rock as his shortest way home.
+  { id: 'lab5-10', mech: [], tool: 'pickaxe', moveLimit: 6, tiles: ['...R.', '....#', '#B#..', '.....', '...#.'] },
+  // Pickaxe 2: a wall of rocks; he digs through one.
+  { id: 'lab5-11', mech: [], tool: 'pickaxe', moveLimit: 7, tiles: ['...R.', '.#...', '#....', '..#.#', '..B..'] },
+  // Plank 1: a river with one bridge; fence the bridge end and he lays his plank across instead.
+  { id: 'lab5-12', mech: [], tool: 'plank', moveLimit: 7, tiles: ['#..~.', 'B..=.', '...~R', '...~.', '...~#'] },
+  // Plank 2: a river down the left, one bridge near the bottom.
+  { id: 'lab5-13', mech: [], tool: 'plank', moveLimit: 7, tiles: ['.~...', '.~...', '.~...', 'B~...', '.=.R.'] },
 ];
 
 const SWAP = { '*': '.', '&': '.', '>': '.', '<': '.', '^': '.', v: '.' };
@@ -45,6 +58,8 @@ const MECH_TILES = { ice: ['*'], mud: ['&'], gate: ['>', '<', '^', 'v'] };
 export const makeRaw = (id, tiles, moveLimit, extra = {}) => ({
   id, size: tiles.length, tiles, rules: 'v5', moveLimit, wallBudget: 9, ...extra,
 });
+/** The extra fields of a spec: its tool, if it has one (existing levels have none, so their output is unchanged). */
+const toolOf = (spec) => (spec.tool ? { tool: spec.tool } : {});
 
 /** Does this wall set win (the gnome's route is longer than his moves, and he still has a route)? False if it is illegal. */
 function wins(raw, walls) {
@@ -93,12 +108,12 @@ export function slideLinesInAnswer(level, answer) {
  * { id, mech, tiles, moveLimit }.
  */
 export function buildLevel(spec) {
-  const probe = parseLevel(makeRaw(spec.id, spec.tiles, spec.moveLimit));
+  const probe = parseLevel(makeRaw(spec.id, spec.tiles, spec.moveLimit, toolOf(spec)));
   const s = solve(probe, { maxPar: 5 });
   if (!s) throw new Error(`${spec.id}: no wall set wins`);
   const par = s.par;
   if (par < 2 || par > 4) throw new Error(`${spec.id}: par ${par} is outside 2 to 4`);
-  const raw = makeRaw(spec.id, spec.tiles, spec.moveLimit, { wallBudget: par + 2 });
+  const raw = makeRaw(spec.id, spec.tiles, spec.moveLimit, { wallBudget: par + 2, ...toolOf(spec) });
   const level = parseLevel(raw);
   const parAnswers = countAnswers(level, par, 50);
   // Prefer an answer that can be placed in some order; the stored order is the order that works.
@@ -129,6 +144,22 @@ export function buildLevel(spec) {
     }
     loadBearing[mech] = parChanged || !wins(swapRaw, answer);
     if (!loadBearing[mech]) throw new Error(`${spec.id}: ${mech} is not load-bearing (the answer still wins on grass and par is the same)`);
+  }
+  // A tool level: the tool is load-bearing (without it par changes or the stored answer stops winning), the gnome is seen
+  // using it when the stored answer is played, and he gets home without it (no tool-only level, spec).
+  if (spec.tool) {
+    const { tool: _t, ...noTool } = raw;
+    let parChanged;
+    try {
+      const sw = solve(parseLevel(noTool), { maxPar: par + 1 });
+      parChanged = !sw || sw.par !== par;
+    } catch {
+      parChanged = true;
+    }
+    loadBearing[spec.tool] = parChanged || !wins(noTool, answer);
+    if (!loadBearing[spec.tool]) throw new Error(`${spec.id}: the ${spec.tool} is not load-bearing`);
+    if (simulate(level, answer).toolStep == null) throw new Error(`${spec.id}: the stored answer never makes him use the ${spec.tool}`);
+    if (findPath(level, []).toolFreeRoute === false) throw new Error(`${spec.id}: he needs the ${spec.tool} to get home at all`);
   }
   // A gate level must show the gate in use: the stored answer's route passes through a gate (QA 8d F1).
   if (spec.mech.includes('gate') && !simulate(level, answer).steps.some(([x, y]) => MECH_TILES.gate.includes(level.tile(x, y)))) {
