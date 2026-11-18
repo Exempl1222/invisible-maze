@@ -44,7 +44,7 @@ const GROUPS = [[0, 4], [5, 9], [10, 14], [15, 19]];
 const D = { ice: [3, 8], mud: [2, 5], gate: [1, 3] };
 const idOf = (i) => `hard-${String(i + 1).padStart(2, '0')}`;
 
-/** Two boards of one group that would feel like the same level: under 30 of 81 tiles differ in any of the 8 turns and flips (gate arrows count as one kind). */
+/** Two boards of one group that would feel like the same level: under 24 of 81 tiles differ in any of the 8 turns and flips (gate arrows count as one kind). */
 export function lookAlike(a, b) {
   const grid = (t) => t.map((r) => [...r].map((c) => ('><^v'.includes(c) ? 'g' : c)));
   const turn = (g) => g[0].map((_, x) => g.map((row) => row[x]).reverse());
@@ -52,7 +52,7 @@ export function lookAlike(a, b) {
   let g = grid(a);
   const ref = grid(b).flat();
   for (let i = 0; i < 4; i++, g = turn(g)) {
-    for (const v of [g, flip(g)]) if (v.flat().filter((c, k) => c !== ref[k]).length < 30) return true;
+    for (const v of [g, flip(g)]) if (v.flat().filter((c, k) => c !== ref[k]).length < 24) return true;
   }
   return false;
 }
@@ -209,16 +209,18 @@ function terrain(rng, slot) {
     if (!left.length || !right.length) return null;
     start = rng.pick(left); beacon = rng.pick(right);
   } else {
-    const walls = dense ? rng.int(2, 3) : rng.int(0, 2);
-    for (let w = 0; w < walls; w++) {
-      const vert = rng.chance(0.5), at = rng.int(2, N - 3);
-      const gap = rng.shuffle([...Array(N).keys()]).slice(0, rng.int(1, 2));
-      for (let k = 0; k < N; k++) if (!gap.includes(k) && g[vert ? k : at][vert ? at : k] === '.') g[vert ? k : at][vert ? at : k] = '#';
-    }
-    for (let r = dense ? rng.int(6, 14) : rng.int(2, 8); r > 0; r--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
-    const free = cells();
-    if (free.length < 30) return null;
-    [start, beacon] = rng.shuffle(free);
+    // ladder: one or two full rock walls with two or three gaps each, in open grass; start and house on opposite sides
+    const nw = rng.int(1, 2);
+    const cols = nw === 1 ? [rng.int(3, 5)] : [rng.int(2, 3), rng.int(5, 6)];
+    cols.forEach((c) => {
+      const gaps = rng.shuffle([...Array(N).keys()]).slice(0, rng.int(2, 3));
+      for (let y = 0; y < N; y++) if (!gaps.includes(y)) g[y][c] = '#';
+    });
+    for (let r = rng.int(6, 13); r > 0; r--) { const [x, y] = rng.pick(cells()); g[y][x] = '#'; }
+    const left = cells().filter(([x]) => x < cols[0]);
+    const right = cells().filter(([x]) => x > cols[cols.length - 1]);
+    if (!left.length || !right.length) return null;
+    start = rng.pick(left); beacon = rng.pick(right);
   }
   if (Math.abs(start[0] - beacon[0]) + Math.abs(start[1] - beacon[1]) < 8) return null;
   g[start[1]][start[0]] = 'R';
@@ -301,7 +303,7 @@ function candidate(slot, rng, tag, F) {
   if (slot.mech.includes('gate') && !visited({ ...raw, answer }).some((c) => '><^v'.includes(c))) return null;
   if (slot.mech.includes('ice') && !slidesInAnswer({ ...raw, answer })) return null;
   F('placeable_tooluse');
-  const parAnswers = countAnswers(lv, s.par, 50, { maxNodes: SEARCH_NODES });
+  const parAnswers = countAnswers(lv, s.par, 50, { maxNodes: SEARCH_NODES * 4 });
   if (parAnswers === null || parAnswers > parCap(slot.index)) return null;
   F('cap');
   const d = toolDecidesPar(raw, s.par, SEARCH_NODES);
