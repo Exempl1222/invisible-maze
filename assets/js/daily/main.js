@@ -88,17 +88,6 @@ let playToken = 0; // bumps whenever the board replays, so a walk cut short by a
 
 /* ---------- page chrome ---------- */
 
-function setupWordmark() {
-  if (!APP_LINK.enabled) return;
-  const old = $('wordmark');
-  const a = document.createElement('a');
-  a.className = old.className;
-  a.id = old.id;
-  a.href = APP_LINK.href;
-  a.append(...old.childNodes);
-  old.replaceWith(a);
-}
-
 function setupTabs() {
   for (const m of MODES) {
     const a = $(`tab-${m}`);
@@ -263,7 +252,6 @@ async function boot() {
 
   const asked = query.get('mode');
   mode = MODES.includes(asked) ? asked : MODES.includes(lastMode()) ? lastMode() : DEFAULT_MODE;
-  setupWordmark();
   setupTabs();
   dateLineEl.textContent = formatDaily(date);
 
@@ -534,8 +522,7 @@ async function run() {
   setStatus('The gnome is on the move.');
 
   await g.board.play(sim, {
-    stepMs: STEP_MS,
-    instant: reducedMotion(),
+    stepMs: STEP_MS, // reduced motion still steps tile by tile; the CSS drops the glide and flourishes
     onMove: (i) => { movesLeftEl.textContent = String(g.level.moveLimit - i); },
   });
 
@@ -680,7 +667,7 @@ async function toggleSolution(button, note) {
   g.solution = !g.solution;
   board.resetRun();
   board.clearWalls({ all: true });
-  const instant = g.solution ? reducedMotion() : true;
+  const instant = !g.solution; // hiding the solution jumps back; showing it walks (stepped under reduced motion)
   let walls;
   if (g.solution) {
     walls = g.answer.map((w) => [...w]);

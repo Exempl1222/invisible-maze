@@ -35,13 +35,13 @@ The daily as its own page, so it can ship alone with a link to the full game lat
 
 ### See the optimal solution
 - Only once the day is done (Submitted or all 5 tries used), also on archive days. Button `See the optimal solution` under the score, toggling to `Hide the solution`.
-- Solves in the browser (above), scrolls the board into view, draws the par answer in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk (respecting reduced motion). Hiding puts the player's own fences back. It changes nothing saved. This is where par is revealed, and only here.
+- Solves in the browser (above), scrolls the board into view, draws the par answer in the hint (gold ribbon) style over an otherwise empty board, says `Par N: one way to fence him in with N fences.` and replays the gnome's walk (stepped, no flourishes, under reduced motion). Hiding puts the player's own fences back. It changes nothing saved. This is where par is revealed, and only here.
 
 ### Where it lives, dates, archive
 - Page: `daily/index.html`, served at `/daily/` on gnomesweetgnome.app; the shared link. Code in `assets/js/daily/`. It reuses the engine (`src/game/`), `assets/js/play/board.js`, `lines.js`, `icons.js`, `daily.js` and `assets/js/sprites.js`, and must not import `assets/js/play/main.js` or `storage.js`.
 - No query: plays the player's **local** date (today). `?date=YYYY-MM-DD` is the **archive**: today minus 1 to minus 29 plays for real and is saved (today's date is the same as no query). A future date shows `Not ready yet. This gnome is still packing.` with a button to today; older than the archive, or not a real date, shows `That day is out of the archive.`; outside the batch shows `The daily is taking a break.`
 - **Archive dialog:** the last 30 days (today plus 29), newest first, today marked; each row shows `#N`, the date and both scores (`Easy 88 · Hard -`). Days before the batch start are left out.
-- Header: wordmark (a link to the full game only when `APP_LINK.enabled`, which is `false`), `?` how to play (opens on the first visit, sets `seenHowTo`), archive and stats buttons. Countdown after the day is done (`Next gnome in 5h 12m`, to local midnight; `A new gnome is here` with `Play` after).
+- Header: wordmark (a link to the home page, `../`; never straight into the full game), `?` how to play (opens on the first visit, sets `seenHowTo`), archive and stats buttons. Countdown after the day is done (`Next gnome in 5h 12m`, to local midnight; `A new gnome is here` with `Play` after).
 
 ### Saved on the device
 - Key `gnome-sweet-gnome:daily:v2`: `{ easy: { date: record }, hard: { date: record }, device, lastMode, seenHowTo }`. Record: `tries` (array of `{ fences, won, base, walls }`), `hint`, `walls` (current fences), `done`, `finishedOn`, `startedOn`, `reviewing`, `sent`. Every storage access is wrapped; memory is the fallback; corrupt data is ignored.

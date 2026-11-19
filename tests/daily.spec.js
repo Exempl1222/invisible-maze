@@ -960,12 +960,33 @@ test('the countdown catches up when the tab becomes visible again', async ({ pag
   await expect(page.locator('#countdown')).toHaveText('Next gnome in 4h 0m');
 });
 
+test('with reduced motion the gnome still walks tile by tile (he does not jump to the end)', async ({ page }) => {
+  await openDay(page);
+  await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+  await tryBtn(page).click();
+  const seen = new Set();
+  for (let i = 0; i < 12; i++) {
+    seen.add(await page.locator('#board .robot').evaluate((r) => `${r.dataset.x},${r.dataset.y}`));
+    await page.clock.runFor(220);
+  }
+  expect(seen.size).toBeGreaterThan(3);
+  await page.clock.runFor(8000);
+  await settle(page);
+});
+
+test('tapping the wordmark goes back to the home page', async ({ page }) => {
+  await openDay(page);
+  await page.locator('#wordmark').click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('a[href="daily/?mode=easy"]')).toBeVisible();
+});
+
 test('the break message shows for a day before the batch, with a way back to today but none to the game', async ({ page }) => {
   await page.goto('/daily/?date=2026-10-26'); // in the archive window, but there is no puzzle
   await expect(page.getByText('The daily is taking a break.')).toBeVisible();
   await expect(page.locator('#game-view')).toBeHidden();
   await expect(page.locator('main a:visible')).toHaveCount(2); // only the Easy | Hard tabs
-  await expect(page.locator('#wordmark')).not.toHaveJSProperty('tagName', 'A');
+  await expect(page.locator('#wordmark')).toHaveAttribute('href', '../'); // home, not the game
 });
 
 test('a future date is not ready, with a button to today', async ({ page }) => {
@@ -998,14 +1019,14 @@ test('the oldest playable day is today minus 29', async ({ page }) => {
 
 test('nothing links to the full game while the app link is off', async ({ page }) => {
   await openDay(page);
-  await expect(page.locator('a')).toHaveCount(2); // the Easy | Hard tabs, both inside the daily
-  for (const a of await page.locator('a').all()) expect(await a.getAttribute('href')).toMatch(/\/daily\/\?mode=/);
-  await expect(page.locator('#wordmark')).not.toHaveJSProperty('tagName', 'A');
+  await expect(page.locator('a')).toHaveCount(3); // the wordmark (home) and the Easy | Hard tabs
+  await expect(page.locator('#wordmark')).toHaveAttribute('href', '../');
+  for (const a of await page.locator('main a').all()) expect(await a.getAttribute('href')).toMatch(/\/daily\/\?mode=/);
   await placeAll(page, level('easy').answer);
   await tryNow(page);
   await page.getByRole('button', { name: 'Submit' }).click();
   await expect(result(page)).toHaveAttribute('data-state', 'done');
-  await expect(page.locator('a')).toHaveCount(2);
+  await expect(page.locator('a')).toHaveCount(3);
   await expect(page.locator('body')).not.toContainText('Want more');
 });
 

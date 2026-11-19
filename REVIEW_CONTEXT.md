@@ -29,6 +29,7 @@ Daily fence-building puzzle at gnomesweetgnome.app. Players place fences on grid
 - Time: `startedOn` is set from the date the page loaded with (`realToday`), so a first try just after midnight still counts as begun on the puzzle's day; a begun-on-the-day finish counts until the end of the next local day. A finish late on that next day can keep the streak but fall outside the Worker's posting window, so it is not posted (accepted).
 - The Worker also requires the Turnstile token's `hostname` to be `gnomesweetgnome.app`. CI smoke-tests the stamped site (`tools/collect-site.sh`, `playwright.site.config.js`). `TURNSTILE_SECRET` is in the env of one deploy step only.
 - Shared links always bring people back to the main site to play. `play/?daily` redirects to `daily/`.
+- The daily header wordmark links to the home page (`../`), never straight into the full game. `APP_LINK` (off) still guards any link to `play/`.
 
 ## Known and accepted limits (do not re-report)
 - Par is derivable with the bundled solver; the answer itself is not shipped.
