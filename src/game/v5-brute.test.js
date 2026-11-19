@@ -136,7 +136,7 @@ function oracleCounts(b, limit, maxK) {
 
 // ------------------------------------------------------------ board generator
 
-function randomBoard(rng, n, withTeleport) {
+function randomBoard(rng, n, withTeleport, noIce = false) {
   const cells = [];
   for (let i = 0; i < n * n; i++) {
     const r = rng.next();
@@ -151,18 +151,18 @@ function randomBoard(rng, n, withTeleport) {
     cells[order[3]] = 'a';
   }
   const rows = [];
-  for (let y = 0; y < n; y++) rows.push(cells.slice(y * n, y * n + n).join(''));
+  for (let y = 0; y < n; y++) rows.push(cells.slice(y * n, y * n + n).join('').replace(/\*/g, noIce ? '.' : '*'));
   return rows;
 }
 
 // ------------------------------------------------------------ the test
 
-function run(seedBase, count, n, maxK) {
+function run(seedBase, count, n, maxK, noIce = false) {
   const rng = createRng(seedBase);
   let boards = 0;
   let withPar = 0;
   while (boards < count) {
-    const rows = randomBoard(rng, n, rng.chance(0.3));
+    const rows = randomBoard(rng, n, rng.chance(0.3), noIce);
     const b = makeBoard(rows);
     const base = oracleCost(b, new Set());
     if (base === null || base < 2) continue; // need a route, and something worth blocking
@@ -214,4 +214,10 @@ test('v5 solve and countAnswers match brute force on 5x5 boards (ice, mud, gates
   const r = run(7001, 100, 5, 3);
   assert.equal(r.boards, 100);
   assert.ok(r.withPar >= 15, `only ${r.withPar} boards had a winning set; the generator is too tame`);
+});
+
+test('v5 solve and countAnswers match brute force on ice-free 4x4 boards (pruned path: mud, gates, teleporters)', () => {
+  const r = run(5501, 220, 4, 4, true);
+  assert.equal(r.boards, 220);
+  assert.ok(r.withPar >= 40, `only ${r.withPar} boards had a winning set; the generator is too tame`);
 });

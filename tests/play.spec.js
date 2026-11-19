@@ -8,9 +8,9 @@ import { parseLevel, solve, simulate, findPath, buildableLines, cutsAllRoutes } 
 const readJson = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const easy = readJson('../assets/levels/easy.json');
 const medium = readJson('../assets/levels/medium.json');
-const pack = readJson('../assets/levels/pack-01.json');
-// the page lists Easy 1 to 20, Medium 21 to 40, then pack 1's 9x9 levels as 41 to 55
-const levels = [...easy.levels, ...medium.levels, ...pack.levels.filter((l) => l.size === 9)].map((l) => parseLevel(l));
+const hard = readJson('../assets/levels/hard.json');
+// the page lists Easy 1 to 20, Medium 21 to 40, Hard 41 to 60
+const levels = [...easy.levels, ...medium.levels, ...hard.levels].map((l) => parseLevel(l));
 const num = (i) => i + 1; // list index -> level number in the URL
 
 const tile = (page, x, y) => page.locator(`#board .cell[data-x="${x}"][data-y="${y}"]`);
@@ -239,9 +239,9 @@ test('teleporter: focusing one lights its partner, and a free run ends on the be
 });
 
 test('teleporters are numbered when there are two or more pairs', async ({ page }) => {
-  const i = firstIndex((l) => new Set(l.tiles.join('').match(/[a-z]/g) || []).size >= 2);
-  expect(i).toBeGreaterThanOrEqual(0);
-  await open(page, num(i));
+  // No Play level has two pairs since the Wild Wood pack retired; lab level 1 (lab-01) does.
+  await page.goto('/play/?lab=1');
+  await expect(page.locator('#board .cell').first()).toBeVisible();
   await expect(page.locator('#board .cell.teleporter').filter({ hasText: '1' })).toHaveCount(2);
   await expect(page.locator('#board .cell.teleporter').filter({ hasText: '2' })).toHaveCount(2);
 });
@@ -300,12 +300,12 @@ test('keyboard: arrows move between tiles, Shift+arrow walls a side and announce
   await expect(page.locator('#status')).toHaveAttribute('role', 'status');
 });
 
-test('level select: all 55 levels are open, and stars persist across reloads', async ({ page }) => {
+test('level select: all 60 levels are open, and stars persist across reloads', async ({ page }) => {
   await page.goto('/play/');
   const buttons = page.locator('#select-view .level-btn');
-  await expect(buttons).toHaveCount(55);
+  await expect(buttons).toHaveCount(60);
   for (const b of await buttons.all()) await expect(b).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Level 55, not played' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Level 60, not played' })).toBeEnabled();
   await expect(page.locator('#play-next')).toHaveText('Play level 1');
 
   await page.getByRole('button', { name: /^Level 1, / }).click();
@@ -340,17 +340,17 @@ test('?level=N opens that level', async ({ page }) => {
   await expect(page.locator('#board .cell')).toHaveCount(49);
 });
 
-test('level select: Easy has 20 buttons, Medium 20, level 21 is medium-01, and stars carry from pack 1', async ({ page }) => {
+test('level select: Easy has 20 buttons, Medium 20, Hard 20, level 21 is medium-01, level 41 is hard-01, and stars carry from pack 1', async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem('invisible-maze:progress:v1', JSON.stringify({ v: 1, best: { 'p01-02': 2 } }));
   });
   await page.goto('/play/');
   const titles = page.locator('#select-view .group-title');
-  await expect(titles).toHaveText(['Easy \u00b7 5x5', 'Medium \u00b7 7x7', 'The Wild Wood \u00b7 9x9']);
+  await expect(titles).toHaveText(['Easy \u00b7 5x5', 'Medium \u00b7 7x7', 'Hard \u00b7 9x9']);
   const grids = page.locator('#select-view .level-grid');
   await expect(grids.nth(0).locator('.level-btn')).toHaveCount(20);
   await expect(grids.nth(1).locator('.level-btn')).toHaveCount(20); // Medium
-  await expect(grids.nth(2).locator('.level-btn')).toHaveCount(15); // pack 1's 9x9
+  await expect(grids.nth(2).locator('.level-btn')).toHaveCount(20); // Hard
   await expect(page.getByRole('button', { name: 'Level 2, 2 stars' })).toBeVisible(); // p01-02 stars count for easy-02
   await page.getByRole('button', { name: /^Level 21, / }).click();
   const m1 = medium.levels[0];
@@ -358,7 +358,8 @@ test('level select: Easy has 20 buttons, Medium 20, level 21 is medium-01, and s
   expect(levels[20].tiles).toEqual(m1.tiles);
   await expect(page.locator('#par')).toHaveText(String(m1.par));
   await expect(page.locator('#board .cell')).toHaveCount(49);
-  expect(levels[40].tiles).toEqual(pack.levels.filter((l) => l.size === 9)[0].tiles); // 41 is pack 1's first 9x9
+  expect(hard.levels[0].id).toBe('hard-01');
+  expect(levels[40].tiles).toEqual(hard.levels[0].tiles); // 41 is hard-01
 });
 
 test('the intro line shows on Medium levels 21, 26 and 31 (also on a deep link), and on no other level', async ({ page }) => {
@@ -386,6 +387,30 @@ test('Medium: every level is won at 3 stars with its stored answer', async ({ pa
     await expect(result(page)).toHaveAttribute('data-result', 'win');
     await expect(page.getByRole('button', { name: 'Next level' })).toBeVisible();
     await expect(result(page).getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
+  }
+});
+
+test('Hard: every level is won at 3 stars with its stored answer (phone project only)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'phone', 'phone project only; the answers are the same on desktop');
+  test.setTimeout(300000);
+  for (let k = 0; k < hard.levels.length; k++) {
+    const raw = hard.levels[k];
+    await open(page, 41 + k);
+    await expect(page.locator('#board .cell')).toHaveCount(81);
+    await placeAll(page, raw.answer);
+    await go(page).click();
+    await expect(result(page), raw.id).toHaveAttribute('data-result', 'win', { timeout: 20000 }); // replays run up to 22 moves
+    await expect(result(page).getByRole('img', { name: '3 of 3 stars' }), raw.id).toBeVisible();
+  }
+});
+
+test('Hard: no horizontal scroll at 390px on levels 41, 50, 60', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const n of [41, 50, 60]) {
+    await open(page, n);
+    await expect(page.locator('#board .cell')).toHaveCount(81);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `level ${n}`).toBeLessThanOrEqual(0);
   }
 });
 
@@ -467,7 +492,7 @@ test.describe('play/?daily goes to the daily page', () => {
     const tabs = page.getByRole('navigation', { name: 'Mode' });
     await expect(tabs.getByRole('link', { name: 'Daily' })).toHaveAttribute('href', '../daily/');
     await expect(page.locator('#daily-break')).toHaveCount(0);
-    await expect(page.locator('#select-view .level-btn')).toHaveCount(55);
+    await expect(page.locator('#select-view .level-btn')).toHaveCount(60);
   });
 });
 
@@ -577,7 +602,7 @@ test('every win shows the out-of-moves reason (all pack levels, par answer)', as
   test.setTimeout(120000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const [i, lv] of levels.entries()) {
-    const { answer } = solve(lv);
+    const answer = lv.answer ?? solve(lv).answer; // Hard levels carry their answer (solving 9x9 with a tool is slow)
     expect(simulate(lv, answer).reason, `${lv.id} engine reason`).toBe('too-far');
     await open(page, num(i));
     await placeAll(page, answer);
