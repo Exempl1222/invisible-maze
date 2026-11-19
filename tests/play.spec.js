@@ -239,9 +239,9 @@ test('teleporter: focusing one lights its partner, and a free run ends on the be
 });
 
 test('teleporters are numbered when there are two or more pairs', async ({ page }) => {
-  const i = firstIndex((l) => new Set(l.tiles.join('').match(/[a-z]/g) || []).size >= 2);
-  expect(i).toBeGreaterThanOrEqual(0);
-  await open(page, num(i));
+  // No Play level has two pairs since the Wild Wood pack retired; lab level 1 (lab-01) does.
+  await page.goto('/play/?lab=1');
+  await expect(page.locator('#board .cell').first()).toBeVisible();
   await expect(page.locator('#board .cell.teleporter').filter({ hasText: '1' })).toHaveCount(2);
   await expect(page.locator('#board .cell.teleporter').filter({ hasText: '2' })).toHaveCount(2);
 });
@@ -399,7 +399,7 @@ test('Hard: every level is won at 3 stars with its stored answer (phone project 
     await expect(page.locator('#board .cell')).toHaveCount(81);
     await placeAll(page, raw.answer);
     await go(page).click();
-    await expect(result(page), raw.id).toHaveAttribute('data-result', 'win');
+    await expect(result(page), raw.id).toHaveAttribute('data-result', 'win', { timeout: 20000 }); // replays run up to 22 moves
     await expect(result(page).getByRole('img', { name: '3 of 3 stars' }), raw.id).toBeVisible();
   }
 });

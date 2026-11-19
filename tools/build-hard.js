@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Builds assets/levels/hard.json: the 20 Hard 9x9 levels, Play levels 41 to 60 (docs/GAME_SPEC.md "Rules v5": Tiers, Gnome tools, Design metrics).
 //
-//   node tools/build-hard.js                     default: rebuild the pack from the frozen boards below (well under 2 minutes, no search)
+//   node tools/build-hard.js                     default: rebuild the pack from the frozen boards below (about 3 minutes, no search)
 //   node tools/build-hard.js --search n [n ...]  documented, seeded generator for the Play levels n (41 to 60). Multi-core (worker threads),
 //                                                HARD_SECONDS = time limit per slot, HARD_SEED_TAG = a different walk of the seeds,
 //                                                HARD_NODES = work budget per solve, HARD_WORKERS = threads.
