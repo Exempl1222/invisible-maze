@@ -167,7 +167,7 @@ function oracleCounts(b, limit, maxK, tool) {
   return counts;
 }
 
-function randomBoard(rng, n, withTeleport) {
+function randomBoard(rng, n, withTeleport, noIce = false) {
   const cells = [];
   for (let i = 0; i < n * n; i++) {
     const r = rng.next();
@@ -182,18 +182,18 @@ function randomBoard(rng, n, withTeleport) {
     cells[order[3]] = 'a';
   }
   const rows = [];
-  for (let y = 0; y < n; y++) rows.push(cells.slice(y * n, y * n + n).join(''));
+  for (let y = 0; y < n; y++) rows.push(cells.slice(y * n, y * n + n).join('').replace(/\*/g, noIce ? '.' : '*'));
   return rows;
 }
 
-function run(tool, seedBase, count, n, maxK, compareNoTool) {
+function run(tool, seedBase, count, n, maxK, compareNoTool, noIce = false) {
   const rng = createRng(seedBase);
   let boards = 0;
   let withPar = 0;
   let toolMatters = 0;
   let freeCut = 0;
   while (boards < count) {
-    const rows = randomBoard(rng, n, rng.chance(0.3));
+    const rows = randomBoard(rng, n, rng.chance(0.3), noIce);
     const b = makeBoard(rows);
     const base = oracleCost(b, new Set(), tool);
     if (base === null || base < 2) continue;
@@ -244,5 +244,13 @@ for (const [tool, seed] of [['ladder', 100], ['pickaxe', 200], ['plank', 300]]) 
   test(`${tool}: solve and countAnswers match brute force on 5x5 boards`, () => {
     const r = run(tool, 12000 + seed, 30, 5, 3, false);
     assert.ok(r.withPar >= 6, `only ${r.withPar} boards had a winning set`);
+  });
+}
+
+// Ice-free boards take the monotone path in solve.js (cut-state prune and packing bound on).
+for (const [tool, seed] of [['ladder', 400], ['pickaxe', 500], ['plank', 600]]) {
+  test(`${tool}: solve and countAnswers match brute force on ice-free 4x4 boards (pruned path)`, () => {
+    const r = run(tool, 9000 + seed, 100, 4, 4, true, true);
+    assert.ok(r.withPar >= 25, `only ${r.withPar} boards had a winning set`);
   });
 }

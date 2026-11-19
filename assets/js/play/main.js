@@ -10,7 +10,7 @@ import { mountVillain, VILLAIN_SPRITES } from '../villain.js';
 
 const EASY_URL = '../assets/levels/easy.json';
 const MEDIUM_URL = '../assets/levels/medium.json';
-const PACK_URL = '../assets/levels/pack-01.json'; // its 9x9 levels (11 to 30) stay as levels 41 to 55 until Hard ships; its 7x7 retired with Medium
+const HARD_URL = '../assets/levels/hard.json'; // Hard 9x9, levels 41 to 60 (pack 1's 9x9 levels retired from Play when Hard shipped)
 const LAB_URL = '../assets/levels/lab.json';
 const LAB_V5_URL = '../assets/levels/lab-v5.json'; // rules v5: ice, mud, gates. Listed after the five v4 lab levels (?lab=6 and up)
 const LAB_V4_COUNT = 5;
@@ -33,6 +33,9 @@ const INTRO_NOTES = {
   'medium-01': 'Ice: he slides until something stops him. The whole slide is one move.',
   'medium-06': 'Mud: stepping onto it costs him 2 moves.',
   'medium-11': 'Gate: he can only pass it the way its arrow points.',
+  'hard-01': 'Ladder: he can climb over one fence, once. Climbing costs him 2 moves.',
+  'hard-06': 'Pickaxe: he can dig through one rock, once. Digging costs him 2 moves.',
+  'hard-11': 'Plank: he can lay it over one river tile, once. Crossing costs him 1 move.',
 };
 const toolBadgeEl = $('tool-badge');
 const toolIconEl = $('tool-icon');
@@ -450,11 +453,11 @@ async function boot() {
   const art = preloadSprites([...GNOME_SPRITES, ...WALL_SPRITES, ...VILLAIN_SPRITES]);
   art.catch(() => {}); // handled where it is awaited below
   try {
-    const [easyRes, mediumRes, packRes] = await Promise.all([fetch(EASY_URL), fetch(MEDIUM_URL), fetch(PACK_URL)]);
-    if (!easyRes.ok || !mediumRes.ok || !packRes.ok) throw new Error(`${easyRes.status} ${mediumRes.status} ${packRes.status}`);
-    const [easy, medium, pack] = await Promise.all([easyRes.json(), mediumRes.json(), packRes.json()]);
-    // Easy 1 to 20, Medium 21 to 40, then pack 1's 9x9 levels as 41 to 55 (its 5x5 is Easy 1 to 5; its 7x7 retired)
-    levels = [...easy.levels, ...medium.levels, ...pack.levels.filter((l) => l.size === 9)].map((l) => parseLevel(l));
+    const [easyRes, mediumRes, hardRes] = await Promise.all([fetch(EASY_URL), fetch(MEDIUM_URL), fetch(HARD_URL)]);
+    if (!easyRes.ok || !mediumRes.ok || !hardRes.ok) throw new Error(`${easyRes.status} ${mediumRes.status} ${hardRes.status}`);
+    const [easy, medium, hard] = await Promise.all([easyRes.json(), mediumRes.json(), hardRes.json()]);
+    // Easy 1 to 20, Medium 21 to 40, Hard 41 to 60
+    levels = [...easy.levels, ...medium.levels, ...hard.levels].map((l) => parseLevel(l));
   } catch (err) {
     loading.textContent = '';
     const p = document.createElement('p');
