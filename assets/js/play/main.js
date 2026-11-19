@@ -33,6 +33,9 @@ const INTRO_NOTES = {
   'medium-01': 'Ice: he slides until something stops him. The whole slide is one move.',
   'medium-06': 'Mud: stepping onto it costs him 2 moves.',
   'medium-11': 'Gate: he can only pass it the way its arrow points.',
+  'hard-01': 'Ladder: he can climb over one fence, once. Climbing costs him 2 moves.',
+  'hard-06': 'Pickaxe: he can dig through one rock, once. Digging costs him 2 moves.',
+  'hard-11': 'Plank: he can lay it over one river tile, once. Crossing costs him 1 move.',
 };
 const toolBadgeEl = $('tool-badge');
 const toolIconEl = $('tool-icon');

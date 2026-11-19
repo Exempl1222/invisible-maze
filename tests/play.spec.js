@@ -362,14 +362,14 @@ test('level select: Easy has 20 buttons, Medium 20, Hard 20, level 21 is medium-
   expect(levels[40].tiles).toEqual(hard.levels[0].tiles); // 41 is hard-01
 });
 
-test('the intro line shows on Medium levels 21, 26 and 31 (also on a deep link), and on no other level', async ({ page }) => {
+test('the intro line shows on Medium 21, 26, 31 and Hard 41, 46, 51 (also on a deep link), and on no other level', async ({ page }) => {
   const intro = page.locator('#intro-note');
-  for (const [n, re] of [[21, /^Ice:/], [26, /^Mud:/], [31, /^Gate:/]]) {
+  for (const [n, re] of [[21, /^Ice:/], [26, /^Mud:/], [31, /^Gate:/], [41, /^Ladder:/], [46, /^Pickaxe:/], [51, /^Plank:/]]) {
     await open(page, n);
     await expect(intro).toBeVisible();
     await expect(intro).toHaveText(re);
   }
-  for (const n of [1, 22, 40, 41]) {
+  for (const n of [1, 22, 40, 42, 56]) {
     await open(page, n);
     await expect(intro).toBeHidden();
   }
